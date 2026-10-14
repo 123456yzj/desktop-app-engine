@@ -1,0 +1,283 @@
+**********************
+PowerShell 记录开始
+开始时间: 20261013104153
+用户名: yzj\yzj123
+RunAs 用户: yzj\yzj123
+配置名称:
+计算机: YZJ (Microsoft Windows NT 10.0.26200.0)
+主机应用程序: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.6.0_x64__8wekyb3d8bbwe\pwsh.dll -NoLogo -NoProfile -NonInteractive -Command $toolchainRoot = 'D:\project\impact\app-v1\desktop-app-engine\.tools'; $env:RUSTUP_HOME = "$toolchainRoot\rustup"; $env:CARGO_HOME = "$toolchainRoot\cargo"; $env:PATH = "$toolchainRoot\cargo\bin;$toolchainRoot\mingw64\bin;$env:PATH"; cargo fmt && & '.\scripts\verify-components.ps1'
+进程 ID: 34320
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+转录已开始，输出文件为 D:\project\impact\desktop-app-engine\evidence\component-verification.txt
+COMMAND cargo fmt -- --check
+
+EXIT 0
+COMMAND cargo clippy --all-targets --locked --offline -- -D warnings
+
+EXIT 0
+COMMAND cargo test --locked --offline
+
+EXIT 0
+COMMAND cargo build --release --locked --offline
+
+EXIT 101
+>> TerminatingError(): "Failed: cargo build --release --locked --offline (101)"
+**********************
+PowerShell 记录结束
+结束时间: 20261013104223
+**********************
+**********************
+PowerShell 记录开始
+开始时间: 20261013104320
+用户名: yzj\yzj123
+RunAs 用户: yzj\yzj123
+配置名称:
+计算机: YZJ (Microsoft Windows NT 10.0.26200.0)
+主机应用程序: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.6.0_x64__8wekyb3d8bbwe\pwsh.dll -NoLogo -NoProfile -NonInteractive -Command Stop-Process -Id 49968 -ErrorAction Stop; & '.\scripts\verify-components.ps1'
+进程 ID: 3784
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+转录已开始，输出文件为 D:\project\impact\desktop-app-engine\evidence\component-verification.txt
+COMMAND cargo fmt -- --check
+
+EXIT 0
+COMMAND cargo clippy --all-targets --locked --offline -- -D warnings
+
+EXIT 0
+COMMAND cargo test --locked --offline
+
+EXIT 0
+COMMAND cargo build --release --locked --offline
+
+EXIT 0
+COMMAND hello.json --check
+EXIT 0
+COMMAND dashboard.json --check
+EXIT 0
+COMMAND python scripts/schema-verify.py
+
+EXIT 0
+**********************
+PowerShell 记录开始
+开始时间: 20261013104530
+用户名: yzj\yzj123
+RunAs 用户: yzj\yzj123
+配置名称:
+计算机: YZJ (Microsoft Windows NT 10.0.26200.0)
+主机应用程序: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.6.0_x64__8wekyb3d8bbwe\pwsh.dll -NoLogo -NoProfile -NonInteractive -Command & '.\scripts\verify-components.ps1'
+进程 ID: 35676
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+转录已开始，输出文件为 D:\project\impact\desktop-app-engine\evidence\component-verification.txt
+COMMAND cargo fmt -- --check
+
+EXIT 0
+COMMAND cargo clippy --all-targets --locked --offline -- -D warnings
+
+EXIT 0
+COMMAND cargo test --locked --offline
+
+EXIT 0
+COMMAND cargo build --release --locked --offline
+
+EXIT 0
+COMMAND hello.json --check
+EXIT 0
+COMMAND dashboard.json --check
+EXIT 0
+COMMAND python scripts/schema-verify.py
+
+EXIT 0
+COMMAND cargo test --release --locked --offline ten_thousand_rows_use_actual_visible_paint_path -- --nocapture
+
+EXIT 0
+COMMAND cargo test --release --locked --offline sampling_preserves_spikes_order_and_gaps -- --nocapture
+
+EXIT 0
+
+Name                                 NumberOfCores NumberOfLogicalProcessors
+----                                 ------------- -------------------------
+13th Gen Intel(R) Core(TM) i5-13500H            12                        16
+
+**********************
+PowerShell 记录结束
+结束时间: 20261013104608
+**********************
+**********************
+PowerShell 记录开始
+开始时间: 20261013105231
+用户名: yzj\yzj123
+RunAs 用户: yzj\yzj123
+配置名称:
+计算机: YZJ (Microsoft Windows NT 10.0.26200.0)
+主机应用程序: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.6.0_x64__8wekyb3d8bbwe\pwsh.dll -NoLogo -NoProfile -NonInteractive -Command & '.\scripts\verify-components.ps1'
+进程 ID: 28036
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+转录已开始，输出文件为 D:\project\impact\desktop-app-engine\evidence\component-verification.txt
+COMMAND cargo fmt -- --check
+
+EXIT 0
+COMMAND cargo clippy --all-targets --locked --offline -- -D warnings
+
+EXIT 0
+COMMAND cargo test --locked --offline
+
+EXIT 0
+COMMAND cargo build --release --locked --offline
+
+EXIT 0
+COMMAND hello.json --check
+EXIT 0
+COMMAND dashboard.json --check
+EXIT 0
+COMMAND python scripts/schema-verify.py
+
+EXIT 0
+COMMAND cargo test --release --locked --offline ten_thousand_rows_use_actual_visible_paint_path -- --nocapture
+
+EXIT 0
+COMMAND cargo test --release --locked --offline sampling_preserves_spikes_order_and_gaps -- --nocapture
+
+EXIT 0
+
+Name                                 NumberOfCores NumberOfLogicalProcessors
+----                                 ------------- -------------------------
+13th Gen Intel(R) Core(TM) i5-13500H            12                        16
+
+**********************
+PowerShell 记录结束
+结束时间: 20261013105254
+**********************
+**********************
+PowerShell 记录开始
+开始时间: 20261013105628
+用户名: yzj\yzj123
+RunAs 用户: yzj\yzj123
+配置名称:
+计算机: YZJ (Microsoft Windows NT 10.0.26200.0)
+主机应用程序: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.6.0_x64__8wekyb3d8bbwe\pwsh.dll -NoLogo -NoProfile -NonInteractive -Command & '.\scripts\verify-components.ps1'
+进程 ID: 25248
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+转录已开始，输出文件为 D:\project\impact\desktop-app-engine\evidence\component-verification.txt
+COMMAND cargo fmt -- --check
+
+EXIT 0
+COMMAND cargo clippy --all-targets --locked --offline -- -D warnings
+
+EXIT 0
+COMMAND cargo test --locked --offline
+
+EXIT 0
+COMMAND cargo build --release --locked --offline
+
+EXIT 0
+COMMAND hello.json --check
+EXIT 0
+COMMAND dashboard.json --check
+EXIT 0
+COMMAND python scripts/schema-verify.py
+
+EXIT 0
+COMMAND cargo test --release --locked --offline ten_thousand_rows_use_actual_visible_paint_path -- --nocapture
+
+EXIT 0
+COMMAND cargo test --release --locked --offline sampling_preserves_spikes_order_and_gaps -- --nocapture
+
+EXIT 0
+**********************
+PowerShell 记录开始
+开始时间: 20261013105747
+用户名: yzj\yzj123
+RunAs 用户: yzj\yzj123
+配置名称:
+计算机: YZJ (Microsoft Windows NT 10.0.26200.0)
+主机应用程序: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.6.0_x64__8wekyb3d8bbwe\pwsh.dll -NoLogo -NoProfile -NonInteractive -Command & '.\scripts\verify-components.ps1'
+进程 ID: 9360
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+转录已开始，输出文件为 D:\project\impact\desktop-app-engine\evidence\component-verification.txt
+COMMAND cargo fmt -- --check
+
+EXIT 0
+COMMAND cargo clippy --all-targets --locked --offline -- -D warnings
+
+EXIT 0
+COMMAND cargo test --locked --offline
+
+EXIT 0
+COMMAND cargo build --release --locked --offline
+
+EXIT 0
+COMMAND hello.json --check
+EXIT 0
+COMMAND dashboard.json --check
+EXIT 0
+COMMAND python scripts/schema-verify.py
+
+EXIT 0
+COMMAND cargo test --release --locked --offline ten_thousand_rows_use_actual_visible_paint_path -- --nocapture
+
+EXIT 0
+COMMAND cargo test --release --locked --offline sampling_preserves_spikes_order_and_gaps -- --nocapture
+
+EXIT 0
+
+Name                                 NumberOfCores NumberOfLogicalProcessors
+----                                 ------------- -------------------------
+13th Gen Intel(R) Core(TM) i5-13500H            12                        16
+
+**********************
+PowerShell 记录结束
+结束时间: 20261013105800
+**********************

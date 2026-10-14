@@ -1,0 +1,16 @@
+{
+  "apiVersion": 1,
+  "name": "echarts",
+  "version": "1.0.0",
+  "entry": "worker.cjs",
+  "components": {
+    "chart": {
+      "props": {"kind":"object","required":["option"],"properties":{"option":{"kind":"object","additionalProperties":true}}},
+      "events": {"click":{"kind":"object","required":["seriesIndex","dataIndex","name","value"],"properties":{"seriesIndex":{"kind":"number"},"dataIndex":{"kind":"number"},"name":{"kind":"string"},"value":{"kind":"number"}}}},
+      "methods": {
+        "getOption": {"args":{"kind":"object"},"result":{"kind":"object","additionalProperties":true}},
+        "dispatchAction": {"args":{"kind":"object","required":["type"],"properties":{"type":{"kind":"string"}},"additionalProperties":true},"result":{"kind":"boolean"}}
+      }
+    }
+  }
+}

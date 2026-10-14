@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:desktop-app-engine:description:0.2",
+  "title": "Desktop application description 0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "app", "state", "root", "actions"],
+  "properties": {
+    "schemaVersion": {"const": "0.2"},
+    "plugins": {"type":"array","uniqueItems":true,"items":{"type":"string","pattern":"^[a-zA-Z0-9_-]+$"}},
+    "dataSources": {"type":"object","maxProperties":64,"propertyNames":{"minLength":1},"additionalProperties":{"$ref":"#/$defs/dataSource"}},
+    "credentialStore": {"type":"string","pattern":"^[a-zA-Z0-9_-]{1,64}$"},
+    "app": {"type":"object","additionalProperties":false,"required":["name","window"],"properties":{
+      "name":{"type":"string","minLength":1},
+      "window":{"type":"object","additionalProperties":false,"required":["width","height"],"properties":{"width":{"type":"number","minimum":160,"maximum":8192},"height":{"type":"number","minimum":160,"maximum":8192}}}
+    }},
+    "state": {"type":"object","propertyNames":{"minLength":1}},
+    "root": {"$ref":"#/$defs/node"},
+    "actions": {"$ref":"#/$defs/actions"}
+  },
+  "$defs": {
+    "httpArgument": {"oneOf":[{"type":"string"},{"$ref":"#/$defs/binding"}]},
+    "httpHeader": {"oneOf":[{"$ref":"#/$defs/httpArgument"},{"type":"object","additionalProperties":false,"required":["kind","name"],"properties":{"kind":{"const":"credential"},"name":{"type":"string","pattern":"^[a-zA-Z0-9_-]{1,64}$"},"prefix":{"type":"string","maxLength":128,"default":""}}}]},
+    "dataSource": {"type":"object","additionalProperties":false,"required":["url","statusTarget","responseSample","mappings"],"properties":{
+      "url":{"$ref":"#/$defs/httpArgument"},"method":{"enum":["GET","POST","PUT","PATCH","DELETE"],"default":"GET"},
+      "headers":{"type":"object","additionalProperties":{"$ref":"#/$defs/httpHeader"}},"query":{"type":"object","additionalProperties":{"$ref":"#/$defs/httpArgument"}},"body":{"$ref":"#/$defs/binding"},
+      "timeoutMs":{"type":"integer","minimum":1,"maximum":120000,"default":15000},"statusTarget":{"type":"string","minLength":1},"responseSample":{},
+      "mappings":{"type":"array","minItems":1,"items":{"type":"object","additionalProperties":false,"required":["target"],"properties":{"target":{"type":"string","minLength":1},"path":{"type":"string","pattern":"^(|/([^~]|~[01])*)$","default":""}}}},
+      "onLoad":{"type":"boolean","default":false},"intervalMs":{"type":"integer","minimum":100,"maximum":86400000},"enabled":{"$ref":"#/$defs/binding"}
+    }},
+    "actions": {"type":"object","propertyNames":{"minLength":1},"additionalProperties":{"type":"object","additionalProperties":false,"required":["steps"],"properties":{"eventPayload":{"not":{"type":"null"}},"steps":{"type":"array","minItems":1,"items":{"$ref":"#/$defs/step"}}}}},
+    "scope": {"properties":{"state":{"type":"object","propertyNames":{"minLength":1}},"actions":{"$ref":"#/$defs/actions"}}},
+    "binding": {"oneOf":[
+      {"type":"object","additionalProperties":false,"required":["kind","value"],"properties":{"kind":{"const":"literal"},"value":{}}},
+      {"type":"object","additionalProperties":false,"required":["kind","key"],"properties":{"kind":{"enum":["state","prop"]},"key":{"type":"string","minLength":1},"path":{"type":"string","pattern":"^(|/([^~]|~[01])*)$","default":""}}},
+      {"type":"object","additionalProperties":false,"required":["kind"],"properties":{"kind":{"const":"event"},"path":{"type":"string","pattern":"^(|/([^~]|~[01])*)$","default":""}}}
+    ]},
+    "eventAction": {"oneOf":[{"type":"string","minLength":1},{"$ref":"#/$defs/binding"}]},
+    "number": {"type":"number","minimum":0,"maximum":1000000},
+    "track": {"oneOf":[
+      {"type":"object","additionalProperties":false,"required":["fixed"],"properties":{"fixed":{"$ref":"#/$defs/number"}}},
+      {"type":"object","additionalProperties":false,"required":["fr"],"properties":{"fr":{"type":"number","exclusiveMinimum":0,"maximum":1000000}}},
+      {"type":"object","additionalProperties":false,"required":["auto"],"properties":{"auto":{"const":true}}}
+    ]},
+    "gridTrack": {"oneOf":[
+      {"type":"object","additionalProperties":false,"required":["fixed"],"properties":{"fixed":{"$ref":"#/$defs/number"}}},
+      {"type":"object","additionalProperties":false,"required":["fr"],"properties":{"fr":{"type":"number","exclusiveMinimum":0,"maximum":1000000}}}
+    ]},
+    "layout": {"type":"object","additionalProperties":false,"properties":{
+      "width":{"$ref":"#/$defs/track"},"height":{"$ref":"#/$defs/track"},
+      "minWidth":{"$ref":"#/$defs/number"},"maxWidth":{"$ref":"#/$defs/number"},"minHeight":{"$ref":"#/$defs/number"},"maxHeight":{"$ref":"#/$defs/number"},
+      "padding":{"$ref":"#/$defs/number","default":0},"gap":{"$ref":"#/$defs/number","default":0},"shrink":{"$ref":"#/$defs/number"},
+      "wrap":{"type":"boolean","default":false},"align":{"enum":["start","center","end","stretch"],"default":"stretch"},
+      "justify":{"enum":["start","center","end","spaceBetween"],"default":"start"},"overflow":{"enum":["clip","scroll"],"default":"clip"}
+    }},
+    "token": {"enum":["surface","surfaceRaised","textPrimary","textMuted","border","accent","success","warning","danger","focus"]},
+    "style": {"type":"object","additionalProperties":false,"properties":{
+      "background":{"$ref":"#/$defs/token"},"color":{"$ref":"#/$defs/token"},"fontSize":{"$ref":"#/$defs/number"},"borderWidth":{"$ref":"#/$defs/number","default":0},"radius":{"$ref":"#/$defs/number","default":0}
+    }},
+    "format": {"type":"object","additionalProperties":false,"properties":{
+      "type":{"enum":["text","number","percent"],"default":"text"},"precision":{"type":"integer","minimum":0,"maximum":12,"default":0},"unit":{"type":"string","default":""}
+    },"allOf":[{"if":{"properties":{"type":{"const":"text"}}},"then":{"properties":{"precision":{"const":0}}}}]},
+    "axis": {"type":"object","additionalProperties":false,"properties":{"scale":{"const":"linear","default":"linear"},"min":{"type":"number","minimum":-1e100,"maximum":1e100},"max":{"type":"number","minimum":-1e100,"maximum":1e100}}},
+    "series": {"type":"object","additionalProperties":false,"required":["id","name","data","xField","yField"],"properties":{
+      "id":{"type":"string","minLength":1},"name":{"type":"string","minLength":1},"data":{"$ref":"#/$defs/binding"},"xField":{"type":"string","minLength":1},"yField":{"type":"string","minLength":1},"monotonicX":{"type":"boolean","default":false}
+    }},
+    "column": {"type":"object","additionalProperties":false,"required":["id","field","title","width"],"properties":{
+      "id":{"type":"string","minLength":1},"field":{"type":"string","minLength":1},"title":{"type":"string"},"width":{"$ref":"#/$defs/track"},"format":{"$ref":"#/$defs/format"}
+    }},
+    "children": {"type":"array","items":{"$ref":"#/$defs/node"},"default":[]},
+    "base": {"type":"object","required":["id","type"],"properties":{
+      "id":{"type":"string","minLength":1},"type":{"type":"string"},"layout":{"$ref":"#/$defs/layout"},"style":{"$ref":"#/$defs/style"},
+      "visible":{"$ref":"#/$defs/binding"},"enabled":{"$ref":"#/$defs/binding"},"events":{"type":"object","additionalProperties":{"$ref":"#/$defs/eventAction"},"default":{}}
+    }},
+    "noEvents": {"properties":{"events":{"maxProperties":0}}},
+    "leaf": {"properties":{"layout":{"not":{"anyOf":[{"required":["gap"]},{"required":["align"]},{"required":["justify"]},{"required":["wrap"]},{"required":["overflow"]}]}}}},
+    "node": {"allOf":[{"$ref":"#/$defs/base"}],"oneOf":[
+      {"allOf":[{"$ref":"#/$defs/leaf"}],"required":["component"],"properties":{"type":{"const":"plugin"},"component":{"type":"string","minLength":1},"props":{"type":"object","propertyNames":{"minLength":1},"additionalProperties":{"$ref":"#/$defs/binding"}}}},
+      {"allOf":[{"$ref":"#/$defs/noEvents"},{"$ref":"#/$defs/scope"}],"properties":{"type":{"const":"module"},"children":{"$ref":"#/$defs/children"},"props":{"type":"object","propertyNames":{"minLength":1},"additionalProperties":{"$ref":"#/$defs/binding"}},"emits":{"type":"object","propertyNames":{"minLength":1}},"on":{"type":"object","propertyNames":{"minLength":1},"additionalProperties":{"$ref":"#/$defs/eventAction"}},"layout":{"properties":{"wrap":{"const":false}}}}},
+      {"allOf":[{"$ref":"#/$defs/noEvents"},{"$ref":"#/$defs/scope"}],"properties":{"type":{"enum":["row","column"]},"children":{"$ref":"#/$defs/children"}},"if":{"properties":{"type":{"const":"column"}}},"then":{"properties":{"layout":{"properties":{"wrap":{"const":false}}}}}},
+      {"allOf":[{"$ref":"#/$defs/noEvents"},{"$ref":"#/$defs/scope"}],"required":["columns"],"properties":{"type":{"const":"grid"},"children":{"$ref":"#/$defs/children"},"columns":{"type":"array","minItems":1,"maxItems":64,"items":{"$ref":"#/$defs/gridTrack"}},"layout":{"properties":{"wrap":{"const":false}},"not":{"required":["justify"]}}}},
+      {"allOf":[{"$ref":"#/$defs/noEvents"},{"$ref":"#/$defs/scope"}],"properties":{"type":{"enum":["panel","card"]},"children":{"$ref":"#/$defs/children"},"title":{"$ref":"#/$defs/binding"},"layout":{"properties":{"wrap":{"const":false}}}}},
+      {"allOf":[{"$ref":"#/$defs/noEvents"},{"$ref":"#/$defs/leaf"}],"required":["text"],"properties":{"type":{"const":"text"},"text":{"$ref":"#/$defs/binding"}}},
+      {"allOf":[{"$ref":"#/$defs/noEvents"},{"$ref":"#/$defs/leaf"}],"required":["text"],"properties":{"type":{"const":"badge"},"text":{"$ref":"#/$defs/binding"},"tone":{"enum":["accent","success","warning","danger","muted"],"default":"accent"}}},
+      {"allOf":[{"$ref":"#/$defs/leaf"}],"required":["text"],"properties":{"type":{"const":"button"},"text":{"$ref":"#/$defs/binding"},"events":{"propertyNames":{"enum":["click"]}}}},
+      {"allOf":[{"$ref":"#/$defs/leaf"}],"required":["value"],"properties":{"type":{"const":"input"},"value":{"$ref":"#/$defs/binding"},"placeholder":{"$ref":"#/$defs/binding"},"events":{"propertyNames":{"enum":["change","submit"]}}}},
+      {"allOf":[{"$ref":"#/$defs/noEvents"},{"$ref":"#/$defs/leaf"}],"required":["label","value"],"properties":{"type":{"const":"metric"},"label":{"$ref":"#/$defs/binding"},"value":{"$ref":"#/$defs/binding"},"format":{"$ref":"#/$defs/format"}}},
+      {"allOf":[{"$ref":"#/$defs/noEvents"},{"$ref":"#/$defs/leaf"}],"required":["value"],"properties":{"type":{"const":"progress"},"value":{"$ref":"#/$defs/binding"},"text":{"$ref":"#/$defs/binding"}}},
+      {"allOf":[{"$ref":"#/$defs/leaf"}],"required":["rows","rowKey","columns"],"properties":{"type":{"const":"table"},"rows":{"$ref":"#/$defs/binding"},"rowKey":{"type":"string"},"rowHeight":{"type":"number","minimum":16,"maximum":512,"default":32},"columns":{"type":"array","minItems":1,"maxItems":64,"items":{"$ref":"#/$defs/column"}},"events":{"propertyNames":{"enum":["rowSelect","sortChange"]}}}},
+      {"allOf":[{"$ref":"#/$defs/noEvents"},{"$ref":"#/$defs/leaf"}],"required":["series","layout"],"properties":{"type":{"enum":["lineChart","barChart"]},"title":{"$ref":"#/$defs/binding"},"series":{"type":"array","maxItems":32,"items":{"$ref":"#/$defs/series"}},"xAxis":{"$ref":"#/$defs/axis"},"yAxis":{"$ref":"#/$defs/axis"},"legend":{"type":"boolean","default":true},"zoom":{"type":"boolean","default":false},"pan":{"type":"boolean","default":false},"layout":{"required":["height"],"properties":{"height":{"required":["fixed"],"properties":{"fixed":{"minimum":120}}}}}}}
+    ],"unevaluatedProperties":false},
+    "step": {"oneOf":[
+      {"type":"object","additionalProperties":false,"required":["type","source"],"properties":{"type":{"const":"request"},"source":{"type":"string","minLength":1}}},
+      {"type":"object","additionalProperties":false,"required":["type","target","method","args"],"properties":{"type":{"const":"pluginCall"},"target":{"type":"string","minLength":1},"method":{"type":"string","minLength":1},"args":{"$ref":"#/$defs/binding"},"resultTarget":{"type":"string","minLength":1}}},
+      {"type":"object","additionalProperties":false,"required":["type","event","payload"],"properties":{"type":{"const":"emit"},"event":{"type":"string","minLength":1},"payload":{"$ref":"#/$defs/binding"}}},
+      {"type":"object","additionalProperties":false,"required":["type","target","value"],"properties":{"type":{"const":"set"},"target":{"type":"string","minLength":1},"value":{"$ref":"#/$defs/binding"}}},
+      {"type":"object","additionalProperties":false,"required":["type","target","parts"],"properties":{"type":{"const":"concat"},"target":{"type":"string","minLength":1},"parts":{"type":"array","items":{"$ref":"#/$defs/binding"}}}},
+      {"type":"object","additionalProperties":false,"required":["type","program","target"],"properties":{"type":{"const":"command"},"program":{"type":"string","minLength":1},"args":{"type":"array","items":{"oneOf":[{"type":"string"},{"$ref":"#/$defs/binding"}]}},"cwd":{"type":"string","minLength":1},"target":{"type":"string","minLength":1},"timeoutMs":{"type":"integer","minimum":1,"maximum":3600000}}}
+    ]}
+  }
+}

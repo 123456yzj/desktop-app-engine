@@ -1,0 +1,110 @@
+{
+  "schemaVersion": "0.2",
+  "plugins": ["echarts"],
+  "app": {
+    "name": "ECharts 插件测试",
+    "window": {"width": 960, "height": 680}
+  },
+  "state": {
+    "chartOption": {
+      "title": {"text": "服务器 CPU 使用率"},
+      "xAxis": {"type": "category", "data": ["服务器 A", "服务器 B", "服务器 C"]},
+      "yAxis": {"type": "value", "min": 0, "max": 100},
+      "series": [{"name": "CPU", "type": "bar", "data": [25, 60, 40]}]
+    },
+    "initialOption": {
+      "title": {"text": "服务器 CPU 使用率"},
+      "xAxis": {"type": "category", "data": ["服务器 A", "服务器 B", "服务器 C"]},
+      "yAxis": {"type": "value", "min": 0, "max": 100},
+      "series": [{"name": "CPU", "type": "bar", "data": [25, 60, 40]}]
+    },
+    "selection": "尚未选择服务器，请点击柱形",
+    "selectedValue": 0,
+    "methodResult": false
+  },
+  "root": {
+    "type": "column",
+    "id": "page",
+    "layout": {"padding": 20, "gap": 12},
+    "children": [
+      {
+        "type": "text",
+        "id": "instructions",
+        "text": {"kind": "literal", "value": "测试：更新数据观察图表刷新；点击柱形查看回传值；点击高亮调用插件方法。"}
+      },
+      {
+        "type": "plugin",
+        "id": "cpuChart",
+        "component": "echarts.chart",
+        "layout": {"height": {"fixed": 360}, "width": {"fr": 1}},
+        "props": {"option": {"kind": "state", "key": "chartOption"}},
+        "events": {"click": "selectServer"}
+      },
+      {
+        "type": "row",
+        "id": "controls",
+        "layout": {"gap": 12},
+        "children": [
+          {"type": "button", "id": "update", "text": {"kind": "literal", "value": "更新数据"}, "events": {"click": "updateData"}},
+          {"type": "button", "id": "highlight", "text": {"kind": "literal", "value": "高亮服务器 B"}, "events": {"click": "highlightServer"}},
+          {"type": "button", "id": "reset", "text": {"kind": "literal", "value": "恢复初始数据"}, "events": {"click": "resetData"}}
+        ]
+      },
+      {"type": "text", "id": "selection", "text": {"kind": "state", "key": "selection"}},
+      {
+        "type": "metric",
+        "id": "selectedCpu",
+        "label": {"kind": "literal", "value": "所选服务器 CPU 使用率"},
+        "value": {"kind": "state", "key": "selectedValue"},
+        "format": {"type": "number", "precision": 0, "unit": "%"}
+      }
+    ]
+  },
+  "actions": {
+    "updateData": {
+      "steps": [
+        {
+          "type": "set",
+          "target": "chartOption",
+          "value": {
+            "kind": "literal",
+            "value": {
+              "title": {"text": "服务器 CPU 使用率"},
+              "xAxis": {"type": "category", "data": ["服务器 A", "服务器 B", "服务器 C"]},
+              "yAxis": {"type": "value", "min": 0, "max": 100},
+              "series": [{"name": "CPU", "type": "bar", "data": [75, 35, 90]}]
+            }
+          }
+        },
+        {"type": "set", "target": "selection", "value": {"kind": "literal", "value": "数据已更新，请重新点击柱形"}},
+        {"type": "set", "target": "selectedValue", "value": {"kind": "literal", "value": 0}}
+      ]
+    },
+    "selectServer": {
+      "eventPayload": {"seriesIndex": 0, "dataIndex": 0, "name": "", "value": 0},
+      "steps": [
+        {"type": "concat", "target": "selection", "parts": [{"kind": "literal", "value": "已选择："}, {"kind": "event", "path": "/name"}]},
+        {"type": "set", "target": "selectedValue", "value": {"kind": "event", "path": "/value"}}
+      ]
+    },
+    "highlightServer": {
+      "steps": [
+        {
+          "type": "pluginCall",
+          "target": "cpuChart",
+          "method": "dispatchAction",
+          "args": {"kind": "literal", "value": {"type": "highlight", "seriesIndex": 0, "dataIndex": 1}},
+          "resultTarget": "methodResult"
+        }
+      ]
+    },
+    "resetData": {
+      "steps": [
+        {"type": "set", "target": "chartOption", "value": {"kind": "state", "key": "initialOption"}},
+        {"type": "set", "target": "selection", "value": {"kind": "literal", "value": "尚未选择服务器，请点击柱形"}},
+        {"type": "set", "target": "selectedValue", "value": {"kind": "literal", "value": 0}},
+        {"type": "set", "target": "methodResult", "value": {"kind": "literal", "value": false}}
+      ]
+    }
+  }
+}

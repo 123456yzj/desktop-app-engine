@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "0.2",
+  "app": {"name": "状态驱动步骤按钮", "window": {"width": 640, "height": 400}},
+  "state": {
+    "wizard": {"label": "下一步", "action": "toSecond", "enabled": true, "page": "第一步：填写信息"}
+  },
+  "root": {
+    "type": "column", "id": "root", "layout": {"padding": 24, "gap": 16},
+    "children": [
+      {"type": "text", "id": "page", "text": {"kind": "state", "key": "wizard", "path": "/page"}},
+      {
+        "type": "button", "id": "advance",
+        "text": {"kind": "state", "key": "wizard", "path": "/label"},
+        "enabled": {"kind": "state", "key": "wizard", "path": "/enabled"},
+        "events": {"click": {"kind": "state", "key": "wizard", "path": "/action"}}
+      },
+      {"type": "button", "id": "reset", "text": {"kind": "literal", "value": "重新开始"}, "events": {"click": "reset"}}
+    ]
+  },
+  "actions": {
+    "toSecond": {"steps": [{"type": "set", "target": "wizard", "value": {"kind": "literal", "value": {"label": "下一步", "action": "toThird", "enabled": true, "page": "第二步：确认信息"}}}]},
+    "toThird": {"steps": [{"type": "set", "target": "wizard", "value": {"kind": "literal", "value": {"label": "提交", "action": "submit", "enabled": true, "page": "第三步：准备提交"}}}]},
+    "submit": {"steps": [{"type": "set", "target": "wizard", "value": {"kind": "literal", "value": {"label": "已提交", "action": "submit", "enabled": false, "page": "提交完成（本地状态演示）"}}}]},
+    "reset": {"steps": [{"type": "set", "target": "wizard", "value": {"kind": "literal", "value": {"label": "下一步", "action": "toSecond", "enabled": true, "page": "第一步：填写信息"}}}]}
+  }
+}

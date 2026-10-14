@@ -1,0 +1,82 @@
+{
+  "schemaVersion": "0.2",
+  "app": {"name": "运行状态看板", "window": {"width": 1180, "height": 860}},
+  "state": {
+    "stats": {"cpu": 0.42, "memory": 0.68, "requests": 128640, "availability": 0.9995},
+    "note": "静态数据 · 点击更新可验证绑定",
+    "trend": [
+      {"time": 0, "cpu": 0.28, "memory": 0.51}, {"time": 1, "cpu": 0.35, "memory": 0.54},
+      {"time": 2, "cpu": 0.31, "memory": 0.53}, {"time": 3, "cpu": 0.66, "memory": 0.58},
+      {"time": 4, "cpu": 0.4, "memory": 0.61}, {"time": 5, "cpu": 0.42, "memory": 0.68}
+    ],
+    "groups": [
+      {"group": 1, "read": 120, "write": 80}, {"group": 2, "read": 180, "write": 115},
+      {"group": 3, "read": 150, "write": 95}, {"group": 4, "read": 210, "write": 130}
+    ],
+    "servers": [
+      {"id":"node-01","name":"北京 · 应用节点一","region":"华北","load":0.42,"requests":24300},
+      {"id":"node-02","name":"上海 · 应用节点二","region":"华东","load":0.68,"requests":31200},
+      {"id":"node-03","name":"广州 · 数据节点三","region":"华南","load":0.31,"requests":18200},
+      {"id":"node-04","name":"成都 · 缓存节点四","region":"西南","load":0.52,"requests":26500},
+      {"id":"node-05","name":"杭州 · 应用节点五","region":"华东","load":0.42,"requests":28440},
+      {"id":"node-06","name":"武汉 · 应用节点六","region":"华中","load":0.35,"requests":14200},
+      {"id":"node-07","name":"西安 · 缓存节点七","region":"西北","load":0.21,"requests":12300},
+      {"id":"node-08","name":"南京 · 数据节点八","region":"华东","load":0.56,"requests":21400},
+      {"id":"node-09","name":"深圳 · 应用节点九","region":"华南","load":0.61,"requests":29100},
+      {"id":"node-10","name":"天津 · 应用节点十","region":"华北","load":0.48,"requests":19800},
+      {"id":"node-11","name":"重庆 · 缓存节点十一","region":"西南","load":0.26,"requests":13600},
+      {"id":"node-12","name":"苏州 · 数据节点十二","region":"华东","load":0.37,"requests":16700}
+    ]
+  },
+  "root": {
+    "type": "column", "id": "dashboard", "layout": {"padding": 16, "gap": 16, "overflow": "scroll"},
+    "children": [
+      {"type":"row","id":"heading","layout":{"gap":16,"height":{"fixed":42},"align":"center"},"children":[
+        {"type":"text","id":"heading-text","layout":{"width":{"fr":1}},"style":{"fontSize":24},"text":{"kind":"literal","value":"运行状态看板"}},
+        {"type":"badge","id":"status","text":{"kind":"literal","value":"系统运行正常"},"tone":"success"},
+        {"type":"button","id":"refresh","text":{"kind":"literal","value":"更新指标"},"events":{"click":"refresh"}}
+      ]},
+      {"type":"text","id":"note","text":{"kind":"state","key":"note"},"style":{"color":"textMuted"}},
+      {"type":"grid","id":"metrics","columns":[{"fr":1},{"fr":1},{"fr":1},{"fr":1}],"layout":{"gap":12},"children":[
+        {"type":"card","id":"cpu-card","layout":{"padding":16},"style":{"radius":8,"borderWidth":1},"children":[
+          {"type":"metric","id":"cpu","label":{"kind":"literal","value":"CPU 使用率"},"value":{"kind":"state","key":"stats","path":"/cpu"},"format":{"type":"percent","precision":1}}
+        ]},
+        {"type":"card","id":"memory-card","layout":{"padding":16},"style":{"radius":8,"borderWidth":1},"children":[
+          {"type":"metric","id":"memory","label":{"kind":"literal","value":"内存使用率"},"value":{"kind":"state","key":"stats","path":"/memory"},"format":{"type":"percent","precision":1}}
+        ]},
+        {"type":"card","id":"requests-card","layout":{"padding":16},"style":{"radius":8,"borderWidth":1},"children":[
+          {"type":"metric","id":"requests","label":{"kind":"literal","value":"累计请求"},"value":{"kind":"state","key":"stats","path":"/requests"},"format":{"type":"number","precision":0,"unit":" 次"}}
+        ]},
+        {"type":"card","id":"availability-card","layout":{"padding":16},"style":{"radius":8,"borderWidth":1},"children":[
+          {"type":"metric","id":"availability","label":{"kind":"literal","value":"服务可用率"},"value":{"kind":"state","key":"stats","path":"/availability"},"format":{"type":"percent","precision":2}}
+        ]}
+      ]},
+      {"type":"progress","id":"cpu-progress","value":{"kind":"state","key":"stats","path":"/cpu"},"text":{"kind":"literal","value":"CPU 容量使用情况"}},
+      {"type":"row","id":"charts","layout":{"gap":16,"height":{"fixed":290}},"children":[
+        {"type":"lineChart","id":"trend-chart","title":{"kind":"literal","value":"资源趋势 · 悬停查看原始数据"},"layout":{"width":{"fr":1},"height":{"fixed":290},"padding":8},"series":[
+          {"id":"cpu-series","name":"CPU","data":{"kind":"state","key":"trend"},"xField":"time","yField":"cpu","monotonicX":true},
+          {"id":"memory-series","name":"内存","data":{"kind":"state","key":"trend"},"xField":"time","yField":"memory","monotonicX":true}
+        ],"xAxis":{"scale":"linear"},"yAxis":{"scale":"linear","min":0,"max":1},"legend":true,"zoom":true,"pan":true},
+        {"type":"barChart","id":"group-chart","title":{"kind":"literal","value":"分组请求量 · 数值组 1～4"},"layout":{"width":{"fr":1},"height":{"fixed":290},"padding":8},"series":[
+          {"id":"read-series","name":"读取","data":{"kind":"state","key":"groups"},"xField":"group","yField":"read"},
+          {"id":"write-series","name":"写入","data":{"kind":"state","key":"groups"},"xField":"group","yField":"write"}
+        ],"xAxis":{"scale":"linear","min":0.5,"max":4.5},"yAxis":{"scale":"linear","min":0},"legend":true}
+      ]},
+      {"type":"panel","id":"detail-panel","title":{"kind":"literal","value":"节点明细 · 点击列头排序，拖动列边界调整宽度"},"layout":{"padding":12,"height":{"fixed":340}},"style":{"borderWidth":1,"radius":8},"children":[
+        {"type":"table","id":"server-table","layout":{"height":{"fr":1}},"rows":{"kind":"state","key":"servers"},"rowKey":"id","rowHeight":32,"columns":[
+          {"id":"name","field":"name","title":"节点名称","width":{"fr":2}},
+          {"id":"region","field":"region","title":"区域","width":{"auto":true}},
+          {"id":"load","field":"load","title":"负载","width":{"fixed":130},"format":{"type":"percent","precision":1}},
+          {"id":"requests","field":"requests","title":"请求量","width":{"fr":1},"format":{"type":"number","precision":0}}
+        ]}
+      ]},
+      {"type":"text","id":"footer","style":{"color":"textMuted"},"text":{"kind":"literal","value":"固定运行时 + app.json · 修改 JSON 无需重新编译 · 表格方向键切换选择，图例可切换系列"}}
+    ]
+  },
+  "actions": {
+    "refresh": {"steps":[
+      {"type":"set","target":"stats","value":{"kind":"literal","value":{"cpu":0.57,"memory":0.72,"requests":132980,"availability":0.9998}}},
+      {"type":"set","target":"note","value":{"kind":"literal","value":"指标已更新 · 确定性本地动作，不访问网络"}}
+    ]}
+  }
+}

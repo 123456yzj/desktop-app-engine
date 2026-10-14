@@ -1,0 +1,22 @@
+/target/
+/target-verify/
+/target-http/
+/tmp-verify/
+/exports/
+/dist/
+/evidence/fixtures/
+/.tools/
+/*.7z
+/*install*.exe
+/*.log
+/*.err
+**/node_modules/
+/examples/plugins/
+# Local verification artifacts and credential files.
+/evidence/*.png
+/evidence/*.out
+/evidence/*.err
+**/*.dpapi
+**/__pycache__/
+.env
+.env.*

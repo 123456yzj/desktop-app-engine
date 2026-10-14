@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "0.2",
+  "app": {"name": "模块状态隔离", "window": {"width": 800, "height": 600}},
+  "state": {},
+  "actions": {},
+  "root": {
+    "type": "column", "id": "page", "layout": {"padding": 20, "gap": 16},
+    "state": {"pageTitle": "两个模块使用同名状态，分别更新"},
+    "children": [
+      {"type": "text", "id": "heading", "text": {"kind": "state", "key": "pageTitle"}},
+      {
+        "type": "card", "id": "moduleA", "title": {"kind": "literal", "value": "模块 A"}, "layout": {"padding": 16, "gap": 8},
+        "state": {"button": {"text": "下一步", "action": "next", "enabled": true}, "message": "A：尚未更新"},
+        "actions": {
+          "next": {"steps": [{"type": "set", "target": "button", "value": {"kind": "literal", "value": {"text": "提交", "action": "submit", "enabled": true}}}]},
+          "submit": {"steps": [{"type": "set", "target": "button", "value": {"kind": "literal", "value": {"text": "已提交", "action": "submit", "enabled": false}}}, {"type": "set", "target": "message", "value": {"kind": "literal", "value": "A：已提交（本地演示）"}}]}
+        },
+        "children": [
+          {"type": "text", "id": "messageA", "text": {"kind": "state", "key": "message"}},
+          {"type": "button", "id": "buttonA", "text": {"kind": "state", "key": "button", "path": "/text"}, "enabled": {"kind": "state", "key": "button", "path": "/enabled"}, "events": {"click": {"kind": "state", "key": "button", "path": "/action"}}}
+        ]
+      },
+      {
+        "type": "card", "id": "moduleB", "title": {"kind": "literal", "value": "模块 B"}, "layout": {"padding": 16, "gap": 8},
+        "state": {"button": {"text": "下一步", "action": "next", "enabled": true}, "message": "B：尚未更新"},
+        "actions": {
+          "next": {"steps": [{"type": "set", "target": "button", "value": {"kind": "literal", "value": {"text": "提交", "action": "submit", "enabled": true}}}]},
+          "submit": {"steps": [{"type": "set", "target": "button", "value": {"kind": "literal", "value": {"text": "已提交", "action": "submit", "enabled": false}}}, {"type": "set", "target": "message", "value": {"kind": "literal", "value": "B：已提交（本地演示）"}}]}
+        },
+        "children": [
+          {"type": "text", "id": "messageB", "text": {"kind": "state", "key": "message"}},
+          {"type": "button", "id": "buttonB", "text": {"kind": "state", "key": "button", "path": "/text"}, "enabled": {"kind": "state", "key": "button", "path": "/enabled"}, "events": {"click": {"kind": "state", "key": "button", "path": "/action"}}}
+        ]
+      }
+    ]
+  }
+}

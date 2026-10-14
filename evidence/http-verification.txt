@@ -1,0 +1,59 @@
+HTTP JSON data sources verification, 2026-10-14
+Workspace: D:\project\impact\desktop-app-engine
+Rust/Cargo 1.99.0 GNU; reqwest 0.12.28 blocking/rustls; ECharts 6.1.0
+
+Observed final results:
+  cargo fmt -- --check: PASS
+  cargo clippy --all-targets --locked --offline -- -D warnings: PASS
+  cargo test --test http --locked --offline: 7 passed, 0 failed
+  cargo test --locked --offline: 75 passed, 0 failed, 0 ignored
+  python scripts/schema-verify.py: PASS, all ten examples and invalid HTTP configuration cases
+  cargo build --release --locked --offline with CARGO_TARGET_DIR=target-http:
+    PASS, 2m45s; log evidence/http-release.err
+  scripts/package.ps1 -Description examples/http-chart.json -Output exports -Name HttpChartApp:
+    PASS --check-plugins exit 0
+  Independent package check:
+    exports/HttpChartApp/HttpChartApp.exe --check-plugins
+    cwd=C:\Users\yzj123\AppData\Local\Temp\opencode
+    PATH=C:\Windows\System32
+    exit 0, stderr empty
+    raw output evidence/http-standalone.out, evidence/http-standalone.err
+  Python demo endpoint test:
+    temporary localhost port; two actual HTTP requests
+    request counter increased and chart values changed; process terminated after verification
+
+HTTP tests use actual local TCP servers:
+  GET bound headers/query snapshot, query URL encoding
+  POST/PUT/PATCH/DELETE JSON request bodies and content-type
+  background trigger returns without waiting for response
+  duplicate in-flight source request skipped
+  complete response atomically commits multiple targets and status at one version
+  errors preserve old business data and last successful updatedAt
+  HTTP 503, invalid JSON, missing pointer, bad state type, component constraint failures
+  HTTP 302 not followed, timeout and Content-Length response size rejection
+  constructor does not send requests; onLoad, interval polling, disabled pause and resume
+  malformed config, private module binding and invalid state changes rejected
+  actual HTTP response -> state -> plugin update -> different ECharts pixel output
+
+Failures observed and resolved:
+  initial cargo index command reached 60s timeout; offline check reported uncached dependency
+  cargo fetch --locked completed, subsequent checks used locked offline dependencies
+  initial tests had intermittent Windows socket send failures: accepted sockets inherited
+    nonblocking mode from listener, test server read prematurely and closed connection
+  test fixture restored blocking mode on accepted sockets; all 7 tests passed
+  Clippy requested collapsing nested error handling; corrected
+  combined compile/regression call exceeded 60s after partial passing output;
+    separate full test run completed 75/75
+  background release tool call exceeded its capture timeout, but build process completed;
+    actual build log confirms release success in 2m45s
+
+Build location:
+  target-http/release/desktop-app-engine.exe is the HTTP-capable runtime.
+  target-verify/release/desktop-app-engine.exe remains the previous runtime used by open previews.
+  New exported HTTP application: exports/HttpChartApp/.
+
+No native window launch/focus or mouse automation during this task.
+HTTPS code uses normal rustls certificate verification, but production HTTPS endpoints and
+certificate chains have not been separately exercised in this local HTTP suite.
+No SSE/WebSocket/streaming, explicit cancellation, response completion callback or high-frequency
+performance acceptance. Interval refresh is sequential polling after previous completion.

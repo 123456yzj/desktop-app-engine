@@ -1,0 +1,49 @@
+{
+  "schemaVersion":"0.2",
+  "plugins":["echarts"],
+  "app":{"name":"HTTP 接口驱动图表","window":{"width":1000,"height":700}},
+  "state":{
+    "endpoint":"http://127.0.0.1:8765/metrics",
+    "autoRefresh":true,
+    "requestStatus":{"status":"idle","loading":false,"statusCode":0,"error":"","updatedAt":0},
+    "stats":{"cpu":0,"requests":0},
+    "chartOption":{"title":{"text":"接口采集 CPU 使用率"},"xAxis":{"type":"category","data":["节点 A","节点 B","节点 C"]},"yAxis":{"type":"value","min":0,"max":100},"series":[{"name":"CPU","type":"bar","data":[0,0,0]}]}
+  },
+  "dataSources":{
+    "metrics":{
+      "url":{"kind":"state","key":"endpoint"},
+      "method":"GET",
+      "query":{"scope":"all"},
+      "headers":{"Accept":"application/json"},
+      "timeoutMs":5000,
+      "onLoad":true,
+      "intervalMs":2000,
+      "enabled":{"kind":"state","key":"autoRefresh"},
+      "statusTarget":"requestStatus",
+      "responseSample":{"data":{"stats":{"cpu":0.42,"requests":1234},"option":{"title":{"text":"接口采集 CPU 使用率"},"xAxis":{"type":"category","data":["节点 A","节点 B","节点 C"]},"yAxis":{"type":"value","min":0,"max":100},"series":[{"name":"CPU","type":"bar","data":[42,60,35]}]}}},
+      "mappings":[{"target":"stats","path":"/data/stats"},{"target":"chartOption","path":"/data/option"}]
+    }
+  },
+  "root":{"type":"column","id":"page","layout":{"padding":20,"gap":12,"overflow":"scroll"},"children":[
+    {"type":"text","id":"heading","style":{"fontSize":26},"text":{"kind":"literal","value":"接口数据 · 自动刷新演示"}},
+    {"type":"text","id":"hint","style":{"fontSize":13,"color":"textMuted"},"text":{"kind":"literal","value":"本地 HTTP 演示接口每次返回新数据，启用时每 2 秒刷新。失败保留上次成功数据。"}},
+    {"type":"input","id":"endpoint","value":{"kind":"state","key":"endpoint"}},
+    {"type":"row","id":"controls","layout":{"gap":12},"children":[
+      {"type":"button","id":"refresh","text":{"kind":"literal","value":"立即请求"},"events":{"click":"refresh"}},
+      {"type":"button","id":"pause","text":{"kind":"literal","value":"暂停请求"},"events":{"click":"pause"}},
+      {"type":"button","id":"resume","text":{"kind":"literal","value":"恢复请求"},"events":{"click":"resume"}},
+      {"type":"badge","id":"status","tone":"accent","text":{"kind":"state","key":"requestStatus","path":"/status"}}
+    ]},
+    {"type":"grid","id":"stats","columns":[{"fr":1},{"fr":1}],"layout":{"gap":12},"children":[
+      {"type":"card","id":"cpuCard","layout":{"padding":16},"children":[{"type":"metric","id":"cpu","label":{"kind":"literal","value":"平均 CPU"},"value":{"kind":"state","key":"stats","path":"/cpu"},"format":{"type":"percent","precision":1}}]},
+      {"type":"card","id":"requestsCard","layout":{"padding":16},"children":[{"type":"metric","id":"requests","label":{"kind":"literal","value":"累计请求数"},"value":{"kind":"state","key":"stats","path":"/requests"},"format":{"type":"number"}}]}
+    ]},
+    {"type":"plugin","id":"cpuChart","component":"echarts.chart","layout":{"height":{"fixed":330}},"props":{"option":{"kind":"state","key":"chartOption"}}},
+    {"type":"text","id":"error","style":{"color":"danger","fontSize":13},"text":{"kind":"state","key":"requestStatus","path":"/error"}}
+  ]},
+  "actions":{
+    "refresh":{"steps":[{"type":"request","source":"metrics"}]},
+    "pause":{"steps":[{"type":"set","target":"autoRefresh","value":{"kind":"literal","value":false}}]},
+    "resume":{"steps":[{"type":"set","target":"autoRefresh","value":{"kind":"literal","value":true}},{"type":"request","source":"metrics"}]}
+  }
+}

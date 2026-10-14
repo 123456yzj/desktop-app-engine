@@ -1,0 +1,28 @@
+{
+  "schemaVersion": "0.1",
+  "app": { "name": "问候示例 · 桌面描述引擎", "window": { "width": 640, "height": 400 } },
+  "state": { "name": "", "greeting": "输入名字，然后点击确认。" },
+  "root": {
+    "type": "column", "id": "page",
+    "children": [
+      { "type": "text", "id": "title", "text": { "kind": "literal", "value": "欢迎使用桌面应用描述引擎" } },
+      {
+        "type": "row", "id": "form",
+        "children": [
+          { "type": "text", "id": "name-label", "text": { "kind": "literal", "value": "名字：" } },
+          { "type": "input", "id": "name-input", "value": { "kind": "state", "key": "name" }, "placeholder": { "kind": "literal", "value": "请输入你的名字" } },
+          { "type": "button", "id": "confirm", "text": { "kind": "literal", "value": "确认" }, "onClick": "greet" }
+        ]
+      },
+      { "type": "text", "id": "live-name", "text": { "kind": "state", "key": "name" } },
+      { "type": "text", "id": "result", "text": { "kind": "state", "key": "greeting" } }
+    ]
+  },
+  "actions": {
+    "greet": {
+      "steps": [
+        { "type": "concat", "target": "greeting", "parts": [ { "kind": "literal", "value": "你好，" }, { "kind": "state", "key": "name" } ] }
+      ]
+    }
+  }
+}

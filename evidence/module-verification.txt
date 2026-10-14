@@ -1,0 +1,30 @@
+**********************
+PowerShell 记录开始
+开始时间: 20261013154305
+用户名: yzj\yzj123
+RunAs 用户: yzj\yzj123
+配置名称:
+计算机: YZJ (Microsoft Windows NT 10.0.26200.0)
+主机应用程序: C:\Program Files\WindowsApps\Microsoft.PowerShell_7.6.6.0_x64__8wekyb3d8bbwe\pwsh.dll -NoLogo -NoProfile -NonInteractive -Command Test-Path -LiteralPath 'evidence'; Test-Path -LiteralPath 'target-verify'; Test-Path -LiteralPath 'tmp-verify'; $env:RUSTUP_HOME='D:\project\impact\app-v1\desktop-app-engine\.tools\rustup'; $env:CARGO_HOME='D:\project\impact\app-v1\desktop-app-engine\.tools\cargo'; $env:PATH="$env:CARGO_HOME\bin;D:\project\impact\app-v1\desktop-app-engine\.tools\mingw64\bin;$env:PATH"; $env:CARGO_TARGET_DIR="$PWD\target-verify"; $env:TMP="$PWD\tmp-verify"; $env:TEMP=$env:TMP; Start-Transcript -Path 'evidence/module-verification.txt' -Append; try { cargo fmt; if ($LASTEXITCODE -ne 0) {throw 'fmt failed'}; cargo fmt -- --check; if ($LASTEXITCODE -ne 0) {throw 'fmt check failed'}; cargo clippy --all-targets --locked --offline -- -D warnings; if ($LASTEXITCODE -ne 0) {throw 'clippy failed'}; cargo test --locked --offline; if ($LASTEXITCODE -ne 0) {throw 'tests failed'}; python scripts/schema-verify.py; if ($LASTEXITCODE -ne 0) {throw 'schema failed'}; cargo build --release --locked --offline; if ($LASTEXITCODE -ne 0) {throw 'release failed'} } finally {Stop-Transcript}
+进程 ID: 45448
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26200
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+转录已开始，输出文件为 evidence/module-verification.txt
+
+
+
+
+
+
+**********************
+PowerShell 记录结束
+结束时间: 20261013154352
+**********************

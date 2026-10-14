@@ -1,0 +1,55 @@
+Plugin API 1 verification summary, 2026-10-13
+Workspace: D:\project\impact\desktop-app-engine
+Windows GNU Rust/Cargo 1.99.0; eframe 0.31.1; resvg 0.48.1
+Node v24.19.0; npm 11.17.0; ECharts 6.1.0
+
+Final commands and observed results:
+  cargo fmt -- --check: PASS
+  cargo clippy --all-targets --locked --offline -- -D warnings: PASS
+  cargo test --locked --offline: 68 passed, 0 failed, 0 ignored
+    src/main GUI tests: 3 (1 new plugin texture/input test)
+    tests/plugins.rs: 8 new tests
+    Existing tests: 59 total, preserved
+  python scripts/schema-verify.py: PASS, Draft 2020-12, seven examples and invalid cases
+  cargo build --release --locked --offline: PASS, final standalone build 32.53s
+  scripts/plugin-verify.ps1 -Output exports -Name PluginChartAppFinal:
+    npm ci --omit=dev --ignore-scripts: installed 3 packages
+    install-plugin.ps1: copied plugin, dependencies, Node and available license
+    package.ps1: --check-plugins exit 0
+
+Final independent check:
+  Executable: exports\PluginChartAppFinal\PluginChartAppFinal.exe
+  Arguments: --check-plugins
+  Working directory: C:\Users\yzj123\AppData\Local\Temp\opencode
+  PATH: C:\Windows\System32 (no system Node/npm)
+  Observed exit code: 0
+  Raw output: evidence\plugin-standalone-final.out
+  Raw stderr: evidence\plugin-standalone-final.err
+  The bundled Node mounted actual ECharts, generated SVG, rasterized it and disposed it.
+
+New verification coverage:
+  manifest component/props/events/method/args/name rejection
+  actual ECharts mount/update/resize/getOption/display-list hit/dispose RPC
+  actual SVG pixels and dimensions, state-driven redraw
+  async method result state writes and rejection without mutation
+  plugin payload validation, disabled ancestors
+  generic non-ECharts worker event to action to state
+  late responses from disabled/unmounted instances and epoch isolation
+  invalid non-object protocol reply and five-second unresponsive worker timeout
+  module prop resolution, dynamic event action, local resultTarget scope
+  egui RawInput texture painting and click to ECharts to state (no native window)
+
+Failures observed and corrected:
+  First ECharts test round: 2 passed / 2 failed; Node rejected extended Windows entry path.
+  Strict Clippy rejected chunks_exact(4) test style; corrected to as_chunks::<4>().
+  Loading regression lacked external-description context for invalid JSON; restored context.
+  Probe fixture had a missing closing JSON brace; corrected.
+  First packaging helper incorrectly interpreted unset LASTEXITCODE as a failure; corrected.
+  Combined final test/build terminal call exceeded 60s after tests passed; standalone build rerun passed.
+
+No native GUI focus, mouse movement or desktop-window automation was performed.
+This record does not assert native-window visual, DPI or performance acceptance.
+Current adapter uses SVG SSR, click forwarding, getOption and dispatchAction.
+No browser DOM/HTML tooltip/hover/drag/wheel/JavaScript function formatter support.
+Methods are asynchronous; no method completion callback or global component-free methods.
+Compatible packages require a manifest and a worker adapter; arbitrary npm/Vue packages are not auto-adapted.

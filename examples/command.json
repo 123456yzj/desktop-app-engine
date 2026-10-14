@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "0.2",
+  "app": {"name": "按钮命令绑定", "window": {"width": 720, "height": 480}},
+  "state": {
+    "message": "你好，命令绑定",
+    "job": {"status": "idle", "running": false, "exitCode": -1, "stdout": "", "stderr": "", "error": ""}
+  },
+  "root": {
+    "type": "column", "id": "root", "layout": {"padding": 20, "gap": 12, "overflow": "scroll"},
+    "children": [
+      {"type": "input", "id": "message", "value": {"kind": "state", "key": "message"}},
+      {"type": "button", "id": "run", "text": {"kind": "literal", "value": "执行 PowerShell"}, "events": {"click": "runCommand"}},
+      {"type": "text", "id": "status", "text": {"kind": "state", "key": "job", "path": "/status"}},
+      {"type": "text", "id": "output", "text": {"kind": "state", "key": "job", "path": "/stdout"}},
+      {"type": "text", "id": "stderr", "text": {"kind": "state", "key": "job", "path": "/stderr"}},
+      {"type": "text", "id": "error", "text": {"kind": "state", "key": "job", "path": "/error"}}
+    ]
+  },
+  "actions": {
+    "runCommand": {"steps": [{
+      "type": "command", "program": "powershell.exe",
+      "args": ["-NoProfile", "-NonInteractive", "-File", "command-demo.ps1", {"kind": "state", "key": "message"}],
+      "cwd": ".", "timeoutMs": 10000, "target": "job"
+    }]}
+  }
+}
