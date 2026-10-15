@@ -30,6 +30,18 @@ for value in [{"kind":"credential","name":"../escape"}, {"kind":"credential","na
     assert not validator.is_valid(invalid)
 validator.validate(json.loads((root / "examples/plugin-test.json").read_text(encoding="utf-8")))
 validator.validate(json.loads((root / "examples/plugin-dashboard.json").read_text(encoding="utf-8")))
+validator.validate(json.loads((root / "examples/vben-package.json").read_text(encoding="utf-8")))
+validator.validate(json.loads((root / "examples/vben-package-legacy.json").read_text(encoding="utf-8")))
+for style in [
+    {"background":"#202a39","borderColor":"#ffffff80","fontFamily":"monospace","fontWeight":"bold","textAlign":"center","textWrap":False,"paddingX":8,"paddingY":4,"hover":{"background":"#334455"},"disabled":{"color":"#778899"}},
+]:
+    styled = deepcopy(dashboard)
+    styled["root"]["style"] = style
+    validator.validate(styled)
+for style in [{"color":"#123"},{"background":"#gggggg"},{"fontWeight":900},{"fontFamily":"unknown"},{"paddingX":-1},{"paddingY":-1},{"hover":{"unknown":True}},{"textAlign":"invalid"}]:
+    styled = deepcopy(dashboard)
+    styled["root"]["style"] = style
+    assert not validator.is_valid(styled), style
 for field, value in [("method", "TRACE"), ("intervalMs", 0), ("timeoutMs", 0), ("unknown", True)]:
     invalid = deepcopy(http_app)
     invalid["dataSources"]["metrics"][field] = value
@@ -59,4 +71,4 @@ for field in ["bogus", "rows", "span"]:
 invalid = deepcopy(dashboard)
 invalid["root"]["children"][2]["columns"][0]["fr"] = 0
 assert not validator.is_valid(invalid)
-print("PASS draft 2020-12 schema, all eleven examples and invalid field/track/event/scope/module/communication/HTTP/credential cases")
+print("PASS draft 2020-12 schema, all twelve examples and invalid field/track/event/scope/module/communication/HTTP/credential cases")

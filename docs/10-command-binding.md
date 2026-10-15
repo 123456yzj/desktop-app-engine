@@ -32,6 +32,12 @@
 
 ## 行为边界
 
-命令启动后后续动作步骤继续执行，不等待命令完成。结果在结束时一次性提交，不提供实时日志或 stdin 交互。默认超时 60 秒。直接子进程超时终止或应用关闭取消；不递归终止后代进程。应用关闭最多等待后台结果 500ms。UTF-8 解码替换非法字节，使用其他编码的程序需自行配置 UTF-8。脚本/程序仍需随应用分发或在目标机安装。
+command 新增可选 `onComplete: "actionId"`。任务结束后先写入 target，再执行完成动作；成功、非零退出、启动失败和超时均触发一次。完成动作按 command 声明位置解析词法作用域，不能要求 event 载荷。完成动作可以读取刚写入的结果、恢复按钮状态或启动下一项任务。未设置时保持原行为。应用关闭后的取消结果不派发完成动作。
+
+新增 `parseJson` 步骤，例如 `{"type":"parseJson","target":"view","value":{"kind":"state","key":"job","path":"/stdout"}}`。value 必须解析为字符串，target 必须已声明；执行时解析完整 JSON 并通过原有 state 类型和组件约束校验后提交。无效 JSON 或类型不匹配保留旧 target 并停止后续步骤。由于命令初始 stdout 通常为空，加载时只检查绑定字符串类型，不解析内容。应用应在 parseJson 前设置失败回退提示和解除忙碌状态，保证错误或超时后可以重试。
+
+`examples/vben-package-legacy.json` 展示结构化命令结果与完成反馈：stdout 仅返回一个 JSON 对象，运行诊断放入 stderr，完成动作解析到界面状态。`tests/command_completion.rs` 验证完成顺序、失败和超时恢复、解析失败与模块隔离；`tests/vben_package.rs` 验证旧项目操作流程。当前多仓库工具采用独立原生控制器，见 [多仓库构建工具](20-turbo-build.md)。
+
+命令启动后后续动作步骤继续执行，不等待命令完成。业务结果在结束时一次性提交，每条流保留前 16384 字节；宿主提供独立实时日志窗口和完整原始输出文件，见 [运行与任务日志](19-runtime-logs.md)。不提供 stdin 交互。默认超时 60 秒。直接子进程超时终止或应用关闭取消；不递归终止后代进程。应用关闭最多等待后台结果 500ms。UTF-8 解码替换非法字节，使用其他编码的程序需自行配置 UTF-8。脚本/程序仍需随应用分发或在目标机安装。
 
 构建后的运行时为 target-verify/release/desktop-app-engine.exe。此前 exports/DashboardAppRelease 是上一轮组件验收包；命令功能使用本次重新构建的运行时。新命令示例包为 exports/CommandApp，包含运行时、app.json、README.txt 和 command-demo.ps1。

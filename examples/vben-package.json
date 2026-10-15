@@ -1,0 +1,83 @@
+{
+  "schemaVersion":"0.2",
+  "app":{"name":"vben-package","window":{"width":1440,"height":900}},
+  "state":{
+    "sshTarget":"",
+    "repository":"/home/wwwroot/web-framework/current/",
+    "hostDraft":"","rootDraft":"/home/wwwroot/web-framework/current/",
+    "searchValue":"","sourceValue":"session",
+    "sourceOptions":[{"label":"当前会话","value":"session"}],
+    "connectionText":"","selectionText":"已选 0 / 0","statusText":"就绪",
+    "logText":"","logMeta":"","reviewText":""
+  },
+  "root":{"type":"column","id":"page","layout":{"width":{"fr":1},"height":{"fr":1},"padding":20,"gap":16},"style":{"background":"#f5f6f9"},"children":[
+    {"type":"row","id":"header","layout":{"height":{"fixed":36},"align":"center","gap":12},"children":[
+      {"type":"text","id":"title","layout":{"width":{"fr":1},"height":{"fixed":28}},"style":{"fontSize":21,"fontWeight":"bold","color":"#202837"},"text":{"kind":"literal","value":"项目构建工作台"}},
+      {"type":"text","id":"snapshotLabel","layout":{"width":{"fixed":128},"height":{"fixed":18}},"style":{"fontSize":11,"color":"#208763"},"text":{"kind":"literal","value":"● 尚未扫描"}},
+      {"type":"button","id":"settings","layout":{"width":{"fixed":94},"height":{"fixed":32}},"text":{"kind":"literal","value":"连接设置"}}
+    ]},
+    {"type":"card","id":"connection","layout":{"height":{"fixed":88},"padding":16},"style":{"borderWidth":1,"radius":9},"children":[
+      {"type":"row","id":"connectionFields","layout":{"height":{"fr":1},"gap":18,"align":"center"},"children":[
+        {"type":"column","id":"serverIcon","layout":{"width":{"fixed":32},"height":{"fixed":32},"padding":7,"gap":3},"style":{"background":"#f0f3f9","radius":7},"children":[
+          {"type":"panel","id":"serverSlot1","layout":{"height":{"fixed":7},"padding":1},"style":{"borderWidth":1,"borderColor":"#8493b0","background":"#f0f3f9","radius":2},"children":[{"type":"text","id":"serverDot1","style":{"fontSize":5,"color":"#8493b0"},"text":{"kind":"literal","value":"●"}}]},
+          {"type":"panel","id":"serverSlot2","layout":{"height":{"fixed":7},"padding":1},"style":{"borderWidth":1,"borderColor":"#8493b0","background":"#f0f3f9","radius":2},"children":[{"type":"text","id":"serverDot2","style":{"fontSize":5,"color":"#8493b0"},"text":{"kind":"literal","value":"●"}}]}
+        ]},
+        {"type":"column","id":"serverField","layout":{"width":{"fixed":180},"height":{"fixed":49},"gap":6},"children":[
+          {"type":"text","id":"serverLabel","layout":{"height":{"fixed":13}},"style":{"fontSize":10,"color":"#7c8595"},"text":{"kind":"literal","value":"SSH 服务器"}},
+          {"type":"text","id":"serverValue","layout":{"height":{"fixed":30}},"style":{"fontSize":12,"fontFamily":"monospace","textWrap":false},"text":{"kind":"state","key":"sshTarget"}}
+        ]},
+        {"type":"column","id":"rootField","layout":{"width":{"fr":1},"height":{"fixed":49},"gap":6},"children":[
+          {"type":"text","id":"rootFieldLabel","layout":{"height":{"fixed":13}},"style":{"fontSize":10,"color":"#7c8595"},"text":{"kind":"literal","value":"TURBO 工作区"}},
+          {"type":"text","id":"rootFieldValue","layout":{"height":{"fixed":30}},"style":{"fontSize":12,"fontFamily":"monospace","textWrap":false},"text":{"kind":"state","key":"repository"}}
+        ]},
+        {"type":"column","id":"rootRepo","layout":{"width":{"fixed":360},"height":{"fixed":49},"gap":6},"children":[]}
+      ]}
+    ]},
+    {"type":"text","id":"error","visible":{"kind":"literal","value":false},"layout":{"height":{"fixed":36}},"style":{"fontSize":12,"color":"danger"},"text":{"kind":"literal","value":""}},
+    {"type":"grid","id":"workspace","columns":[{"fr":2.2},{"fr":1}],"layout":{"height":{"fr":1},"gap":18},"children":[
+      {"type":"card","id":"repoCard","layout":{"height":{"fr":1},"padding":16,"gap":12},"style":{"borderWidth":1,"radius":9},"children":[
+        {"type":"row","id":"repoHeading","layout":{"height":{"fixed":34},"gap":10,"align":"center"},"children":[
+          {"type":"text","id":"repoTitle","layout":{"width":{"fixed":80},"height":{"fixed":22}},"style":{"fontSize":16,"fontWeight":"bold","color":"#202837"},"text":{"kind":"literal","value":"业务仓库"}},
+          {"type":"badge","id":"repoCount","layout":{"width":{"fixed":28},"height":{"fixed":22}},"style":{"fontSize":11},"tone":"muted","text":{"kind":"literal","value":"0"}},
+          {"type":"panel","id":"repoHeadingSpace","layout":{"width":{"fr":1}}},
+          {"type":"row","id":"batchActions","layout":{"width":{"fixed":190},"gap":10},"children":[
+            {"type":"button","id":"scan","layout":{"width":{"fixed":80}},"style":{"fontSize":12},"text":{"kind":"literal","value":"重新扫描"}},
+            {"type":"button","id":"build","layout":{"width":{"fixed":100}},"style":{"fontSize":12,"background":"#4166eb","color":"#ffffff","borderColor":"#4166eb","hover":{"background":"#3457d6"},"pressed":{"background":"#2948bd"},"disabled":{"background":"#aebcf5","color":"#ffffff","borderColor":"#aebcf5"}},"text":{"kind":"literal","value":"批量构建"}}
+          ]}
+        ]},
+        {"type":"row","id":"filters","layout":{"height":{"fixed":32},"gap":12,"align":"center","justify":"spaceBetween"},"children":[
+          {"type":"input","id":"search","layout":{"width":{"fr":1},"height":{"fixed":32},"maxWidth":260},"value":{"kind":"state","key":"searchValue"},"placeholder":{"kind":"literal","value":"搜索项目或当前分支…"}},
+          {"type":"row","id":"selection","layout":{"width":{"fr":1},"height":{"fixed":28},"gap":8,"align":"center","justify":"end"},"children":[
+            {"type":"text","id":"selectedCount","layout":{"width":{"fixed":76},"height":{"fixed":18}},"style":{"fontSize":11,"color":"textMuted"},"text":{"kind":"state","key":"selectionText"}},
+            {"type":"button","id":"all","layout":{"width":{"fixed":48}},"style":{"fontSize":11},"text":{"kind":"literal","value":"全选"}},
+            {"type":"button","id":"clear","layout":{"width":{"fixed":70}},"style":{"fontSize":11},"text":{"kind":"literal","value":"清空选择"}},
+            {"type":"button","id":"retry","visible":{"kind":"literal","value":false},"layout":{"width":{"fixed":112}},"style":{"color":"danger","fontSize":11},"text":{"kind":"literal","value":"重试未完成项目"}}
+          ]}
+        ]},
+        {"type":"grid","id":"tableHeader","columns":[{"fixed":34},{"fixed":130},{"fr":1},{"fixed":223}],"layout":{"height":{"fixed":34},"gap":6,"align":"center"},"style":{"background":"#f7f9fc"},"children":[
+          {"type":"button","id":"selectVisible","layout":{"height":{"fixed":28}},"style":{"fontSize":14,"paddingX":8,"paddingY":5,"background":"#f7f9fc","borderWidth":0,"color":"#7383a1"},"text":{"kind":"literal","value":"□"}},
+          {"type":"text","id":"projectHeading","layout":{"height":{"fixed":18}},"style":{"fontSize":11,"color":"textMuted"},"text":{"kind":"literal","value":"业务项目"}},
+          {"type":"text","id":"branchHeading","layout":{"height":{"fixed":18}},"style":{"fontSize":11,"color":"textMuted"},"text":{"kind":"literal","value":"分支"}},
+          {"type":"text","id":"actionHeading","layout":{"height":{"fixed":18}},"style":{"fontSize":11,"color":"textMuted"},"text":{"kind":"literal","value":"仓库操作"}}
+        ]},
+        {"type":"column","id":"projects","layout":{"height":{"fr":1},"overflow":"scroll","gap":2},"children":[]}
+      ]},
+      {"type":"card","id":"logCard","layout":{"height":{"fr":1},"padding":16,"gap":12},"style":{"borderWidth":1,"radius":10,"background":"#202a39","borderColor":"#263244"},"children":[
+        {"type":"text","id":"logTitle","layout":{"height":{"fixed":24}},"style":{"fontSize":14,"color":"#e1e8f3"},"text":{"kind":"literal","value":"●  实时日志"}},
+        {"type":"select","id":"logSource","layout":{"height":{"fixed":32}},"value":{"kind":"state","key":"sourceValue"},"options":{"kind":"state","key":"sourceOptions"}},
+        {"type":"text","id":"logMetadata","layout":{"height":{"fixed":60}},"style":{"fontSize":11,"color":"#93a4bd","fontFamily":"monospace","textOverflowTooltip":false},"text":{"kind":"state","key":"logMeta"}},
+        {"type":"column","id":"logScroll","layout":{"height":{"fr":1},"overflow":"scroll"},"children":[
+          {"type":"text","id":"logOutput","style":{"fontSize":11,"fontFamily":"monospace","color":"#acbdd5","textOverflowTooltip":false},"text":{"kind":"state","key":"logText"}}
+        ]},
+        {"type":"row","id":"logControls","layout":{"height":{"fixed":28},"gap":6},"children":[
+          {"type":"button","id":"autoScroll","layout":{"width":{"fixed":82}},"style":{"fontSize":11},"text":{"kind":"literal","value":"☑ 自动滚动"}},
+          {"type":"button","id":"copyLogs","layout":{"width":{"fixed":46}},"style":{"fontSize":11},"text":{"kind":"literal","value":"复制"}},
+          {"type":"button","id":"clearLogs","layout":{"width":{"fixed":66}},"style":{"fontSize":11},"text":{"kind":"literal","value":"清空显示"}},
+          {"type":"button","id":"logFolder","layout":{"width":{"fixed":66}},"style":{"fontSize":11},"text":{"kind":"literal","value":"日志目录"}}
+        ]}
+      ]}
+    ]},
+    {"type":"text","id":"status","layout":{"height":{"fixed":12}},"style":{"fontSize":10,"color":"#7c8595"},"text":{"kind":"state","key":"statusText"}}
+  ]},
+  "actions":{}
+}

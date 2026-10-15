@@ -1,0 +1,47 @@
+VBEN refresh failure root cause and verification
+
+Observed user task: refresh / job; exit 1; actual current branch returned;
+no branch list committed; stderr only a blank line; outputComplete=true.
+
+Trace on the configured server:
+- Git 2.43.0, repository/current branch/local refs/remote refs all readable.
+- git fetch --all --prune --dry-run returned 0 in a diagnostic shell.
+- Original application runner with dry-run fetch reproduced exit 1.
+- Temporary Bash xtrace and ERR instrumentation showed all Git/list commands
+  succeeded, followed by EXIT handler exit 0, then login-shell logout code
+  invoking /usr/bin/clear_console -q without a terminal. With errexit still
+  enabled this produced the final exit 1. Thus no Git failure text existed.
+- Saving rc and disabling errexit in EXIT handler fixed the same dry run:
+  exit 0, 16 branches, current branch feat-antdtable.
+
+Final application fix:
+- Save rc=$?; set +e before EXIT reporting and explicit exit "$rc".
+- Retain login Bash so existing remote build PATH/profile loading is retained.
+- Register EXIT handler before repository validation; report stage and exit.
+- Query current branch only after successful repository validation.
+- Log client operation start/end and keep latest 80 diagnostic lines.
+- Generic failure feedback includes exit code and points to live logs.
+
+Verification:
+1. python scripts/verify-vben-workflow.py: PASS.
+   10 mocked SSH scenarios and 6 actual Bash login/logout regressions.
+   Reproduces old false-failure with a failing isolated .bash_logout;
+   verifies fixed success and original nonzero fetch=7, branch-list=8,
+   build=9, plus missing-repository failure and no false current branch.
+2. python scripts/schema-verify.py: PASS, 12 examples and negative cases.
+3. cargo test --locked --offline --test vben_package: PASS, 2 tests.
+4. cargo test --locked --offline --bin desktop-app-engine
+   workspace_actual_render_dropdown_and_task_locking: PASS, 1 test.
+5. Actual configured server refresh with the final runner: PASS, exit 0.
+   Executed normal git fetch --all --prune and read local/remote branches.
+   Returned 16 distinct branches, current feat-antdtable; ready/hasBranches/
+   success all true. stderr recorded stage=branches exit=0 and refresh exit=0.
+
+No actual checkout, pull or pnpm build was executed. No remote shell/profile
+files were edited. No native GUI or mouse automation was used.
+
+Delivery: exports/refresh-fix/vben-package, existing release runtime with
+updated external app.json; new runtime compilation is unnecessary for this
+configuration-only change. App package --check verification recorded separately
+in task output. Exported connection values reuse the user's current settings;
+repository example retains an empty host for distribution.

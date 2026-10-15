@@ -41,6 +41,7 @@ pub struct Runtime {
     last_sequence: Option<u64>,
     pub command_base: PathBuf,
     jobs: BTreeMap<String, Arc<AtomicBool>>,
+    command_callbacks: BTreeMap<String, String>,
     completed_tx: mpsc::Sender<(String, Value)>,
     completed_rx: mpsc::Receiver<(String, Value)>,
 }
@@ -84,6 +85,7 @@ impl Runtime {
                 .ok_or("无法定位程序目录")?
                 .to_owned(),
             jobs: BTreeMap::new(),
+            command_callbacks: BTreeMap::new(),
             completed_tx,
             completed_rx,
         })
@@ -195,6 +197,18 @@ impl Runtime {
                 }
             }
             let action_names = node.spec.action_names.clone();
+            if node.spec.kind == crate::v02::Kind::Select && e.kind == "change" {
+                let allowed =
+                    crate::v02::select_options(&node.spec, &self.state).is_ok_and(|options| {
+                        options
+                            .iter()
+                            .any(|o| !o.disabled && e.payload.as_str() == Some(o.value.as_str()))
+                    });
+                if !allowed {
+                    self.error = Some("select.change 必须选择可用选项".into());
+                    continue;
+                }
+            }
             let binding = if e.kind == "change" {
                 node.spec.value.clone()
             } else {
@@ -234,7 +248,16 @@ impl Runtime {
         }
     }
     pub fn invoke(&mut self, id: &str) -> Result<(), String> {
-        self.invoke_event(id, None, 0)
+        crate::logging::event("INFO", "action.invoke", serde_json::json!({"action":id}));
+        let result = self.invoke_event(id, None, 0);
+        if let Err(error) = &result {
+            crate::logging::event(
+                "ERROR",
+                "action.failed",
+                serde_json::json!({"action":id,"error":error}),
+            );
+        }
+        result
     }
     fn invoke_event(
         &mut self,
@@ -270,6 +293,10 @@ impl Runtime {
         for (i, step) in steps.iter().enumerate() {
             let result = (|| {
                 let (target, value) = match step {
+                    Step::OpenLogs => {
+                        crate::logging::open_viewer();
+                        return Ok(());
+                    }
                     Step::Request { source } => {
                         self.request_http_snapshot(source, &snapshot)?;
                         return Ok(());
@@ -326,6 +353,7 @@ impl Runtime {
                         cwd,
                         target,
                         timeout_ms,
+                        on_complete,
                     } => {
                         if self.jobs.contains_key(target) {
                             return Err(format!("命令 {target:?} 已在运行"));
@@ -361,10 +389,19 @@ impl Runtime {
                         let worker_cancel = cancel.clone();
                         let tx = self.completed_tx.clone();
                         let key = target.clone();
+                        let label = format!("{id} / {target}");
                         std::thread::Builder::new()
                             .name("command".into())
                             .spawn(move || {
-                                let _ = tx.send((key, crate::command::run(request, worker_cancel)));
+                                let _ = tx.send((
+                                    key,
+                                    crate::command::run_logged(
+                                        request,
+                                        worker_cancel,
+                                        &label,
+                                        crate::logging::global(),
+                                    ),
+                                ));
                             })
                             .map_err(|e| {
                                 let _ = self.set(
@@ -378,15 +415,31 @@ impl Runtime {
                                         e.to_string(),
                                     ),
                                 );
+                                if let Some(callback) = on_complete {
+                                    let _ = self.invoke(callback);
+                                }
                                 e.to_string()
                             })?;
                         self.jobs.insert(target.clone(), cancel);
+                        if let Some(callback) = on_complete {
+                            self.command_callbacks
+                                .insert(target.clone(), callback.clone());
+                        }
                         return Ok(());
                     }
                     Step::Set { target, value } => (
                         target,
                         value.resolve_event(&snapshot, payload.as_ref())?.clone(),
                     ),
+                    Step::ParseJson { target, value } => {
+                        let text = value
+                            .resolve_event(&snapshot, payload.as_ref())?
+                            .as_str()
+                            .ok_or("parseJson value 必须为字符串")?;
+                        let parsed =
+                            serde_json::from_str(text).map_err(|e| format!("parseJson: {e}"))?;
+                        (target, parsed)
+                    }
                     Step::Concat { target, parts } => {
                         let mut result = String::new();
                         for p in parts {
@@ -532,6 +585,11 @@ impl Runtime {
             self.jobs.remove(&target);
             if let Err(e) = self.set(&target, result) {
                 self.error = Some(e);
+            }
+            if let Some(callback) = self.command_callbacks.remove(&target)
+                && let Err(e) = self.invoke(&callback)
+            {
+                self.error = Some(format!("命令 {target} onComplete: {e}"));
             }
         }
     }

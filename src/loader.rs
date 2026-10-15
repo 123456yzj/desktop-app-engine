@@ -23,6 +23,19 @@ pub fn parse_document(source: &str) -> Result<Document, String> {
     }
 }
 pub fn load_document(path: Option<&Path>) -> Result<Document, String> {
+    if let Some(value) = crate::application::packaged_definition(path)? {
+        let source = value.to_string();
+        if value
+            .get("schemaVersion")
+            .and_then(serde_json::Value::as_str)
+            == Some("0.2")
+        {
+            let exe = std::env::current_exe().map_err(|e| e.to_string())?;
+            return crate::v02::parse_at(&source, exe.parent().ok_or("无法定位程序目录")?)
+                .map(|d| Document::V02(Box::new(d)));
+        }
+        return parse_document(&source);
+    }
     let file = if let Some(path) = path {
         Some(path.to_owned())
     } else {

@@ -1,0 +1,24 @@
+Log tooltip and manual scrolling fix - 2026-10-15
+Package: exports/turbo-log-scroll-fix/vben-package/
+SHA256: CDB31048E90D00A6155E94686413FB300B597207089982269A18E77D840DF2DE
+
+Root causes:
+- Styled text automatically showed its full content in a tooltip when it overflowed.
+- The native host called scroll_to_end(logScroll) every frame while auto-scroll was enabled, overriding manual scrolling on subsequent frames.
+
+Changes:
+- Added strict optional boolean style.textOverflowTooltip (default behavior retained).
+- Disabled overflow tooltips for workbench logOutput and logMetadata.
+- Native renderer reports containers moved by wheel/scrollbar input during a draw.
+- Host pauses auto-scroll after manual log movement; new output and description replacement retain position. Clicking auto-scroll again returns to the end and resumes following.
+
+Validation:
+- cargo test --bin vben-package --test style --test select --locked --offline: 16 passed.
+- Headless native host test verifies upward wheel movement pauses following, position survives append and description replacement, re-enabling follows the tail, and scrollbar interaction reveals earlier logs and pauses following.
+- Timed hover test verifies enabled overflow tooltips paint a second full text copy and disabled tooltips do not.
+- Existing scan/Fetch/cache/build/Git/log/branch popup tests passed.
+- cargo clippy --all-targets --locked --offline -- -D warnings: passed.
+- cargo fmt --all, schema verification and git diff --check: passed.
+- Release build --release --bin vben-package --locked --offline: passed.
+- Packaged --check: passed.
+Validation used headless egui frames and disposable local repositories.

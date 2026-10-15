@@ -1,0 +1,20 @@
+Select component and vben-package verification
+
+- cargo test --locked --offline: 84 passed, 0 failed
+- 4 new tests cover selection-before-change action ordering, disabled/invalid
+  values, line options normalization, reactive dependency invalidation,
+  preserving selection on option refresh, duplicate rejection, read-only
+  module props, disabled controls and local scope resolution.
+- cargo clippy --locked --offline --all-targets -- -D warnings: passed
+- cargo fmt: completed
+- scripts/schema-verify.py: all twelve examples and invalid cases passed
+- Mock SSH tests: all four operations passed argument transport, Bash syntax,
+  Unicode and exit code propagation. Switch uses git checkout.
+- Branch discovery script executed with mocked Git: local/remote merge,
+  deduplication and fetch failure propagation passed.
+- cargo build --release --locked --offline: passed
+- exports/vben-package/vben-package.exe --check: passed
+- Existing application EXE and app.json updated with Select-enabled version.
+
+No real SSH connection or remote branch/build operation was performed.
+Native window visual/interaction acceptance was not performed.

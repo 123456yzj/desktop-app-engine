@@ -1,0 +1,29 @@
+VBEN pre-build .turbo cleanup verification
+
+Change in examples/vben-package.json:
+Repository validation -> current branch validation -> stage=clean-turbo ->
+rm -rf -- ./.turbo -> stage=build -> pnpm build:dev:tms.
+
+The cleanup target is relative to the successfully entered project root.
+A missing .turbo is allowed. Cleanup failure stops before pnpm and preserves
+the original error code in the clean-turbo stage log. A branch mismatch stops
+before any deletion, with exit code 4 preserved even if Bash logout fails.
+
+Observed checks:
+- python scripts/verify-vben-workflow.py: PASS, 10 mocked SSH workflows and
+  10 actual isolated Bash cases. Includes actual temporary .turbo/cache
+  deletion before mocked pnpm, absent-cache success, cleanup failure=13
+  preventing pnpm, branch mismatch=4 preserving cache and preventing pnpm.
+  A sibling keep.txt remains intact after successful cleanup.
+- python scripts/schema-verify.py: PASS, 12 examples and negative cases.
+- cargo test --locked --offline --test vben_package: PASS, 2 tests after
+  initial cleanup addition; final explicit branch-exit adjustment is also
+  exercised by the actual Bash regression script above.
+
+Delivery: exports/turbo-clean/vben-package with existing release runtime
+and updated external app.json. Engine recompilation is not required.
+Package --check, runner/source equality, external-cwd loading and durable
+session checks are performed after export.
+
+No production-server cleanup or pnpm build was executed. All deletion tests
+operate inside disposable local fixture directories. No native GUI opened.

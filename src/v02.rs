@@ -33,6 +33,7 @@ pub enum Kind {
     Card,
     Text,
     Input,
+    Select,
     Button,
     Metric,
     Badge,
@@ -82,6 +83,9 @@ pub struct Node {
     pub label: Option<Binding>,
     pub value: Option<Binding>,
     pub placeholder: Option<Binding>,
+    pub options: Option<Binding>,
+    #[serde(default)]
+    pub options_format: SelectOptionsFormat,
     pub format: Option<Format>,
     pub tone: Option<Tone>,
     pub rows: Option<Binding>,
@@ -95,6 +99,67 @@ pub struct Node {
     pub legend: Option<bool>,
     pub zoom: Option<bool>,
     pub pan: Option<bool>,
+}
+
+#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum SelectOptionsFormat {
+    #[default]
+    Array,
+    Lines,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct SelectOption {
+    pub label: String,
+    pub value: String,
+    #[serde(default)]
+    pub disabled: bool,
+}
+
+/// Normalize bound options without changing the selected value during refresh.
+pub fn select_options(n: &Node, state: &State) -> Result<Vec<SelectOption>, String> {
+    let value = required(&n.options, "options")?.resolve(state)?;
+    let options: Vec<SelectOption> = match n.options_format {
+        SelectOptionsFormat::Lines => value
+            .as_str()
+            .ok_or("select.optionsFormat=lines 要求 options 为字符串")?
+            .lines()
+            .map(str::trim)
+            .filter(|s| !s.is_empty())
+            .map(|s| SelectOption {
+                label: s.into(),
+                value: s.into(),
+                disabled: false,
+            })
+            .collect(),
+        SelectOptionsFormat::Array => value
+            .as_array()
+            .ok_or("select.options 必须为数组")?
+            .iter()
+            .map(|v| match v.as_str() {
+                Some(s) => Ok(SelectOption {
+                    label: s.into(),
+                    value: s.into(),
+                    disabled: false,
+                }),
+                None => {
+                    serde_json::from_value(v.clone()).map_err(|e| format!("select.options: {e}"))
+                }
+            })
+            .collect::<Result<_, _>>()?,
+    };
+    if options.len() > 10000 {
+        return Err("select.options 最多 10000 项".into());
+    }
+    let mut values = std::collections::BTreeSet::new();
+    for option in &options {
+        if !values.insert(&option.value) {
+            return Err(format!("select.options value 重复: {:?}", option.value));
+        }
+    }
+    Ok(options)
 }
 
 /// Existing fixed IDs and state/literal bindings share the same event dispatch path.
@@ -143,6 +208,7 @@ fn parse_node(value: serde_json::Value) -> Result<Node, String> {
         Kind::Text => &["text"],
         Kind::Badge => &["text", "tone"],
         Kind::Input => &["value", "placeholder"],
+        Kind::Select => &["value", "placeholder", "options", "optionsFormat"],
         Kind::Button => &["text"],
         Kind::Metric => &["label", "value", "format"],
         Kind::Progress => &["value", "text"],
@@ -295,9 +361,45 @@ pub struct Style {
     pub border_width: f32,
     #[serde(default)]
     pub radius: f32,
+    pub border_color: Option<Token>,
+    pub font_family: Option<FontFamily>,
+    pub font_weight: Option<FontWeight>,
+    pub text_wrap: Option<bool>,
+    pub text_overflow_tooltip: Option<bool>,
+    pub text_align: Option<TextAlign>,
+    pub padding_x: Option<f32>,
+    pub padding_y: Option<f32>,
+    pub hover: Option<ControlStyle>,
+    pub pressed: Option<ControlStyle>,
+    pub disabled: Option<ControlStyle>,
+}
+#[derive(Debug, Clone, Default, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ControlStyle {
+    pub background: Option<Token>,
+    pub color: Option<Token>,
+    pub border_color: Option<Token>,
 }
 #[derive(Debug, Clone, Copy, Deserialize)]
 #[serde(rename_all = "camelCase")]
+pub enum FontFamily {
+    Proportional,
+    Monospace,
+}
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum FontWeight {
+    Normal,
+    Bold,
+}
+#[derive(Debug, Clone, Copy, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum TextAlign {
+    Start,
+    Center,
+    End,
+}
+#[derive(Debug, Clone, Copy)]
 pub enum Token {
     Surface,
     SurfaceRaised,
@@ -309,6 +411,44 @@ pub enum Token {
     Warning,
     Danger,
     Focus,
+    Primary,
+    OnPrimary,
+    Hex([u8; 4]),
+}
+impl<'de> Deserialize<'de> for Token {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let value = String::deserialize(deserializer)?;
+        Ok(match value.as_str() {
+            "surface" => Self::Surface,
+            "surfaceRaised" => Self::SurfaceRaised,
+            "textPrimary" => Self::TextPrimary,
+            "textMuted" => Self::TextMuted,
+            "border" => Self::Border,
+            "accent" => Self::Accent,
+            "success" => Self::Success,
+            "warning" => Self::Warning,
+            "danger" => Self::Danger,
+            "focus" => Self::Focus,
+            "primary" => Self::Primary,
+            "onPrimary" => Self::OnPrimary,
+            _ => {
+                let hex = value
+                    .strip_prefix('#')
+                    .filter(|s| {
+                        matches!(s.len(), 6 | 8) && s.bytes().all(|b| b.is_ascii_hexdigit())
+                    })
+                    .ok_or_else(|| {
+                        serde::de::Error::custom("颜色必须为主题 Token 或 #RRGGBB / #RRGGBBAA")
+                    })?;
+                let mut rgba = [255; 4];
+                for (i, channel) in rgba.iter_mut().enumerate().take(hex.len() / 2) {
+                    *channel = u8::from_str_radix(&hex[i * 2..i * 2 + 2], 16)
+                        .map_err(serde::de::Error::custom)?;
+                }
+                Self::Hex(rgba)
+            }
+        })
+    }
 }
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
@@ -345,6 +485,7 @@ pub struct Action {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(tag = "type", rename_all = "camelCase", deny_unknown_fields)]
 pub enum Step {
+    OpenLogs,
     Request {
         source: String,
     },
@@ -365,6 +506,10 @@ pub enum Step {
         target: String,
         value: Binding,
     },
+    ParseJson {
+        target: String,
+        value: Binding,
+    },
     Concat {
         target: String,
         parts: Vec<Binding>,
@@ -378,6 +523,8 @@ pub enum Step {
         target: String,
         #[serde(rename = "timeoutMs", default = "crate::command::default_timeout")]
         timeout_ms: u64,
+        #[serde(rename = "onComplete")]
+        on_complete: Option<String>,
     },
 }
 
@@ -459,9 +606,9 @@ pub fn validate(d: &Description) -> Result<(), String> {
 pub(crate) fn action_uses_event(action: &Action) -> bool {
     let is_event = |b: &Binding| matches!(b, Binding::Event { .. });
     action.steps.iter().any(|step| match step {
-        Step::Request { .. } => false,
+        Step::Request { .. } | Step::OpenLogs => false,
         Step::PluginCall { args, .. } => is_event(args),
-        Step::Set { value, .. } => is_event(value),
+        Step::Set { value, .. } | Step::ParseJson { value, .. } => is_event(value),
         Step::Concat { parts, .. } => parts.iter().any(is_event),
         Step::Emit { payload, .. } => is_event(payload),
         Step::Command { args, .. } => args
@@ -596,6 +743,7 @@ pub(crate) fn validate_flat(d: &Description) -> Result<(), String> {
             for (i, step) in a.steps.iter().enumerate() {
                 let result = (|| {
                     let (target, value) = match step {
+                        Step::OpenLogs => return Ok(()),
                         Step::Request { source } => {
                             if !d.data_sources.contains_key(source) {
                                 return Err(format!("未定义 dataSource {source:?}"));
@@ -646,7 +794,14 @@ pub(crate) fn validate_flat(d: &Description) -> Result<(), String> {
                             cwd,
                             target,
                             timeout_ms,
+                            on_complete,
                         } => {
+                            if let Some(id) = on_complete {
+                                let callback = d.actions.get(id).ok_or("onComplete 动作不存在")?;
+                                if action_uses_event(callback) || callback.event_payload.is_some() {
+                                    return Err("onComplete 动作不能要求 event 载荷".into());
+                                }
+                            }
                             return crate::command::validate_event(
                                 program,
                                 args,
@@ -659,6 +814,15 @@ pub(crate) fn validate_flat(d: &Description) -> Result<(), String> {
                         }
                         Step::Set { target, value } => {
                             (target, value.resolve_event(&d.state, payload)?.clone())
+                        }
+                        Step::ParseJson { target, value } => {
+                            if !d.state.contains_key(target) {
+                                return Err("parseJson target 状态不存在".into());
+                            }
+                            if !value.resolve_event(&d.state, payload)?.is_string() {
+                                return Err("parseJson value 必须为字符串".into());
+                            }
+                            return Ok(());
                         }
                         Step::Concat { target, parts } => {
                             let mut s = String::new();
@@ -724,6 +888,8 @@ fn validate_node(
             Some(n.style.border_width),
             Some(n.style.radius),
             n.style.font_size,
+            n.style.padding_x,
+            n.style.padding_y,
         ]
         .into_iter()
         .flatten()
@@ -745,6 +911,7 @@ fn validate_node(
                 Kind::Plugin => &[],
                 Kind::Button => &["click"],
                 Kind::Input => &["change", "submit"],
+                Kind::Select => &["change", "open"],
                 Kind::Table => &["rowSelect", "sortChange"],
                 _ => &[],
             };
@@ -805,13 +972,16 @@ fn validate_node(
             Kind::Text | Kind::Button | Kind::Badge => {
                 required(&n.text, "text")?;
             }
-            Kind::Input => {
+            Kind::Input | Kind::Select => {
                 let b = required(&n.value, "value")?;
                 if !b.resolve(&d.state)?.is_string() {
                     return Err("input.value 必须为字符串".into());
                 }
                 if matches!(b,Binding::State {path,..} if !path.is_empty()) {
                     return Err("input.value 暂仅支持顶层状态（path 为空）".into());
+                }
+                if n.kind == Kind::Select {
+                    select_options(n, &d.state)?;
                 }
             }
             Kind::Metric | Kind::Progress => {

@@ -1,0 +1,42 @@
+Compiled application packaging - 2026-10-15
+Package: exports/turbo-compiled/vben-package/
+SHA256: 35204609CE061B24E0BD7DB5F67E431E5EF38138331130EF8AAD5D4B0FC44A3C
+
+Delivery contract:
+- Application JSON is a required build input, not an external runtime dependency.
+- package.ps1 supplies the actual input through DAE_APP_DESCRIPTION and invokes Cargo Release compilation.
+- build.rs parses the input and generates Rust Value constructors that compile into the application EXE.
+- Packaged hosts use their compiled definition, ignore adjacent app.json, and reject --app overrides.
+- Developer builds retain external-description loading for development/testing.
+- Both the generic 0.1/0.2 host and the native Turbo host support compiled application definitions.
+- Turbo connection settings are separate versioned binary data in the current user's LocalAppData directory, not changes to source JSON or the EXE.
+- Current Turbo initial server/root were preserved in the source template and compiled into the EXE.
+- The delivered Turbo directory contains vben-package.exe and README.txt only. No app.json or source description is shipped.
+- Previous external-JSON Turbo export was removed after checking its configuration exactly matched the source and the new EXE hash was valid.
+
+Verification:
+- cargo test --all-targets --locked --offline: 111 passed across all targets, 0 failures.
+- cargo clippy --all-targets --locked --offline -- -D warnings: passed.
+- cargo fmt --all, python scripts/schema-verify.py and git diff --check: passed.
+- scripts/verify-compiled-package.py: passed real Release compilation of two distinct 0.1 apps and one 0.2 dashboard.
+- Verified differing source inputs produce their respective application names, including reuse of the same input path with changed contents.
+- Removed each source description after packaging and successfully checked each EXE from outside its application directory.
+- Planted invalid adjacent app.json: packaged applications still checked successfully using their compiled definitions.
+- Explicit --app overrides exited 2; later builds did not change previously packaged applications.
+- CompiledPlugin package: --check-plugins passed actual plugin startup, mount, SVG rendering and unmount using bundled components and runtime.
+- Turbo compiled package: automatic --check passed, --inspect exited 0 without external app.json, --app override exited 2.
+- Turbo read-only inspect found the root repository (feat-copilot) and all four business repositories.
+- No production Fetch, checkout, Pull, cache cleanup or builds were executed for this validation.
+- Connection storage tests passed missing-file, roundtrip, repeated-save replacement, invalid-save preservation, truncated-data and trailing-data cases.
+
+Logs:
+tmp-verify/compiled-package-verification.out
+tmp-verify/compiled-package-verification.err
+tmp-verify/compiled-package-all-tests.out
+tmp-verify/compiled-package-all-tests.err
+tmp-verify/compiled-plugin-package.out
+tmp-verify/compiled-plugin-package.err
+tmp-verify/turbo-compiled-package.out
+tmp-verify/turbo-compiled-package.err
+tmp-verify/turbo-compiled-inspect.out
+tmp-verify/turbo-compiled-override.err

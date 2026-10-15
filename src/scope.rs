@@ -83,6 +83,7 @@ fn event(e: &mut EventAction, names: &Names, state: &State) -> Result<(), String
 fn action(mut action: Action, names: &Names) -> Result<Action, String> {
     for step in &mut action.steps {
         match step {
+            Step::OpenLogs => {}
             Step::Request { source } => {
                 valid_name(source)?;
             }
@@ -110,7 +111,7 @@ fn action(mut action: Action, names: &Names) -> Result<Action, String> {
                 );
                 binding(payload, names, true)?;
             }
-            Step::Set { target, value } => {
+            Step::Set { target, value } | Step::ParseJson { target, value } => {
                 *target = write_target(target, names)?;
                 binding(value, names, true)?;
             }
@@ -120,8 +121,16 @@ fn action(mut action: Action, names: &Names) -> Result<Action, String> {
                     binding(p, names, true)?;
                 }
             }
-            Step::Command { target, args, .. } => {
+            Step::Command {
+                target,
+                args,
+                on_complete,
+                ..
+            } => {
                 *target = write_target(target, names)?;
+                if let Some(id) = on_complete {
+                    *id = lookup(&names.actions, id, "动作")?;
+                }
                 for arg in args {
                     if let crate::command::Argument::Binding(b) = arg {
                         binding(b, names, true)?;
@@ -240,7 +249,9 @@ pub fn compile(mut d: Description) -> Result<Description, String> {
         }
         n.action_names = names.actions.clone();
         n.state_names = names.state.clone();
-        if n.kind == Kind::Input && matches!(n.value, Some(Binding::Prop { .. })) {
+        if matches!(n.kind, Kind::Input | Kind::Select)
+            && matches!(n.value, Some(Binding::Prop { .. }))
+        {
             return Err("prop 为只读，input.value 请绑定局部 state 并通过 emit 通知父级".into());
         }
         for b in [
@@ -252,6 +263,7 @@ pub fn compile(mut d: Description) -> Result<Description, String> {
             &mut n.value,
             &mut n.placeholder,
             &mut n.rows,
+            &mut n.options,
         ]
         .into_iter()
         .flatten()

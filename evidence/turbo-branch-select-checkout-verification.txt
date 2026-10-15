@@ -1,0 +1,25 @@
+Unified branch selector with immediate checkout - 2026-10-15
+Package: exports/turbo-branch-select-checkout/vben-package/
+SHA256: C0F9B9251603DD7585FE5C181A8A6FBF9D2B8400B2645D1E81FE50CB20F5933A
+
+Changes:
+- Replaced the current-branch and target-branch columns with one branch selector column.
+- Removed the per-row switch button and its event handler.
+- Default selector value is the repository's actual current branch.
+- Selecting a different cached branch immediately launches git checkout for that repository.
+- Pending selection is shown during execution; repeated operations are locked.
+- Completion clears the pending selection and displays the re-read actual branch. Failure reports the error and restores the actual branch, or displays branch-unconfirmed if it cannot be read.
+- Selecting the current branch or an unknown branch does not launch a command.
+- Fetch, Pull, build and log buttons remain in the operation column.
+
+Validation:
+- cargo test --bin vben-package --test style --test select --locked --offline: 17 passed.
+- New isolated Git test verifies initial actual value, removal of duplicate column/button, automatic checkout, no duplicate requests while busy, failure with conflicting local edits, preservation of local edits, recovery to actual branch, successful retry and current-branch no-op.
+- Native popup test now verifies a real selection launches checkout and completion updates actual branch.
+- Existing scan/Fetch/cache/build/log/scroll/tooltip/select tests passed.
+- Native rendering previews regenerated: tmp-verify/turbo-native-styled.png and turbo-native-styled-compact.png; compact preview visually reviewed.
+- cargo clippy --all-targets --locked --offline -- -D warnings: passed.
+- cargo fmt --all, schema verification and git diff --check: passed.
+- Release build --release --bin vben-package --locked --offline: passed.
+- Packaged --check: passed.
+Git operations were verified in disposable local repositories; no production checkout was performed for validation.

@@ -16,6 +16,8 @@
 /evidence/*.png
 /evidence/*.out
 /evidence/*.err
+# Local design preview screenshots may contain connection details.
+/design/turbo-build-demo*.png
 **/*.dpapi
 **/__pycache__/
 .env

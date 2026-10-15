@@ -1,6 +1,6 @@
 # 桌面应用描述引擎
 
-项目仓库：[123456yzj/desktop-app-engine](https://github.com/123456yzj/desktop-app-engine)。固定运行时读取 JSON 描述，生成带接口数据、图表、交互和加密 API 凭据的 Windows 桌面应用。
+项目仓库：[123456yzj/desktop-app-engine](https://github.com/123456yzj/desktop-app-engine)。以 JSON 作为制作端输入，编译生成带接口数据、图表、交互和加密 API 凭据的 Windows 桌面应用 EXE。
 
 仓库包含源码、协议文档、示例、插件适配器、测试和文字验证记录。构建产物、导出应用、Node/npm 依赖、截图、原始日志及凭据密文由本地生成，不纳入版本控制。
 
@@ -42,8 +42,8 @@ Python 仅用于演示 API 与可选的 Schema 检查；运行引擎本身不需
 
 ## 运行
 
-正式交付为应用目录：运行时 EXE、同目录 `app.json` 和 `README.txt`。客户机无需 Rust、编辑器或源码；使用 Windows 中文系统字体及 OpenGL 图形驱动。
-描述加载优先级：`--app FILE` > EXE 同目录 `app.json` > 内嵌中文问候示例（开发兜底）。双击应用 EXE 即可读取同目录描述；修改描述无需重新编译。
+正式交付为应用目录：包含本次输入定义的应用 EXE、按需配套的组件/资源及 `README.txt`，不依赖外置应用描述 JSON。客户机无需 Rust、编辑器或源码；使用 Windows 中文系统字体及 OpenGL 图形驱动。修改源描述后重新打包。
+开发运行时的描述加载优先级仍为：`--app FILE` > EXE 同目录 `app.json` > 内嵌中文问候示例。打包 EXE 固定使用编入的应用定义，忽略同目录 JSON 并拒绝 `--app` 覆盖。
 
 ```powershell
 .\target-verify\release\desktop-app-engine.exe
@@ -64,6 +64,13 @@ Python 仅用于演示 API 与可选的 Schema 检查；运行引擎本身不需
 0.2 事件动作也可绑定状态：`events.click` 支持固定动作名或 state/literal 字符串绑定。步骤按钮示例中，同一个按钮随状态切换“下一步 → 提交 → 已提交”，点击动作同步改变，完成后禁用，支持重置。配置与语义见 [动态事件绑定](docs/11-dynamic-event-binding.md)。
 0.2 容器可声明局部 state/actions，形成页面和模块作用域。同名状态与动作在兄弟模块中互相隔离，后代就近解析；输入、按钮、表格、图表和命令结果采用相同规则。完整示例 [scoped-state.json](examples/scoped-state.json)，规则见 [作用域说明](docs/12-scoped-state.md)。
 模块化优先使用专门的 `module` 组件，在内部声明 state/actions，并通过 children 组织布局和控件。module 默认纵向布局、不添加卡片外观，支持嵌套、同名局部状态隔离和响应式按钮；例子 [modules.json](examples/modules.json)，说明见 [模块组件](docs/13-module-component.md)。
+
+下拉选择使用 `select`，支持数组选项、label/value、禁用项、双向状态绑定、change 与 open 事件；命令输出可通过 `optionsFormat: "lines"` 按行作为选项。说明见 [Select](docs/18-select.md)。
+
+`vben-package` 提供多仓库构建工作台，使用独立原生控制器驱动引擎 0.2 界面。启动时、保存连接设置后和点击“重新扫描”时，扫描 Turbo 根目录 `apps/*` 下的独立 Git 仓库并 Fetch 各仓库分支到内存缓存；也可点击某行 Fetch 单独刷新。下拉最多展示 10 项，可滚动查看完整列表，展开不会再次获取。切换和普通 pull 在对应业务仓库执行。部分项目使用根目录实际存在的 `build:dev:<业务>` 脚本串行构建；全选执行单条 `pnpm build:dev`。整批先核对分支与提交，再清理一次根目录 `.turbo`；任一失败即停止后续构建，重试排除已成功项目。右侧提供每批共享准备日志、独立进程日志、历史来源、自动滚动和清空显示。配置及交付方式见 [多仓库构建工具](docs/20-turbo-build.md)。旧命令回调示例保留在 [vben-package-legacy.json](examples/vben-package-legacy.json)。
+
+运行日志自动保存到 `%LOCALAPPDATA%\DesktopAppEngine\logs\app-<EXE名>\`，每次启动独立目录，每个命令有完整原始 stdout/stderr 文件和结果记录。通用宿主底部“日志与任务”及构建工作台右侧日志面板显示运行中输出，目录按钮查看历史文件；详情见 [运行与任务日志](docs/19-runtime-logs.md)。
+
 模块间支持显式 `props` 和 `emit`：父级传入只读响应式 props，子级发出已声明事件，父级通过 on 动作读取 event 载荷并更新状态，兄弟模块自动刷新。示例 [module-linkage.json](examples/module-linkage.json)，协议与验收见 [模块通信](docs/14-module-communication.md)。
 插件包通过 manifest 注册组件、props、事件和方法，安装及修改应用 JSON 后即可使用，无需重新编译引擎。ECharts 示例支持 SVG SSR 绘制、响应式 option、柱形点击与 dispatchAction。先安装示例资源，再运行或校验：
 
@@ -95,19 +102,18 @@ API 认证凭据支持 Windows DPAPI 加密保存，配置只引用名称。Auth
 
 ## 分发
 
-先构建一次 release 运行时，再导出应用包：
+将源描述编译并导出为应用包：
 
 ```powershell
 $env:CARGO_TARGET_DIR = "$PWD\target-verify"
-cargo build --release --locked --offline
 .\scripts\package.ps1 -Description .\examples\hello.json -Output .\exports -Name HelloApp
 .\exports\HelloApp\HelloApp.exe --check
 .\scripts\package.ps1 -Description .\examples\dashboard.json -Output .\exports -Name DashboardApp
 ```
 
-脚本产出 `exports/HelloApp/HelloApp.exe`、`app.json`、`README.txt`，自动执行 `--check`，成功退出 0，失败退出 2。
+脚本将输入描述转换为 Rust 数据定义并编译进应用 EXE，产出 `exports/HelloApp/HelloApp.exe` 和 `README.txt`，按需携带插件组件，自动执行校验，成功退出 0，失败退出 2。
 省略 `-Name` 时采用描述中的 `app.name`；名称必须是有效 Windows 文件名。已有应用目录拒绝覆盖，请换输出位置。
-运行时从 `$env:CARGO_TARGET_DIR/release` 读取，未设置时从项目 `target/release` 读取；脚本不调用 Cargo，不要求导出端安装 Rust，只需要已有 release 运行时和 PowerShell。
+制作端需 Rust/Cargo；脚本调用离线 Release 编译，使用 `$env:CARGO_TARGET_DIR` 或默认 `target` 保存编译缓存。客户端只需交付产物。多个应用可复用编译缓存，但每个应用定义均进入自己的 EXE。
 分发整个应用目录，不单独发送 EXE。详见 [分发决策](docs/06-packaging-decision.md)。
 
 原项目 **`app-v1/desktop-app-engine/dist/desktop-app-engine.exe` 已过期**，未迁入独立项目。它构建于 2026-10-10，`main.rs` 修改于 10-12；历史实测二者 `--check` 输出不同。请在本项目构建新的 release 运行时，勿复制旧 dist。
@@ -147,7 +153,7 @@ cargo build --release --locked --offline
 
 常规开发使用 `rustup` 管理的用户级工具链，Cargo 命令位于 `%USERPROFILE%\.cargo\bin`，工具链位于 `%USERPROFILE%\.rustup`。`scripts/cargo.ps1` 仅保留为标准 Cargo 的兼容入口。本项目不包含工具链安装包和缓存，不依赖父项目源码。
 `Cargo.lock` 锁定完整依赖；源码入口 `src/main.rs`，协议 `description.rs`，校验 `validation.rs`，加载 `loader.rs`，执行 `engine.rs`，渲染 `gui.rs`。
-示例在 `examples/hello.json`，通过 `include_str!` 嵌入；修改嵌入示例后需要重新编译。正式应用修改包内 app.json 即可，无需重新编译。
+开发示例在 `examples/hello.json`；正式应用使用打包时传入的源描述，修改后需要重新打包。Turbo 工具的用户连接设置独立保存在当前用户 `connection.dat` 中，详见 [分发决策](docs/06-packaging-decision.md)。
 
 Dashboard 示例是外部 JSON，包含四个指标、趋势图、分组柱图和明细表。“更新指标”执行确定性本地动作；表头点击稳定排序，拖动列边界调整宽度，点击/方向键选择行；图例切换系列，趋势图支持 hover、滚轮缩放、拖拽平移，双击/Home 恢复视口。HTTP 自动刷新见 http-chart.json，ECharts 复合看板见 plugin-dashboard.json；尚无可变行高、合并单元格或可视化编辑器。
 

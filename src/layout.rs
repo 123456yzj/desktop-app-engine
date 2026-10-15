@@ -56,6 +56,17 @@ pub struct Constraint {
 }
 pub trait TextMeasure {
     fn text(&self, text: &str, width: f32, font_size: f32) -> Size;
+    fn styled_text(&self, text: &str, width: f32, style: &crate::v02::Style) -> Size {
+        self.text(
+            text,
+            if style.text_wrap == Some(false) {
+                100_000.0
+            } else {
+                width
+            },
+            style.font_size.unwrap_or(16.0),
+        )
+    }
 }
 #[derive(Clone, Copy, Debug)]
 pub struct FlexItem {
@@ -217,14 +228,14 @@ pub fn measure(
         .collect();
     let mut natural = match s.kind {
         Kind::Text | Kind::Badge | Kind::Button => {
-            let mut size = text.text(&r.text, inner, font);
+            let mut size = text.styled_text(&r.text, inner, &s.style);
             if s.kind != Kind::Text {
-                size.w += 20.0;
-                size.h += 12.0;
+                size.w += 2.0 * s.style.padding_x.unwrap_or(10.0);
+                size.h += 2.0 * s.style.padding_y.unwrap_or(6.0);
             }
             size
         }
-        Kind::Input => Size { w: 220.0, h: 34.0 },
+        Kind::Input | Kind::Select => Size { w: 220.0, h: 34.0 },
         Kind::Metric => Size {
             w: text
                 .text(&r.text, inner, font * 1.875)
@@ -514,8 +525,58 @@ impl<T: TextMeasure> Arranger<'_, T> {
         let mut placements = Vec::new();
         if s.kind == Kind::Grid {
             let widths = grid_widths(s, content.w);
+            let row_items: Vec<_> = children
+                .chunks(widths.len())
+                .map(|chunk| {
+                    let natural = chunk
+                        .iter()
+                        .enumerate()
+                        .map(|(j, &c)| {
+                            measure(
+                                self.tree,
+                                self.resolved,
+                                c,
+                                Constraint {
+                                    width: Limit::Bounded(widths[j]),
+                                    height: Limit::Unbounded,
+                                },
+                                self.text,
+                            )
+                            .h
+                        })
+                        .fold(0.0, f32::max);
+                    let grow = chunk
+                        .iter()
+                        .filter_map(|&c| {
+                            self.tree.nodes[c]
+                                .spec
+                                .layout
+                                .height
+                                .as_ref()
+                                .and_then(|t| t.fr)
+                        })
+                        .fold(0.0, f32::max);
+                    FlexItem {
+                        base: if grow > 0.0 { 0.0 } else { natural },
+                        min: 0.0,
+                        max: 1e8,
+                        grow: if grow == 0.0
+                            && children.len() <= widths.len()
+                            && l.height
+                                .as_ref()
+                                .is_some_and(|t| t.fixed.is_some() || t.fr.is_some())
+                        {
+                            1.0
+                        } else {
+                            grow
+                        },
+                        shrink: 0.0,
+                    }
+                })
+                .collect();
+            let heights = flex(&row_items, content.h, l.gap);
             let mut y = 0.0;
-            for chunk in children.chunks(widths.len()) {
+            for (row, chunk) in children.chunks(widths.len()).enumerate() {
                 let measured: Vec<_> = chunk
                     .iter()
                     .enumerate()
@@ -532,10 +593,17 @@ impl<T: TextMeasure> Arranger<'_, T> {
                         )
                     })
                     .collect();
-                let height = measured.iter().map(|m| m.h).fold(0.0, f32::max);
+                let height = heights[row];
                 let mut x = 0.0;
                 for (j, &c) in chunk.iter().enumerate() {
-                    let (dy, h) = cross(l.align, height, measured[j].h);
+                    let desired = dimension(
+                        self.tree.nodes[c].spec.layout.height.as_ref(),
+                        measured[j].h,
+                        Limit::Bounded(height),
+                        self.tree.nodes[c].spec.layout.min_height,
+                        self.tree.nodes[c].spec.layout.max_height,
+                    );
+                    let (dy, h) = cross(l.align, height, desired);
                     let child_layout = &self.tree.nodes[c].spec.layout;
                     let width = dimension(
                         child_layout.width.as_ref(),

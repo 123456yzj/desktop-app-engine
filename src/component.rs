@@ -71,6 +71,7 @@ impl Tree {
             &n.title,
             &n.placeholder,
             &n.rows,
+            &n.options,
         ]
         .into_iter()
         .flatten()
@@ -117,7 +118,7 @@ fn resolve_node(n: &ComponentNode, state: &State) -> Result<Resolved, String> {
             .to_owned())
     };
     let mut value = match n.spec.kind {
-        Kind::Metric | Kind::Progress | Kind::Input => n
+        Kind::Metric | Kind::Progress | Kind::Input | Kind::Select => n
             .spec
             .value
             .as_ref()

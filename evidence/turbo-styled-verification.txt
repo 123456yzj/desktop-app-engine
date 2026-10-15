@@ -1,0 +1,38 @@
+Turbo styled native desktop package verification
+Date: 2026-10-15
+
+Package: exports/turbo-styled/vben-package/
+Executable: vben-package.exe
+SHA256: 1FF86E23D02B95A43A5BD210627B3D187500943769F4A40EF03B218A7D33A53D
+Packaged executable hash matches target-http/release/vben-package.exe.
+Connection: [redacted for publication]
+Root: /home/wwwroot/web-framework/current/
+
+Validation:
+- Release build --release --bins --locked --offline: passed.
+- Full all-target tests passed after main style implementation.
+- Final lib, vben-package, style and layout tests: passed.
+- cargo fmt --all: completed.
+- cargo clippy --all-targets --locked --offline -- -D warnings: passed.
+- python scripts/schema-verify.py: passed.
+- git diff --check: passed.
+- Packaged --check: exit 0.
+- Packaged --inspect: exit 0; read-only production repository scan succeeded.
+- Missing --app configuration: exit 2.
+- Invalid --theme value: exit 2.
+
+Read-only production scan:
+web-admin | @repo/admin | dev | 464fde512ff673c0ccbe366b6854914436e7e3e8 | build:dev:admin
+web-bms | @repo/bms | ref-FeeItemConfig | 8aeb536529be0f4d81b43feef5e1df8482050a07 | build:dev:bms
+web-copilot | @repo/copilot | dev | 951a8e93936d89f0a08c6081cc7d8450e7101c3b | build:dev:copilot
+web-tms | @repo/tms | feat/optimize-waybill-dashboard | d4444bfb71462fb2c8dac4893dc0f339b7add7bf | build:dev:tms
+
+Visual evidence:
+- tmp-verify/turbo-native-styled.png (1520 x 900)
+- tmp-verify/turbo-native-styled-compact.png (1120 x 760)
+These previews rasterize actual native egui meshes and font atlas without opening a system window.
+They are native rendering previews, not screenshots of an interactive production session.
+Reference: design/turbo-build-demo.png.
+Native styling is closer to the approved HTML design; pixel-perfect HTML equivalence is not asserted.
+
+Production verification was read-only. Checkout, pull, cache deletion and build behavior were tested using isolated temporary repositories.

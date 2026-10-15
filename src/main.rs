@@ -1,8 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-mod gui;
-mod gui_v02;
-const MAX_INPUT_CHARS: usize = desktop_app_engine::validation::MAX_STRING_BYTES / 4;
+use desktop_app_engine::{gui, gui_v02};
 
 use desktop_app_engine::{engine::Engine, loader};
 use eframe::egui;
@@ -158,6 +156,11 @@ fn run() -> Result<(), String> {
         );
     }
     let description = loader::load_document(options.path.as_deref())?;
+    desktop_app_engine::logging::event(
+        "INFO",
+        "app.loaded",
+        serde_json::json!({"name":description.app().name}),
+    );
     let command_base = options
         .path
         .as_ref()
@@ -244,7 +247,22 @@ fn run() -> Result<(), String> {
 }
 
 fn main() {
+    let _ = desktop_app_engine::logging::global();
+    let previous = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        desktop_app_engine::logging::event(
+            "ERROR",
+            "app.panic",
+            serde_json::json!({"message":info.to_string(),"backtrace":std::backtrace::Backtrace::force_capture().to_string()}),
+        );
+        previous(info);
+    }));
     if let Err(error) = run() {
+        desktop_app_engine::logging::event(
+            "ERROR",
+            "app.failed",
+            serde_json::json!({"error":error}),
+        );
         eprintln!("{error}");
         if !std::env::args_os().any(|arg| {
             arg == "--check"
@@ -257,6 +275,7 @@ fn main() {
         }
         std::process::exit(2);
     }
+    desktop_app_engine::logging::event("INFO", "app.exit", serde_json::json!({"exitCode":0}));
 }
 
 fn show_error(error: &str) {

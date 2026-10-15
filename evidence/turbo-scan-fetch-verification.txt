@@ -1,0 +1,23 @@
+Scan-triggered branch refresh - 2026-10-15
+Package: exports/turbo-scan-fetch/vben-package/
+SHA256: 9F5D5FDB7B3976BADD77D45B4A207107F275DA9343784AE1541B42913F8CEE27
+
+Behavior:
+- Application startup with valid connection, successful connection settings save and manual rescan all use Controller.scan().
+- Scan requests now fetch all discovered repositories sequentially and return per-repository branch lists/errors together with project snapshots.
+- Successful refresh replaces the memory cache and preserves a target that still exists.
+- Failed refresh preserves the affected repository's old cache and target, reports its error, and continues with other repositories.
+- Per-row Fetch remains available. Opening a dropdown reads the memory cache.
+- No database is used.
+- --inspect uses scan_read_only() and does not fetch.
+
+Validation:
+- cargo test --bin vben-package --test style --test select --locked --offline: 14 passed.
+- New isolated repository test validates initial scan population, manual rescan updates, connection save updates, failure isolation, cache/target preservation, recovery and read-only scan cache behavior.
+- Existing manual Fetch, branch dropdown, build, checkout, pull, log and settings tests passed.
+- cargo clippy --all-targets --locked --offline -- -D warnings: passed.
+- cargo fmt --all, schema verification and git diff --check: passed.
+- Release build --release --bin vben-package --locked --offline: passed.
+- Packaged --check and read-only --inspect: exit 0.
+- Production read-only inspection discovered web-admin, web-bms, web-copilot and web-tms.
+Automatic fetch behavior was verified against disposable local repositories; production inspection was read-only.

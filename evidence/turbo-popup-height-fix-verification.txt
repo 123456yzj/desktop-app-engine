@@ -1,0 +1,23 @@
+Dynamic select popup height fix - 2026-10-15
+Package: exports/turbo-popup-height-fix/vben-package/
+SHA256: 2BFF343E2ED99A567926B2F035BE46AF2F1A451733F425F16DA8B44957AACF2D
+
+Root cause:
+egui ComboBox popup Area retains its prior small size after rendering one loading/empty option. The internal ScrollArea maximum height does not override this remembered available size; its default 64px minimum permits only two full rows. The original test opened an already-populated list and missed this transition.
+
+Fix:
+Native select anchor and popup now explicitly size the ScrollArea minimum and maximum from up to ten current option rows. Popup placement chooses above/below using screen space. Selection, disabled options, open/change events, outside-click closure and Escape closure continue through native egui interaction.
+
+Evidence:
+- Before the fix, amended style regression test (loading option -> twenty branches in same open popup) failed with 2 visible rows instead of 10.
+- After the fix, the same regression passes and also verifies scrolling to branch-19 and selecting it.
+- Actual workbench test fetches twenty additional branches in a disposable repository, transitions its open popup from loading to fetched branches, and verifies ten complete visible branch labels.
+- Native rendering preview: tmp-verify/turbo-branches-ten-rows.png (1520x900). Rasterized real egui meshes and font atlas, animations disabled only for deterministic preview capture.
+- cargo test --bin vben-package --test style --test select --locked --offline: 13 tests passed.
+- Final test/render-only edits: vben-package and style suites rerun, 9 tests passed.
+- cargo clippy --all-targets --locked --offline -- -D warnings: passed.
+- cargo fmt --all and git diff --check: passed.
+- Release build --release --bin vben-package --locked --offline: passed.
+- Packaged --check: passed.
+
+Validation uses headless native frames and isolated local Git repositories.

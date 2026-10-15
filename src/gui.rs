@@ -25,11 +25,25 @@ pub fn install_chinese_font(ctx: &egui::Context) -> Result<(), String> {
             .or_default()
             .push("chinese".into());
     }
+    let mut bold = Vec::new();
+    for name in ["segoeuib.ttf", "msyhbd.ttc"] {
+        if let Ok(bytes) = std::fs::read(std::path::Path::new(&windows).join("Fonts").join(name)) {
+            fonts
+                .font_data
+                .insert(name.into(), egui::FontData::from_owned(bytes).into());
+            bold.push(name.into());
+        }
+    }
+    bold.extend(fonts.families[&egui::FontFamily::Proportional].clone());
+    fonts
+        .families
+        .insert(egui::FontFamily::Name("bold".into()), bold);
     ctx.set_fonts(fonts);
     Ok(())
 }
 
 pub struct DesktopApp {
+    logs: crate::gui_logs::Viewer,
     engine: Engine,
     root: Component,
     local_inputs: BTreeMap<String, String>,
@@ -39,6 +53,7 @@ pub struct DesktopApp {
 impl DesktopApp {
     pub fn new(engine: Engine) -> Self {
         Self {
+            logs: crate::gui_logs::Viewer::default(),
             root: engine.description().root.clone(),
             engine,
             local_inputs: BTreeMap::new(),
@@ -49,6 +64,8 @@ impl DesktopApp {
 
 impl eframe::App for DesktopApp {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+        self.logs
+            .show(ctx, self.engine.error().or(self.render_error.as_deref()));
         egui::CentralPanel::default().show(ctx, |ui| {
             if let Some(error) = self.engine.error().or(self.render_error.as_deref()) {
                 ui.colored_label(ui.visuals().error_fg_color, error);

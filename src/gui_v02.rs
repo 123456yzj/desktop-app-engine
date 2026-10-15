@@ -13,6 +13,22 @@ use std::collections::{BTreeMap, HashSet};
 
 struct EguiMeasure(egui::Painter);
 impl TextMeasure for EguiMeasure {
+    fn styled_text(&self, text: &str, width: f32, style: &v02::Style) -> Size {
+        let g = self.0.layout(
+            text.into(),
+            style_font(style, self.0.ctx()),
+            Color32::WHITE,
+            if style.text_wrap == Some(false) {
+                100_000.0
+            } else {
+                width.max(1.0)
+            },
+        );
+        Size {
+            w: g.size().x,
+            h: g.size().y,
+        }
+    }
     fn text(&self, text: &str, width: f32, font_size: f32) -> Size {
         let g = self.0.layout(
             text.to_owned(),
@@ -63,6 +79,145 @@ fn token(ui: &egui::Ui, t: Token) -> Color32 {
         }
         Token::Danger => v.error_fg_color,
         Token::Focus => v.selection.stroke.color,
+        Token::Primary => Color32::from_rgb(58, 94, 220),
+        Token::OnPrimary => Color32::WHITE,
+        Token::Hex([r, g, b, a]) => Color32::from_rgba_unmultiplied(r, g, b, a),
+    }
+}
+fn style_font(style: &v02::Style, ctx: &egui::Context) -> FontId {
+    let bold = egui::FontFamily::Name("bold".into());
+    let family = if matches!(style.font_family, Some(v02::FontFamily::Monospace)) {
+        egui::FontFamily::Monospace
+    } else if matches!(style.font_weight, Some(v02::FontWeight::Bold))
+        && ctx.fonts(|f| f.families().contains(&bold))
+    {
+        bold
+    } else {
+        egui::FontFamily::Proportional
+    };
+    FontId::new(style.font_size.unwrap_or(16.0), family)
+}
+fn styled_label(
+    ui: &mut egui::Ui,
+    painter: &egui::Painter,
+    r: egui::Rect,
+    text: &str,
+    style: &v02::Style,
+    color: Color32,
+) {
+    if text.is_empty() || !r.is_positive() {
+        return;
+    }
+    let g = painter.layout(
+        text.into(),
+        style_font(style, painter.ctx()),
+        color,
+        if style.text_wrap == Some(false) {
+            100_000.0
+        } else {
+            r.width()
+        },
+    );
+    let size = g.size();
+    let pos = match style.text_align {
+        Some(v02::TextAlign::Center) => {
+            r.min
+                + Vec2::new(
+                    (r.width() - size.x).max(0.0) / 2.0,
+                    (r.height() - size.y).max(0.0) / 2.0,
+                )
+        }
+        Some(v02::TextAlign::End) => r.min + Vec2::new((r.width() - size.x).max(0.0), 0.0),
+        _ => r.min,
+    };
+    painter
+        .with_clip_rect(r.intersect(painter.clip_rect()))
+        .galley(pos, g, color);
+    let response = ui.interact(
+        r.intersect(ui.clip_rect()),
+        ui.id().with((text, r.min.x.to_bits(), r.min.y.to_bits())),
+        egui::Sense::hover(),
+    );
+    response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, true, text));
+    if style.text_overflow_tooltip != Some(false) && (size.x > r.width() || size.y > r.height()) {
+        response.on_hover_text(text);
+    }
+}
+fn control_theme(ui: &mut egui::Ui, style: &v02::Style, height: f32) {
+    let bg = style.background.map(|c| token(ui, c));
+    let fg = style.color.map(|c| token(ui, c));
+    let border = style.border_color.map(|c| token(ui, c));
+    let states = [
+        style.disabled.as_ref(),
+        None,
+        style.hover.as_ref(),
+        style.pressed.as_ref(),
+        style.hover.as_ref(),
+    ];
+    let colors: Vec<_> = states
+        .iter()
+        .map(|s| {
+            s.map(|s| {
+                (
+                    s.background.map(|c| token(ui, c)),
+                    s.color.map(|c| token(ui, c)),
+                    s.border_color.map(|c| token(ui, c)),
+                )
+            })
+        })
+        .collect();
+    let custom = bg.is_some()
+        || fg.is_some()
+        || border.is_some()
+        || style.hover.is_some()
+        || style.pressed.is_some()
+        || style.disabled.is_some()
+        || style.font_size.is_some()
+        || style.font_family.is_some()
+        || style.font_weight.is_some()
+        || style.padding_x.is_some()
+        || style.padding_y.is_some()
+        || style.radius > 0.0;
+    if !custom {
+        return;
+    }
+    let font = style_font(style, ui.ctx());
+    let s = ui.style_mut();
+    s.override_font_id = Some(font);
+    s.spacing.interact_size.y = height;
+    s.spacing.button_padding = Vec2::new(
+        style.padding_x.unwrap_or(8.0),
+        style.padding_y.unwrap_or(5.0),
+    );
+    if let Some(bg) = bg {
+        s.visuals.extreme_bg_color = bg;
+    }
+    if let Some(fg) = fg {
+        s.visuals.override_text_color = Some(fg);
+    }
+    let w = &mut s.visuals.widgets;
+    for (widget, state) in [
+        &mut w.noninteractive,
+        &mut w.inactive,
+        &mut w.hovered,
+        &mut w.active,
+        &mut w.open,
+    ]
+    .into_iter()
+    .zip(colors)
+    {
+        let (over_bg, over_fg, over_border) = state.unwrap_or((None, None, None));
+        if let Some(c) = over_bg.or(bg) {
+            widget.bg_fill = c;
+            widget.weak_bg_fill = c;
+        }
+        if let Some(c) = over_fg.or(fg) {
+            widget.fg_stroke.color = c;
+        }
+        if let Some(c) = over_border.or(border) {
+            widget.bg_stroke = Stroke::new(style.border_width, c);
+        }
+        widget.corner_radius = egui::CornerRadius::same(style.radius.clamp(0.0, 255.0) as u8);
     }
 }
 fn series_color(ui: &egui::Ui, i: usize) -> Color32 {
@@ -140,6 +295,11 @@ struct ChartState {
     hidden: HashSet<usize>,
 }
 pub struct DashboardApp {
+    embedded: bool,
+    host_events: Vec<UiEvent>,
+    open_selects: HashSet<String>,
+    user_scrolled: HashSet<String>,
+    logs: crate::gui_logs::Viewer,
     runtime: Runtime,
     scroll: Vec<Size>,
     inputs: BTreeMap<String, String>,
@@ -158,6 +318,11 @@ impl DashboardApp {
         let runtime = Runtime::new(d)?;
         let count = runtime.tree.nodes.len();
         Ok(Self {
+            embedded: false,
+            host_events: vec![],
+            open_selects: HashSet::new(),
+            user_scrolled: HashSet::new(),
+            logs: crate::gui_logs::Viewer::default(),
             runtime,
             scroll: vec![Size::default(); count],
             inputs: BTreeMap::new(),
@@ -169,12 +334,88 @@ impl DashboardApp {
             resolved_version: 0,
         })
     }
+    /// Embed the renderer in a native controller without the separate diagnostics window.
+    pub fn embedded(description: v02::Description) -> Result<Self, String> {
+        let mut app = Self::new(description)?;
+        app.embedded = true;
+        Ok(app)
+    }
+    pub fn take_events(&mut self) -> Vec<UiEvent> {
+        std::mem::take(&mut self.host_events)
+    }
+    pub fn state(&self) -> &desktop_app_engine::binding::State {
+        &self.runtime.state
+    }
+    /// Native hosts own their background jobs. Retain scroll positions by component ID.
+    pub fn replace_description(&mut self, description: v02::Description) -> Result<(), String> {
+        if self.runtime.commands_running()
+            || self.runtime.http_active()
+            || !self.runtime.description.plugins.is_empty()
+        {
+            return Err("动态视图替换不允许丢弃运行中的命令、数据源或插件".into());
+        }
+        let positions: BTreeMap<_, _> = self
+            .runtime
+            .tree
+            .nodes
+            .iter()
+            .zip(&self.scroll)
+            .map(|(n, p)| (n.spec.id.clone(), *p))
+            .collect();
+        let mut runtime = Runtime::new(description)?;
+        runtime.command_base = self.runtime.command_base.clone();
+        runtime.generation = self.runtime.generation + 1;
+        self.scroll = runtime
+            .tree
+            .nodes
+            .iter()
+            .map(|n| positions.get(&n.spec.id).copied().unwrap_or_default())
+            .collect();
+        self.runtime = runtime;
+        self.resolved.clear();
+        self.resolved_version = 0;
+        Ok(())
+    }
+    pub fn scroll_to_end(&mut self, id: &str) {
+        if let Some((index, _)) = self
+            .runtime
+            .tree
+            .nodes
+            .iter()
+            .enumerate()
+            .find(|(_, n)| n.spec.id == id)
+        {
+            self.scroll[index].h = 1_000_000.0;
+        }
+    }
+    /// Whether wheel or scrollbar input moved this container in the most recent draw.
+    pub fn user_scrolled(&self, id: &str) -> bool {
+        self.user_scrolled.contains(id)
+    }
+    pub fn draw(&mut self, ctx: &egui::Context) {
+        self.render(ctx);
+    }
+    pub fn draw_in(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
+        self.render_inner(ctx, Some(ui));
+    }
 }
 impl eframe::App for DashboardApp {
     fn update(&mut self, ctx: &egui::Context, _: &mut eframe::Frame) {
+        self.render(ctx);
+    }
+}
+impl DashboardApp {
+    fn render(&mut self, ctx: &egui::Context) {
+        self.render_inner(ctx, None);
+    }
+    fn render_inner(&mut self, ctx: &egui::Context, host_ui: Option<&mut egui::Ui>) {
+        self.user_scrolled.clear();
         self.runtime.poll_commands();
         self.runtime.poll_http();
         self.runtime.poll_plugins();
+        if !self.embedded {
+            self.logs.show(ctx, self.runtime.error.as_deref());
+        }
         for (id, image) in std::mem::take(&mut self.runtime.plugin_images) {
             let image = egui::ColorImage::from_rgba_premultiplied(image.size, &image.rgba);
             self.plugin_textures.insert(
@@ -205,7 +446,8 @@ impl eframe::App for DashboardApp {
             }
         }
         let mut events = vec![];
-        egui::CentralPanel::default().show(ctx, |ui| {
+        let embedded = self.embedded;
+        let mut paint = |ui: &mut egui::Ui| {
             if let Some(error) = &self.runtime.error {
                 ui.colored_label(ui.visuals().error_fg_color, error);
             }
@@ -294,6 +536,7 @@ impl eframe::App for DashboardApp {
                         }
                     }
                     if node.layout.overflow == Overflow::Scroll {
+                        let before = self.scroll[id];
                         wheel.y = -layout::scroll_axis(
                             &mut self.scroll[id].h,
                             -wheel.y,
@@ -306,6 +549,9 @@ impl eframe::App for DashboardApp {
                             b.extent.w,
                             b.content.w,
                         );
+                        if self.scroll[id].w != before.w || self.scroll[id].h != before.h {
+                            self.user_scrolled.insert(node.id.clone());
+                        }
                     }
                 }
                 boxes = layout::arrange(
@@ -351,6 +597,7 @@ impl eframe::App for DashboardApp {
                     continue;
                 }
                 let previous_clip = ui.clip_rect();
+                let previous_style = ui.style().clone();
                 ui.set_clip_rect(er(b.clip));
                 let painter = ui.painter().with_clip_rect(er(b.clip));
                 let rect = er(b.rect);
@@ -367,11 +614,16 @@ impl eframe::App for DashboardApp {
                         token(ui, n.style.background.unwrap_or(Token::SurfaceRaised)),
                     );
                 }
-                if n.style.border_width > 0.0 {
+                if n.style.border_width > 0.0
+                    && !matches!(n.kind, Kind::Button | Kind::Input | Kind::Select)
+                {
                     painter.rect_stroke(
                         rect,
                         n.style.radius,
-                        Stroke::new(n.style.border_width, token(ui, Token::Border)),
+                        Stroke::new(
+                            n.style.border_width,
+                            token(ui, n.style.border_color.unwrap_or(Token::Border)),
+                        ),
                         StrokeKind::Inside,
                     );
                 }
@@ -408,7 +660,7 @@ impl eframe::App for DashboardApp {
                             self.runtime.error = Some(e);
                         }
                     }
-                    Kind::Text => label(ui, &painter, content, &r.text, font, color),
+                    Kind::Text => styled_label(ui, &painter, content, &r.text, &n.style, color),
                     Kind::Metric => {
                         label(
                             ui,
@@ -439,12 +691,18 @@ impl eframe::App for DashboardApp {
                             Tone::Muted => Token::TextMuted,
                         };
                         painter.rect_filled(content, 6.0, token(ui, tone).gamma_multiply(0.15));
-                        label(
+                        let mut style = n.style.clone();
+                        style.text_wrap = Some(false);
+                        style.text_align = Some(v02::TextAlign::Center);
+                        styled_label(
                             ui,
                             &painter,
-                            content.shrink2(Vec2::new(10.0, 6.0)),
+                            content.shrink2(Vec2::new(
+                                n.style.padding_x.unwrap_or(10.0),
+                                n.style.padding_y.unwrap_or(2.0),
+                            )),
                             &r.text,
-                            font,
+                            &style,
                             token(ui, tone),
                         );
                     }
@@ -478,40 +736,82 @@ impl eframe::App for DashboardApp {
                         response.widget_info(|| {
                             egui::WidgetInfo::labeled(egui::WidgetType::Button, r.enabled, &r.text)
                         });
-                        let fill = if response.is_pointer_button_down_on() {
+                        let fill = if !r.enabled {
+                            ui.visuals().widgets.noninteractive.bg_fill
+                        } else if let Some(background) = n.style.background {
+                            let base = token(ui, background);
+                            if response.is_pointer_button_down_on() {
+                                base.gamma_multiply(0.8)
+                            } else if response.hovered() {
+                                base.gamma_multiply(0.9)
+                            } else {
+                                base
+                            }
+                        } else if response.is_pointer_button_down_on() {
                             ui.visuals().widgets.active.bg_fill
                         } else if response.hovered() {
                             ui.visuals().widgets.hovered.bg_fill
                         } else {
                             ui.visuals().widgets.inactive.bg_fill
                         };
-                        painter.rect_filled(content, n.style.radius.max(4.0), fill);
+                        let state = if !r.enabled {
+                            n.style.disabled.as_ref()
+                        } else if response.is_pointer_button_down_on() {
+                            n.style.pressed.as_ref()
+                        } else if response.hovered() {
+                            n.style.hover.as_ref()
+                        } else {
+                            None
+                        };
+                        let fill = state
+                            .and_then(|s| s.background)
+                            .map(|c| token(ui, c))
+                            .unwrap_or(fill);
+                        let border = state
+                            .and_then(|s| s.border_color)
+                            .or(n.style.border_color)
+                            .unwrap_or(Token::Border);
+                        painter.rect_filled(rect, n.style.radius.max(4.0), fill);
                         painter.rect_stroke(
-                            content,
-                            4.0,
+                            rect,
+                            n.style.radius.max(4.0),
                             Stroke::new(
-                                1.0_f32,
+                                if n.style.border_color.is_some() {
+                                    n.style.border_width
+                                } else {
+                                    1.0
+                                },
                                 if response.has_focus() {
                                     token(ui, Token::Focus)
                                 } else {
-                                    token(ui, Token::Border)
+                                    token(ui, border)
                                 },
                             ),
                             StrokeKind::Inside,
                         );
-                        label(
+                        styled_label(
                             ui,
                             &painter,
-                            content.shrink2(Vec2::new(10.0, 6.0)),
+                            rect.shrink2(Vec2::new(
+                                n.style.padding_x.unwrap_or(10.0),
+                                n.style.padding_y.unwrap_or(6.0),
+                            )),
                             &r.text,
-                            font,
-                            color,
+                            &n.style,
+                            if let Some(c) = state.and_then(|s| s.color) {
+                                token(ui, c)
+                            } else if r.enabled {
+                                color
+                            } else {
+                                token(ui, Token::TextMuted)
+                            },
                         );
                         if response.clicked() {
                             collector.push(ui, "click", None, serde_json::Value::Null);
                         }
                     }
                     Kind::Input => {
+                        control_theme(ui, &n.style, content.height());
                         let initial = r
                             .value
                             .as_ref()
@@ -531,7 +831,7 @@ impl eframe::App for DashboardApp {
                                     content,
                                     egui::TextEdit::singleline(&mut text)
                                         .text_color(color)
-                                        .font(FontId::proportional(font))
+                                        .font(style_font(&n.style, ui.ctx()))
                                         .id(egui::Id::new((&n.id, "input")))
                                         .hint_text(&r.placeholder)
                                         .char_limit(crate::MAX_INPUT_CHARS),
@@ -544,6 +844,145 @@ impl eframe::App for DashboardApp {
                         }
                         if response.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                             collector.push(ui, "submit", None, serde_json::Value::Null);
+                        }
+                    }
+                    Kind::Select => {
+                        control_theme(ui, &n.style, content.height());
+                        let options =
+                            v02::select_options(n, &self.runtime.state).unwrap_or_default();
+                        let initial = r
+                            .value
+                            .as_ref()
+                            .and_then(|v| v.as_str())
+                            .unwrap_or_default();
+                        let mut selected = if matches!(n.value, Some(Binding::Literal { .. })) {
+                            self.inputs
+                                .get(&n.id)
+                                .map(String::as_str)
+                                .unwrap_or(initial)
+                                .to_owned()
+                        } else {
+                            initial.to_owned()
+                        };
+                        let before = selected.clone();
+                        let display = options
+                            .iter()
+                            .find(|o| o.value == selected)
+                            .map(|o| o.label.as_str())
+                            .unwrap_or(if selected.is_empty() {
+                                &r.placeholder
+                            } else {
+                                &selected
+                            })
+                            .to_owned();
+                        let mut open = false;
+                        ui.add_enabled_ui(r.enabled, |ui| {
+                            ui.push_id((&n.id, "select"), |ui| {
+                                let row_height = (ui.text_style_height(&egui::TextStyle::Button)
+                                    + 2.0 * ui.spacing().button_padding.y)
+                                    .max(ui.spacing().interact_size.y);
+                                let row_spacing = ui.spacing().item_spacing.y;
+                                let response = ui.put(content, egui::Button::new(""));
+                                response.widget_info(|| {
+                                    egui::WidgetInfo::labeled(
+                                        egui::WidgetType::ComboBox,
+                                        r.enabled,
+                                        &display,
+                                    )
+                                });
+                                let visuals = ui.style().interact(&response);
+                                let text_rect = egui::Rect::from_min_max(
+                                    content.min + Vec2::new(ui.spacing().button_padding.x, 0.0),
+                                    content.max - Vec2::new(24.0, 0.0),
+                                );
+                                let galley = ui.painter().layout_no_wrap(
+                                    display.clone(),
+                                    style_font(&n.style, ui.ctx()),
+                                    visuals.text_color(),
+                                );
+                                ui.painter()
+                                    .with_clip_rect(text_rect.intersect(ui.clip_rect()))
+                                    .galley(
+                                        Pos2::new(
+                                            text_rect.left(),
+                                            text_rect.center().y - galley.size().y / 2.0,
+                                        ),
+                                        galley,
+                                        visuals.text_color(),
+                                    );
+                                let center = Pos2::new(content.right() - 13.0, content.center().y);
+                                ui.painter().add(egui::Shape::convex_polygon(
+                                    vec![
+                                        center + Vec2::new(-4.0, -2.0),
+                                        center + Vec2::new(4.0, -2.0),
+                                        center + Vec2::new(0.0, 3.0),
+                                    ],
+                                    visuals.text_color(),
+                                    Stroke::NONE,
+                                ));
+                                let popup_id = ui.make_persistent_id("popup");
+                                if response.clicked() {
+                                    ui.memory_mut(|m| m.toggle_popup(popup_id));
+                                }
+                                let screen = ui.ctx().screen_rect();
+                                let below =
+                                    (screen.bottom() - response.rect.bottom() - 12.0).max(0.0);
+                                let above = (response.rect.top() - screen.top() - 12.0).max(0.0);
+                                let count = options.len().clamp(1, 10) as f32;
+                                let desired = count * row_height + (count - 1.0) * row_spacing;
+                                let (direction, available) = if below < desired && above > below {
+                                    (egui::AboveOrBelow::Above, above)
+                                } else {
+                                    (egui::AboveOrBelow::Below, below)
+                                };
+                                let height = desired.min(available);
+                                let popup_style = ui.style().clone();
+                                let result = egui::popup::popup_above_or_below_widget(
+                                    ui,
+                                    popup_id,
+                                    &response,
+                                    direction,
+                                    egui::PopupCloseBehavior::CloseOnClickOutside,
+                                    |ui| {
+                                        ui.set_style(popup_style);
+                                        ui.spacing_mut().interact_size.y = row_height;
+                                        ui.spacing_mut().item_spacing.y = row_spacing;
+                                        ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
+                                        // The popup Area remembers its previous size. Override the
+                                        // scroll minimum as well as its maximum so a loading row
+                                        // cannot permanently constrain a later full option list.
+                                        egui::ScrollArea::vertical()
+                                            .min_scrolled_height(height)
+                                            .max_height(height)
+                                            .show(ui, |ui| {
+                                                for option in &options {
+                                                    ui.add_enabled_ui(!option.disabled, |ui| {
+                                                        if ui
+                                                            .selectable_value(
+                                                                &mut selected,
+                                                                option.value.clone(),
+                                                                &option.label,
+                                                            )
+                                                            .clicked()
+                                                        {
+                                                            ui.memory_mut(|m| m.close_popup());
+                                                        }
+                                                    });
+                                                }
+                                            });
+                                    },
+                                );
+                                open = result.is_some();
+                            });
+                        });
+                        if open && self.open_selects.insert(n.id.clone()) {
+                            collector.push(ui, "open", None, serde_json::Value::Null);
+                        } else if !open {
+                            self.open_selects.remove(&n.id);
+                        }
+                        if selected != before {
+                            self.inputs.insert(n.id.clone(), selected.clone());
+                            collector.push(ui, "change", None, serde_json::Value::String(selected));
                         }
                     }
                     Kind::Table => paint_table(
@@ -574,6 +1013,7 @@ impl eframe::App for DashboardApp {
                     _ => {}
                 }
                 if n.layout.overflow == Overflow::Scroll {
+                    let before = self.scroll[id];
                     scrollbar(
                         ui,
                         &painter,
@@ -602,12 +1042,30 @@ impl eframe::App for DashboardApp {
                         true,
                         r.enabled,
                     );
+                    if self.scroll[id].w != before.w || self.scroll[id].h != before.h {
+                        self.user_scrolled.insert(n.id.clone());
+                    }
                 }
                 ui.set_clip_rect(previous_clip);
+                ui.set_style(previous_style);
             }
-        });
+        };
+        if let Some(ui) = host_ui {
+            paint(ui);
+        } else {
+            let panel = egui::CentralPanel::default();
+            let panel = if embedded {
+                panel.frame(egui::Frame::NONE)
+            } else {
+                panel
+            };
+            panel.show(ctx, paint);
+        }
         self.sequence += ctx.input(|i| i.events.len() as u64 + 2) * 4;
         if !events.is_empty() {
+            if self.embedded {
+                self.host_events.extend(events.iter().cloned());
+            }
             self.runtime.commit(events);
             ctx.request_repaint();
         }
@@ -1381,6 +1839,130 @@ fn paint_chart(
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn workspace_frame(
+        app: &mut DashboardApp,
+        ctx: &egui::Context,
+        events: Vec<egui::Event>,
+        width: f32,
+    ) -> egui::FullOutput {
+        ctx.run(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    Pos2::ZERO,
+                    Vec2::new(width, 900.0),
+                )),
+                events,
+                ..Default::default()
+            },
+            |ctx| app.render(ctx),
+        )
+    }
+    fn text_position(output: &egui::FullOutput, text: &str) -> Option<Pos2> {
+        output.shapes.iter().find_map(|shape| match &shape.shape {
+            egui::epaint::Shape::Text(t) if t.galley.job.text == text => {
+                Some(t.pos + t.galley.size() * 0.5)
+            }
+            _ => None,
+        })
+    }
+    fn workspace_click(app: &mut DashboardApp, ctx: &egui::Context, pos: Pos2) -> egui::FullOutput {
+        workspace_frame(
+            app,
+            ctx,
+            vec![
+                egui::Event::PointerMoved(pos),
+                egui::Event::PointerButton {
+                    pos,
+                    button: egui::PointerButton::Primary,
+                    pressed: true,
+                    modifiers: egui::Modifiers::NONE,
+                },
+            ],
+            1120.0,
+        );
+        workspace_frame(
+            app,
+            ctx,
+            vec![egui::Event::PointerButton {
+                pos,
+                button: egui::PointerButton::Primary,
+                pressed: false,
+                modifiers: egui::Modifiers::NONE,
+            }],
+            1120.0,
+        )
+    }
+    #[test]
+    fn workspace_actual_render_dropdown_and_task_locking() {
+        let description = v02::parse(include_str!("../examples/vben-package-legacy.json")).unwrap();
+        let mut app = DashboardApp::new(description).unwrap();
+        let ctx = egui::Context::default();
+        for width in [1120.0, 960.0] {
+            let output = workspace_frame(&mut app, &ctx, vec![], width);
+            assert!(text_position(&output, "当前所在分支").is_some());
+            assert!(text_position(&output, "开始打包").is_some());
+        }
+        let mut view = app.runtime.state["view"].clone();
+        view["currentBranch"] = serde_json::json!("dev");
+        view["branches"] = serde_json::json!("dev\nfeature/tms");
+        view["ready"] = serde_json::json!(true);
+        view["hasBranches"] = serde_json::json!(true);
+        app.runtime.set("view", view).unwrap();
+        let output = workspace_frame(&mut app, &ctx, vec![], 1120.0);
+        let pos = text_position(&output, "读取分支后，在此选择")
+            .expect("Select missing from actual render");
+        workspace_click(&mut app, &ctx, pos);
+        let output = workspace_frame(&mut app, &ctx, vec![], 1120.0);
+        let pos = text_position(&output, "feature/tms").expect("Select popup missing");
+        workspace_click(&mut app, &ctx, pos);
+        assert_eq!(app.runtime.state["branch"], "feature/tms");
+        assert_eq!(app.runtime.state["switchAvailable"], true);
+        assert_eq!(app.runtime.state["view"]["currentBranch"], "dev");
+        app.runtime.set("idle", serde_json::json!(false)).unwrap();
+        app.runtime.set("busy", serde_json::json!(true)).unwrap();
+        let resolved = app.runtime.tree.resolve(&app.runtime.state).unwrap();
+        for id in [
+            "sshTarget",
+            "repository",
+            "branch",
+            "refreshButton",
+            "switchButton",
+            "pullButton",
+            "buildButton",
+        ] {
+            let index = app
+                .runtime
+                .tree
+                .nodes
+                .iter()
+                .position(|n| n.spec.id == id)
+                .unwrap();
+            assert!(!resolved[index].enabled, "{id} must be locked during a job");
+        }
+        workspace_frame(&mut app, &ctx, vec![], 1120.0);
+        let session = desktop_app_engine::logging::global().unwrap();
+        let task = session
+            .task(
+                "headless live task",
+                "test.exe",
+                &std::env::current_dir().unwrap(),
+                1000,
+            )
+            .unwrap();
+        task.write(false, b"headless live output");
+        app.runtime.invoke("openLogs").unwrap();
+        workspace_frame(&mut app, &ctx, vec![], 1120.0);
+        let output = workspace_frame(&mut app, &ctx, vec![], 1120.0);
+        assert!(text_position(&output, "日志与任务").is_some());
+        assert!(text_position(&output, "headless live output").is_some());
+        task.write(false, b" updated");
+        let output = workspace_frame(&mut app, &ctx, vec![], 1120.0);
+        assert!(text_position(&output, "headless live output updated").is_some());
+        task.finish("succeeded", 0, "", true);
+        session
+            .viewer_open
+            .store(false, std::sync::atomic::Ordering::Relaxed);
+    }
     #[test]
     fn plugin_texture_and_egui_click_reach_actual_echarts_worker() {
         let d = v02::parse_at(

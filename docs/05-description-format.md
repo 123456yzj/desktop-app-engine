@@ -108,7 +108,13 @@ layout 所有尺寸为逻辑 point，有限非负且 <=1,000,000，min <= max。
 
 gap/align/justify/wrap/overflow 只用于容器，叶节点声明会被拒绝。表格自身提供双轴滚动，图表的滚轮由 zoom 单独控制。width/height、约束和 padding 可用于所有组件。坐标按边界对齐像素，避免累加四舍五入误差。
 
-style：background/color 使用 surface、surfaceRaised、textPrimary、textMuted、border、accent、success、warning、danger、focus token；fontSize 缺省 16，borderWidth/radius 缺省 0。card/panel 缺省 raised surface 与至少 6 point 圆角，badge/button 有自身最小圆角。样式无继承，每节点单独指定。系统主题和 --theme 使用同一主题 palette。
+style：background/color/borderColor 可使用 surface、surfaceRaised、textPrimary、textMuted、border、accent、success、warning、danger、focus、primary、onPrimary Token，或 `#RRGGBB` / `#RRGGBBAA` 精确颜色。Token 随主题变化，精确颜色保持不变。fontSize 缺省 16，borderWidth/radius 缺省 0。card/panel 缺省 raised surface 与至少 6 point 圆角，badge/button 有自身最小圆角。样式无继承，每节点单独指定。
+
+文本支持 `fontFamily: proportional|monospace`、`fontWeight: normal|bold`、`textWrap: true|false` 和 `textAlign: start|center|end`；center 同时在可用文本框内垂直居中。默认正常比例字体、换行、起始对齐。Bold 使用 Windows 系统粗体字体；自定义嵌入宿主未安装粗体字族时回退普通比例字体。等宽字体优先于字重。截断的文本默认悬停显示完整内容，可设置 `textOverflowTooltip: false` 关闭，适用于可滚动的日志正文。
+
+按钮支持 `paddingX` / `paddingY`（默认 10 / 6 point），并可通过 `hover`、`pressed`、`disabled` 分别声明 background/color/borderColor。输入和下拉框也应用颜色、边框、圆角、字体与状态配置，保留 egui 的编辑、焦点和弹层行为。未指定状态字段时沿用默认反馈或基础样式。原有描述可继续使用。
+
+Grid 中声明 `height: {"fr": n}` 的子项使对应行按权重分配剩余高度；未声明 fr 的行使用内容高度。有限高度下 fr 子项填满分配的行；无界测量仍采用内容尺寸。
 
 ### 组件字段
 
@@ -121,6 +127,7 @@ style：background/color 使用 surface、surfaceRaised、textPrimary、textMute
 | panel/card | 无 | children=[]、title 字符串绑定 |
 | text | text 字符串绑定 | 无 |
 | input | value 字符串绑定 | placeholder 字符串绑定 |
+| select | value 字符串绑定、options 绑定 | placeholder；optionsFormat=array/lines；change/open 事件；详见 [Select](18-select.md) |
 | button | text 字符串绑定 | events.click |
 | metric | label 字符串绑定、value 数字绑定 | format，默认 text |
 | badge | text 字符串绑定 | tone=accent，可选 success/warning/danger/muted |
@@ -156,6 +163,10 @@ module.props 在父作用域解析，内部用 `{"kind":"prop","key":"message","
 
 顶层 credentialStore 指定当前用户的加密凭据库。认证 headers 使用 `{"kind":"credential","name":"api-token","prefix":"Bearer "}`；凭据由 Windows DPAPI 加密保存在用户本地目录，发送请求时后台解密。常见认证头必须使用该引用。配置校验无需真实凭据，--check-credentials 检查存在与解密能力。详见 [加密凭据](17-encrypted-credentials.md)。
 
+command 可选 `onComplete` 指定完成动作，在结果写入 target 后调用。`parseJson` 步骤将字符串绑定解析为 JSON 并写入已有类型的 target；解析或组件校验失败时保留原值。详见 [命令完成反馈](10-command-binding.md)。
+
+style 额外支持 `primary` 和 `onPrimary`，用于主操作按钮背景与前景；按钮显式 background 会用于绘制，并保留悬停、按下和禁用反馈。
+
 ### 按钮命令绑定（0.2）
 
 button 的 `events.click` 指向包含 `command` 步骤的动作：
@@ -177,5 +188,9 @@ button 的 `events.click` 指向包含 `command` 步骤的动作：
 同一 target 正在执行时拒绝重复启动，其他 target 可以并行执行。command 步骤启动后立即继续后续步骤，不等待完成，后续步骤仍读取动作开始时快照。完成结果由 GUI 更新线程写回，不在后台线程修改业务状态。输出在结束时更新，每条流保留前 16384 字节，继续消费超出部分避免管道堵塞；以 UTF-8 解码，非法字节替换。继承输出管道的后代进程不会使结果提交无限等待；结束后最多为两条流各等待 100ms。非零退出码通过结果状态报告。
 
 可运行示例：[command.json](../examples/command.json) 和 [command-demo.ps1](../examples/command-demo.ps1)。分发时将脚本随应用复制，并按实际目录配置 cwd/args。`--check` 只校验描述，不执行命令或检查程序是否安装。
+
+### 运行与任务日志
+
+0.1/0.2 桌面宿主均提供底部“日志与任务”和“打开日志目录”。命令 stdout/stderr 按原始字节持续写文件，窗口独立显示每条流最近 32 KiB，不影响命令结果状态。0.2 可使用 `{"type":"openLogs"}` 动作步骤打开同一窗口，无参数，不读取或修改业务状态。运行日志按 EXE 名和启动会话保存，完整位置、文件和错误边界见 [运行与任务日志](19-runtime-logs.md)。
 
 完整示例：[dashboard.json](../examples/dashboard.json)。实施和实际验收：[09-component-implementation.md](09-component-implementation.md)。
