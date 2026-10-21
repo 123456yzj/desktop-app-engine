@@ -4,26 +4,16 @@
 
 ## 安装和运行
 
-```powershell
-# 开发机需要 Node/npm，安装器拒绝覆盖已有插件目录。
-.\scripts\install-plugin.ps1 -Package .\plugins\echarts -AppDirectory .\examples -InstallDependencies
-.\target-verify\release\desktop-app-engine.exe --app .\examples\plugin-chart.json --check
-.\target-verify\release\desktop-app-engine.exe --app .\examples\plugin-chart.json --check-plugins
-.\target-verify\release\desktop-app-engine.exe --app .\examples\plugin-chart.json
+制作端需自行准备应用描述旁的 `plugins/<包名>`，复制 manifest、worker 和生产依赖，并准备 `plugins/runtime/node.exe` 及对应许可证。仓库中的 `plugins/echarts/` 提供适配器源码与锁定依赖。插件的 node_modules 连同包内许可证一起分发；打包脚本复制已经准备好的资源。
 
-# 已完成 release 构建后，导出完整应用目录并后台实测插件。
-$env:CARGO_TARGET_DIR = "$PWD\target-verify"
-.\scripts\plugin-verify.ps1 -Output .\exports -Name PluginChartApp
-```
-
-安装器复制插件目录和当前开发机的 node.exe、可用的 Node LICENSE。npm 有锁文件时使用 ci，安装时省略开发依赖与安装脚本。插件的 node_modules 连同包内许可证一起分发。客户机无需 Rust、npm 或单独安装 Node。
+开发时使用 `desktop-app-engine.exe --app <应用描述路径> --check-plugins` 检查实际 RPC 和 SVG。客户端使用包内 Node 时无需另外安装 Rust、npm 或 Node。
 
 目录结构：
 
 ```text
 PluginChartApp/
   PluginChartApp.exe
-  app.json
+  README.txt
   plugins/
     runtime/node.exe
     runtime/NODE-LICENSE.txt
@@ -34,7 +24,7 @@ PluginChartApp/
     echarts/node_modules/...
 ```
 
-`plugins` 在应用 JSON 顶层列出启用包名。发现基于 app.json 所在目录，与启动工作目录无关；纯字符串解析 `v02::parse` 使用当前目录，程序化宿主可使用 `parse_at` 指定目录。插件入口必须在包内；包名仅接受字母、数字、下划线、连字符。manifest 错误、缺失包、重复组件注册都使加载失败。Node 优先使用 `plugins/runtime/node.exe`，开发时可回退 PATH 中的 node。
+`plugins` 在应用 JSON 顶层列出启用包名。开发加载器通过 `compiler::compile_at` 按输入描述目录发现插件，打包应用使用 EXE 目录。`protocol::v02::parse` 只解析输入，程序化宿主应在编译时明确传入资源目录。插件入口必须在包内；包名仅接受字母、数字、下划线、连字符。manifest 错误、缺失包、重复组件注册都使加载失败。Node 优先使用 `plugins/runtime/node.exe`，开发时可回退 PATH 中的 node。
 
 `--check` 校验配置和 manifest，不执行 JavaScript；`--check-plugins` 额外逐个启动已引用组件，在 800×400 下 mount、栅格化返回 SVG、unmount；成功退出 0，失败退出 2。这个模式会执行插件代码。插件与应用具有相同本机权限，API 1 不提供沙箱。
 
@@ -125,12 +115,8 @@ target 是全树唯一组件 ID，method 必须已注册；args 支持 literal/s
 
 点击用 ECharts display list 命中，发出 seriesIndex/dataIndex/name/value，当前 value 为数字，数组取最后数值。已实测普通柱图。API 1 当前只转发 click；不提供浏览器 DOM、HTML tooltip、hover/滚轮/拖拽、JS 函数 formatter 或完整浏览器 ECharts 交互。需要 DOM 的库要增加其他宿主版本；SSR 点击适配依赖 ECharts helper/display-list API，版本已锁定。
 
-示例展示柱图、选择名称、按钮调用 dispatchAction 高亮 B。源码参考 `plugins/echarts/worker.cjs` 和 `examples/plugin-chart.json`。
+适配器源码参考 `plugins/echarts/worker.cjs`，应用可按上面的配置片段引用注册组件。
 
-## 验证记录
+## 验证入口
 
-使用后台与无窗口测试验证，不操作鼠标或切换桌面窗口。专项覆盖 manifest 拒绝、真实 ECharts RPC、SVG 栅格化、响应式更新、方法结果、事件载荷、disabled/卸载响应隔离、RPC 超时，并通过 egui RawInput 验证纹理绘制和实际点击到 ECharts 的完整链路。
-
-过程发现并修复：首次 ECharts 专项 2 通过/2 失败，原因是 Node 无法处理 Windows 扩展路径入口，改用入口文件名和包目录 cwd；严格 Clippy 的测试切片写法已修复；完整回归发现一次外部 JSON 错误缺少“外部描述”上下文，已恢复；通用测试 fixture 曾缺少闭合括号，已修复。最终检查和产物见 evidence/plugin-verification.txt。
-
-最终 fmt、严格 Clippy、68 项测试（新增 9 项插件/无窗口 GUI 测试）、七个示例 schema 验证均通过，release 构建通过。最终应用包 `exports/PluginChartAppFinal/` 已通过 --check-plugins；在项目外目录、PATH 仅含 Windows System32 时再次通过，确认使用包内 Node。初次分发验证曾错误检查未设置的 LASTEXITCODE，已改为依赖安装脚本异常和 npm 进程实际退出码。一次合并测试/构建工具调用达到 60 秒超时，随后独立 release 构建成功（32.53 秒）。没有进行原生窗口视觉或交互验收，也未进行插件性能基准。
+`--check` 校验结构、manifest 和组件契约；`--check-plugins` 执行已引用插件的挂载、SVG 栅格化和卸载。插件包和 Node 由应用提供，需要在实际交付目录检查。当前通用离线回归不安装或运行第三方插件依赖。

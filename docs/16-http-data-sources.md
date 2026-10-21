@@ -88,21 +88,10 @@ onLoad 与 intervalMs 共存时立即请求一次，之后按完成间隔刷新�
 
 JSON 请求 body 与响应大小上限 4MiB；响应有 Content-Length 时先检查，读取时也限制实际字节数。界面 error 不附加完整 URL、请求头或响应 body。认证凭据现通过当前 Windows 用户的 DPAPI 加密存储，app.json 中引用凭据名称；常见认证头拒绝明文/state 配置。录入、轮换和分发规则见 [加密凭据](17-encrypted-credentials.md)。
 
-HTTP 功能编译在运行时中，客户机不需要 Python、curl 或 Node。仅 ECharts 页面需要随包携带插件与 Node。演示服务器使用 Python，属于测试配套，不是引擎依赖。
+HTTP 功能编译在运行时中，客户机不需要 Python、curl 或 Node。使用 ECharts 的页面需要另行随包携带插件与 Node。
 
-## 演示及验证
+## 实现与验证入口
 
-```powershell
-python .\scripts\http-demo-server.py --port 8765
-.\target-http\release\desktop-app-engine.exe --app .\examples\http-chart.json
-```
+传输与响应映射位于 `src/services/http.rs`，请求排程和状态提交位于 `src/runtime/http.rs`。使用实际接口前先通过 `--check` 校验描述；该模式不发送请求。运行应用后按目标接口验证认证、错误处理和刷新行为。
 
-接口地址 `http://127.0.0.1:8765/metrics` 每次返回新的 CPU 与请求数，页面每 2 秒更新两个指标及图表。支持立即请求、暂停、恢复；停止服务器后显示失败并保留已有图表，重启后后续请求恢复。endpoint 状态绑定受到 URL 校验约束，编辑时需粘贴完整有效 URL。
-
-专项通过本地真实 TCP HTTP 接口，覆盖 GET 参数编码/快照、POST/PUT/PATCH/DELETE 的 JSON body、启动不阻塞、重复请求跳过、原子提交及回退、2xx/503/302、超时、非法 JSON、缺字段、类型及组件约束、响应超限、onLoad/轮询/暂停恢复、全局作用域、实际接口驱动 ECharts 像素变化。HTTPS 证书链和真实生产服务尚未实测；原生桌面视觉与实时刷新性能也不在本轮后台验收范围。
-
-首轮测试有间歇发送失败，原因是 Windows 非阻塞监听器接受的连接继承非阻塞模式，测试服务器读取过早结束。显式恢复接受连接为阻塞后 7 项专项通过；修复发生在测试服务器，不引入生产请求重试。最终验证记录见 evidence/http-verification.txt。
-
-本轮 release 实际构建在 `target-http/release/desktop-app-engine.exe`，独立示例包为 `exports/HttpChartApp/`。`target-verify/release` 的旧版本仍被两个预览窗口使用，因此使用独立输出目录构建。运行当前 HTTP 示例请使用 target-http 中的新 EXE 或独立包。
-
-最终 fmt、严格 Clippy、75 项回归（新增 7 项 HTTP 专项）、十个示例 Schema 校验通过，release 构建成功（2 分 45 秒）。独立包 --check-plugins 在项目外目录、PATH 仅含 Windows System32 的条件下退出 0；Python 演示 API 两次实际请求也确认指标与图表数据变化，测试结束关闭演示服务器。
+内联运行时回归覆盖状态批量更新的原子提交和回滚；当前常规离线测试不覆盖实际网络服务、HTTPS 证书链或接口性能。

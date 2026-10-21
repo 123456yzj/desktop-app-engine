@@ -1,17 +1,17 @@
 # 多仓库构建工具
 
-`vben-package` 是独立 Windows 二进制，复用引擎的 0.2 描述、布局、事件和日志。源界面模板位于 `examples/vben-package.json`，原生控制器位于 `src/turbo_build`。正式打包会把本次输入编译进 EXE，不交付外置 `app.json`；开发时可使用 `--app` 调试模板。
+`vben-package` 是独立 Windows 二进制，复用引擎的 0.2 描述、布局、事件和日志。源界面模板位于 `examples/vben-package.json`，原生控制器位于 `src/bin/vben-package/turbo_build/`。正式打包会把本次输入编译进 EXE，不交付外置 `app.json`；开发时可使用 `--app` 调试模板。
 
-工作台通过通用样式字段指定 HTML Demo 的浅色背景、白色仓库面板、深色日志面板、蓝色主按钮、项目色标与分组连接栏。Grid 的 fr 高度将左右面板撑满剩余窗口空间。视觉回归使用真实 egui 绘制网格与字形纹理在 CPU 上生成 1520×900 和 1120×760 预览，不创建或切换系统窗口；预览位于 `tmp-verify/turbo-native-styled.png` 和 `turbo-native-styled-compact.png`。
+工作台通过通用样式字段指定浅色背景、白色仓库面板、深色日志面板、蓝色主按钮、项目色标与分组连接栏。Grid 的 fr 高度将左右面板撑满剩余窗口空间。业务测试使用两种窗口尺寸的无窗口 egui 绘制验证生成界面。
 
 会话日志预览显示扫描进度和仓库分支，扫描与分支列表的结构化 JSON 保留在原始 stdout 文件中，避免大段数据占满面板。构建进程的 stdout/stderr 仍可实时查看。
 
 ```powershell
-.\scripts\package.ps1 -Description .\examples\vben-package.json -Output .\exports\multi-repo -Name vben-package
+.\scripts\package.ps1 -Description .\examples\vben-package.json -Output .\exports\multi-repo -Name vben-package -Runtime vben-package -InstructionsTemplate .\src\bin\vben-package\README.template.txt
 .\exports\multi-repo\vben-package\vben-package.exe --check
 ```
 
-构建和打包共用 `CARGO_TARGET_DIR`；未设置时为 `target`。打包脚本按应用名选择 `vben-package.exe`，也可显式使用 `-Runtime vben-package`。
+构建和打包共用 `CARGO_TARGET_DIR`；未设置时为 `target`。业务运行时通过 `-Runtime vben-package` 显式选择，专属交付说明由业务目录中的模板提供。
 
 初始连接取自编入的 `state.sshTarget` 与 `state.repository`；当前用户保存的连接优先，保存在 `%LOCALAPPDATA%\DesktopAppEngine\apps\<EXE名>\connection.dat`，不回写应用定义。连接无效时打开设置；已有合法配置会自动扫描。认证由本机 OpenSSH 管理，不随包复制密钥。`--check` 仅校验编入的定义；`--inspect` 无窗口执行只读扫描，输出数组包含根仓库（`id: "@root"`，存在时）及业务仓库。
 
@@ -33,4 +33,4 @@ Turbo 根目录有独立 Git 仓库时，顶部连接栏依次显示 SSH 服务�
 
 服务器需 Bash、Node.js、Git、pnpm，以及可供免交互 SSH 加载的环境。本机需 OpenSSH 客户端。扫描并刷新全部仓库分支超时 600 秒，单次只读扫描或仓库操作超时 120 秒，单个构建进程超时 3600 秒。关闭应用会取消本机 SSH 进程，服务器端命令是否退出由 SSH 和远端进程行为决定。
 
-`cargo test --bin vben-package --locked --offline` 使用本机临时 Git 仓库与 SSH 传输替身，实际运行生产 Bash、Node.js 和 Git 逻辑；替身仅替换 pnpm 与缓存删除入口以模拟失败并记录调用。测试不会向正式服务器执行构建。
+`cargo test --bin vben-package --locked --offline` 使用自包含业务模型、临时目录和无窗口渲染，验证构建计划、工作区状态约束、界面生成、连接设置和命令阶段。真实 SSH、Bash、Git 与 pnpm 的集成行为需在目标环境另行验证。

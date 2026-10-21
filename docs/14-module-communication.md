@@ -60,27 +60,6 @@ emit 按动作声明所在的最近 module 选择事件源，payload 支持 lite
 
 输入事件先写局部 state，再执行动作；emit 在该步骤同步调用父级处理动作，然后继续原动作。每次动作独立捕获开始时快照，原动作后续步骤仍读取原快照。处理动作失败会停止后续步骤，之前成功写入保留。调用深度最多 32 层，超过会返回诊断而不是无限递归。处理动作启动 command 时后台执行，emit 不等待进程结束；本次没有新增进程完成回调、watch 或 computed。
 
-## 示例与改动
+## 实现与验证
 
-examples/module-linkage.json：编辑模块局部 draft → 输入 change/publish 按钮 → emit messageChanged → 页面 receiveMessage → sharedMessage → 编辑模块回显及兄弟预览模块 props。不会读取兄弟模块的私有状态。
-
-改动：src/binding.rs、src/v02.rs、src/scope.rs、src/interaction.rs、src/command.rs；docs/description-0.2.schema.json、docs/05-description-format.md、docs/13-module-component.md、README.md；examples/module-linkage.json、tests/module_communication.rs、scripts/schema-verify.py。没有新增依赖。
-
-初次通信测试为 4 passed/2 failed，之后动态监听切换测试为 5 passed/1 failed；已修正动态动作类型声明及推导契约保留，并将错误断言改为检测类型错误。最终专项 9 项测试通过、严格 Clippy 通过。失败尝试不算通过证据。
-
-## 最终验证与产物
-
-增加兄弟模块同名 prop 绑定不同来源测试后，专项为 10 项，完整回归为 59 项。实际命令与结果如下，均退出 0：
-
-| 命令 | 结果 |
-| --- | --- |
-| cargo fmt -- --check | 通过 |
-| cargo clippy --all-targets --locked --offline -- -D warnings | 通过，无警告 |
-| cargo test --locked --offline | 59 passed，0 failed，0 ignored |
-| python scripts/schema-verify.py | 六个 0.2 示例与非法结构用例通过 |
-| cargo build --release --locked --offline | Finished release，20.58s |
-| scripts/package.ps1 -Description examples/module-linkage.json -Output exports -Name ModuleLinkageApp | 导出并 --check 通过 |
-
-新增测试覆盖输入提交时联动、兄弟 props 更新、父级主动更新、只读 props、局部状态不可跨模块读取、父作用域解析、嵌套路径、literal props、载荷契约和 event 指针、动态 on 切换、非法状态更新回退、未监听事件、事件转发及 32 层深度限制，以及真实后台命令接收中文/特殊字符载荷。通过事件提交和组件解析验证，没有进行原生 GUI 鼠标操作。
-
-日志：evidence/module-communication-verification.txt。最新运行时：target-verify/release/desktop-app-engine.exe。独立联动示例包：exports/ModuleLinkageApp/ModuleLinkageApp.exe、app.json、README.txt；此前导出包为各轮历史产物。
+`src/compiler/scope.rs` 解析 props、父级监听动作和 emit 所在模块；事件样例及名称映射保存在 `src/compiler/metadata.rs`。运行时动作读取这些元数据执行同步通信。`src/runtime/tests.rs` 使用内联描述验证父级监听器、共享状态更新和只读 prop。

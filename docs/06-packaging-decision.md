@@ -14,8 +14,8 @@
 每次打包都会用 `DAE_APP_DESCRIPTION` 指向本次实际输入。生成的 Rust 定义进入 EXE，不复制应用描述 JSON，不把固定示例当作传入描述。Cargo 同时跟踪输入路径、输入内容和构建环境变化；应用定义修改后需要重新打包。
 
 ```powershell
-$env:CARGO_TARGET_DIR = "$PWD\target-http"
-.\scripts\package.ps1 -Description .\examples\hello.json -Output .\exports -Name HelloApp
+.\scripts\package.ps1 -Description C:\Apps\monitor.json -Output .\exports -Name Monitor
+.\scripts\package.ps1 -Description .\examples\vben-package.json -Output .\exports -Name BuildWorkbench -Runtime vben-package -InstructionsTemplate .\src\bin\vben-package\README.template.txt
 ```
 
 制作端需要 Rust/Cargo 和已缓存的锁定依赖，脚本执行 `cargo build --release --bin <运行时> --locked --offline`。`CARGO_TARGET_DIR` 指定编译缓存目录，默认使用项目 `target`。脚本在编译后复制应用 EXE、按需复制插件基础件，生成 README 并执行包内 `--check` 或 `--check-plugins`。应用名称默认取描述的 `app.name`；可通过 `-Name` 指定有效 Windows 文件名，已有目录拒绝覆盖。失败返回 2。
@@ -36,8 +36,10 @@ $env:CARGO_TARGET_DIR = "$PWD\target-http"
 
 Turbo 构建工具的连接设置保存在 `%LOCALAPPDATA%\DesktopAppEngine\apps\<EXE名>\connection.dat`。该文件采用带版本标识的二进制格式，独立保存用户修改的 SSH 地址和工作区路径，不回写源描述或应用 EXE。首次启动使用编入的初始连接；后续读取当前用户保存的连接设置。设置先校验、写临时文件并同步，再替换正式文件；保存失败不更改当前连接。`--check` 不读取连接覆盖、不发起远端操作。任务日志继续写入用户日志目录。
 
-开发构建未指定 `DAE_APP_DESCRIPTION` 时，保留 `--app FILE`、同目录 `app.json`、开发示例的加载顺序，方便编辑器和测试调试。该开发加载规则不适用于打包 EXE。
+开发构建未指定 `DAE_APP_DESCRIPTION` 时，依次使用 `--app FILE`、EXE 同目录 `app.json`；缺少描述时报错。构建工作台的默认模板由业务二进制持有。该开发加载规则不适用于打包 EXE。
 
 ## 验证
 
-`python scripts/verify-compiled-package.py` 实际编译多个不同应用，覆盖 0.1、0.2、同一路径更新输入、源文件移除后运行、邻近 JSON 无法覆盖、拒绝 `--app` 以及后续构建不影响先前应用。输出位于 `tmp-verify`。Turbo 原生测试覆盖连接设置持久化、重复保存、坏文件与无效保存恢复。
+通用脚本默认运行时为 `desktop-app-engine`，通过 `-Runtime` 显式选择二进制，不根据应用名称推断业务类型。`-InstructionsTemplate` 可指定交付说明，其中 `{{Name}}` 替换为导出名称。
+
+每次打包后执行包内校验。自动化测试覆盖编译结果与原始输入的边界、运行时校验、业务生成描述、构建计划和连接设置；交付环境应补充启动及外部资源检查。

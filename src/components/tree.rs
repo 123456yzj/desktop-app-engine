@@ -8,6 +8,7 @@ pub struct ComponentNode {
     pub parent: Option<NodeId>,
     pub children: Vec<NodeId>,
     pub spec: Node,
+    pub(crate) metadata: crate::compiler::NodeMetadata,
 }
 pub struct Tree {
     pub nodes: Vec<ComponentNode>,
@@ -23,8 +24,13 @@ pub struct Resolved {
     pub value: Option<serde_json::Value>,
 }
 impl Tree {
-    pub fn new(root: &Node) -> Self {
-        fn add(tree: &mut Tree, spec: &Node, parent: Option<NodeId>) -> NodeId {
+    pub(crate) fn new(root: &Node, metadata: &crate::compiler::Metadata) -> Self {
+        fn add(
+            tree: &mut Tree,
+            spec: &Node,
+            parent: Option<NodeId>,
+            metadata: &crate::compiler::Metadata,
+        ) -> NodeId {
             let id = tree.nodes.len();
             let mut shallow = spec.clone();
             shallow.children.clear();
@@ -32,15 +38,16 @@ impl Tree {
                 parent,
                 children: vec![],
                 spec: shallow,
+                metadata: metadata.nodes[&spec.id].clone(),
             });
             for child in &spec.children {
-                let c = add(tree, &child.0, Some(id));
+                let c = add(tree, &child.0, Some(id), metadata);
                 tree.nodes[id].children.push(c);
             }
             id
         }
         let mut tree = Self { nodes: vec![] };
-        add(&mut tree, root, None);
+        add(&mut tree, root, None, metadata);
         tree
     }
     pub fn resolve(&self, state: &State) -> Result<Vec<Resolved>, String> {

@@ -1,4 +1,4 @@
-use crate::description::{Component, Description, Property, Step};
+use super::description::{Component, Description, Property, Step};
 use std::collections::HashSet;
 
 pub const MAX_STRING_BYTES: usize = 65_536;

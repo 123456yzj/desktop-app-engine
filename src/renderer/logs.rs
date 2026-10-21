@@ -1,5 +1,5 @@
 //! Shared host diagnostics, independent of business state and JSON output parsing.
-use desktop_app_engine::logging;
+use crate::logging;
 use eframe::egui;
 use std::sync::atomic::Ordering;
 

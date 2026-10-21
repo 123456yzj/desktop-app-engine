@@ -27,23 +27,4 @@ module 具有纵向容器布局、尺寸约束、gap/padding、对齐、滚动�
 
 这是组件实例的作用域封装。现已增加 props/emit/on 通信，详见 [模块通信](14-module-communication.md)。尚未提供 Vue 的模板注册/复用、computed、watch 或 JavaScript 执行环境；隐藏模块保留状态，无动态卸载生命周期。模块组件不依赖前端框架。
 
-示例 examples/modules.json 用 module 封装页面和两个独立模块，卡片位于模块内部。同一个按钮“下一步 → 提交 → 已提交”，模块 A 的操作不影响模块 B。
-
-改动：src/v02.rs（Module 类型和严格字段校验）、src/scope.rs（局部作用域声明）、docs/description-0.2.schema.json、examples/modules.json、tests/module.rs、scripts/schema-verify.py、README.md、docs/05-description-format.md。现有布局和绘制已支持纵向容器路径，module 复用该路径。
-
-## 验证与产物
-
-本地 GNU 离线工具链，以下实际命令均退出 0：
-
-| 命令 | 结果 |
-| --- | --- |
-| cargo fmt -- --check | 通过 |
-| cargo clippy --all-targets --locked --offline -- -D warnings | 通过，无警告 |
-| cargo test --locked --offline | 49 passed，0 failed，0 ignored（module 新增 4 项） |
-| python scripts/schema-verify.py | 模块及已有示例、非法 module 字段/事件验证通过 |
-| cargo build --release --locked --offline | Finished release，21.93s |
-| scripts/package.ps1 -Description examples/modules.json -Output exports -Name ModuleApp | 导出与独立包 --check 通过 |
-
-模块测试覆盖真实布局矩形、动态按钮属性更新、同名状态/动作独立、嵌套继承与遮蔽、空模块、父级禁用传播、非法专属字段/事件及跨作用域引用。测试通过后台事件和布局接口，不操作鼠标或切换窗口。日志：evidence/module-verification.txt。
-
-最新运行时：target-verify/release/desktop-app-engine.exe。示例包：exports/ModuleApp/ModuleApp.exe、app.json、README.txt；先前导出包不自动替换。
+类型与结构解析位于 `src/protocol/v02/`，作用域编译位于 `src/compiler/scope.rs`。内联模块回归位于 `src/runtime/tests.rs`，使用实际 Runtime 验证同名状态和动作隔离。

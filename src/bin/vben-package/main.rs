@@ -1,8 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-#[path = "../turbo_build/mod.rs"]
 mod turbo_build;
 
-use desktop_app_engine::{gui, gui_v02::DashboardApp, logging, v02};
+use desktop_app_engine::{
+    protocol::v02,
+    renderer::{self as gui, DashboardApp},
+    services::logging,
+};
 use eframe::egui;
 use serde_json::Value;
 use std::{
@@ -119,6 +122,13 @@ impl eframe::App for App {
         }
     }
 }
+fn parse_template(text: &str, base: &std::path::Path) -> Result<(v02::Description, Value), String> {
+    let description = v02::parse(text)?;
+    desktop_app_engine::compiler::compile_at(description.clone(), base)?;
+    let template = serde_json::from_str(text).map_err(|e| e.to_string())?;
+    Ok((description, template))
+}
+
 fn run() -> Result<(), String> {
     let mut path = None;
     let mut check = false;
@@ -146,13 +156,17 @@ fn run() -> Result<(), String> {
     } else if let Some(path) = &path {
         std::fs::read(path).map_err(|e| format!("读取 app.json 失败: {e}"))?
     } else {
-        include_bytes!("../../examples/vben-package.json").to_vec()
+        include_bytes!("../../../examples/vben-package.json").to_vec()
     };
     let text = std::str::from_utf8(&bytes)
         .map_err(|e| e.to_string())?
         .trim_start_matches('\u{feff}');
-    let description = v02::parse(text)?;
-    let template: Value = serde_json::from_str(text).map_err(|e| e.to_string())?;
+    let resource_base = path
+        .as_deref()
+        .and_then(std::path::Path::parent)
+        .unwrap_or(&base)
+        .to_owned();
+    let (description, template) = parse_template(text, &resource_base)?;
     let mut connection = Connection {
         host: description
             .state
@@ -180,7 +194,7 @@ fn run() -> Result<(), String> {
         prefix_args: vec![],
     };
     let mut model = Controller::new(connection, backend, Some(settings_path));
-    view::document(&template, &model)?;
+    desktop_app_engine::compiler::compile_at(view::document(&template, &model)?, &resource_base)?;
     if check {
         println!("多仓库打包应用校验通过");
         return Ok(());
@@ -243,4 +257,15 @@ fn main() {
         std::process::exit(2);
     }
     logging::event("INFO", "app.exit", serde_json::json!({"exitCode":0}));
+}
+
+#[cfg(test)]
+mod template_tests {
+    #[test]
+    fn template_loading_rejects_semantically_invalid_window() {
+        let mut template: serde_json::Value =
+            serde_json::from_slice(include_bytes!("../../../examples/vben-package.json")).unwrap();
+        template["app"]["window"]["width"] = serde_json::json!(1);
+        assert!(super::parse_template(&template.to_string(), std::path::Path::new(".")).is_err());
+    }
 }

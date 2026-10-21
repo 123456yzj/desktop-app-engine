@@ -1,5 +1,5 @@
 use super::{Active, Controller, LogView, Repo, Status};
-use desktop_app_engine::v02;
+use desktop_app_engine::protocol::v02;
 use serde_json::{Value, json};
 
 fn literal(value: impl Into<Value>) -> Value {
@@ -396,7 +396,7 @@ pub fn document_json(template: &Value, model: &Controller) -> Result<Value, Stri
                         } else if let Some(task) = &job.task {
                             format!(
                                 " · {:.1} 秒",
-                                desktop_app_engine::logging::now_ms()
+                                desktop_app_engine::services::logging::now_ms()
                                     .saturating_sub(task.started_ms)
                                     as f64
                                     / 1000.0

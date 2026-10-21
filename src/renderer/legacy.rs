@@ -1,6 +1,6 @@
-use desktop_app_engine::{
+use crate::{
     description::{Component, Property},
-    engine::Engine,
+    runtime::Engine,
     validation::MAX_STRING_BYTES,
 };
 use eframe::egui;

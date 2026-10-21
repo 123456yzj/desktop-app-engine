@@ -65,7 +65,7 @@ row 支持换行，column 纵向排列；内容使用垂直滚动，文本自动
 
 ## 协议 0.2
 
-结构 schema：[description-0.2.schema.json](description-0.2.schema.json)，Draft 2020-12。运行时还进行状态类型、唯一 ID、引用、数据列、行键和坐标等语义校验。schema 不代替运行时；`scripts/schema-verify.py` 使用本机已有 jsonschema 验证器离线检查示例与结构错误。
+结构 schema：[description-0.2.schema.json](description-0.2.schema.json)，Draft 2020-12。编译器还进行状态类型、唯一 ID、引用、数据列、行键和坐标等语义校验。schema 不代替完整编译校验；运行应用的 `--check` 验证描述和引用资源。
 
 顶层 schemaVersion、app、state、root、actions 均必填，可选 plugins 数组声明启用包名，dataSources 对象声明 HTTP JSON 接口；schemaVersion 固定 `"0.2"`。app/window 沿用 0.1。所有结构对象拒绝未知字段；组件只接受该类型的专属字段。表格行对象和用户业务状态对象的字段由数据声明消费，不采用任意表达式。
 
@@ -87,7 +87,7 @@ format：`{"type":"number|percent|text","precision":0,"unit":""}`，字段缺省
 
 加载时将局部引用解析为内部唯一键；`@scope/` 是状态/动作名称的保留前缀，配置不得使用。宿主集成可通过 Runtime::state_from(componentId,key) 和 set_from(componentId,key,value) 按组件上下文访问状态，不需要拼接内部名称。该隔离是描述与事件的访问规则，不是操作系统或任意宿主代码的安全沙箱。
 
-示例：[scoped-state.json](../examples/scoped-state.json)；实施说明：[12-scoped-state.md](12-scoped-state.md)。页面/模块是容器树中的作用域，目前没有独立路由或动态卸载生命周期。
+配置片段与规则见 [作用域](12-scoped-state.md)。页面/模块是容器树中的作用域，目前没有独立路由或动态卸载生命周期。
 
 ### 组件公共属性
 
@@ -151,7 +151,7 @@ actions.steps 非空。set 的 value 可为任意已匹配类型的绑定；conc
 
 ### 模块通信（0.2）
 
-module.props 在父作用域解析，内部用 `{"kind":"prop","key":"message","path":""}` 读取；props 只读，不可作为 set/concat/command 的 target 或 input.value。module.emits 用 JSON 样本声明事件载荷类型，module.on 将事件绑定到父级动作。内部动作通过 `{"type":"emit","event":"changed","payload":{"kind":"state","key":"draft"}}` 发出数据，父级处理动作通过 `{"kind":"event","path":""}` 或对象字段路径读取载荷。event 只用于处理动作步骤，不可用于界面属性。处理动作可用可选 eventPayload 样本声明类型，适用于尚未激活的动态监听动作。emit 同步执行父级处理动作，调用深度上限 32，原动作仍保持开始时快照。完整协议与限制见 [模块通信](14-module-communication.md)，示例 [module-linkage.json](../examples/module-linkage.json)。
+module.props 在父作用域解析，内部用 `{"kind":"prop","key":"message","path":""}` 读取；props 只读，不可作为 set/concat/command 的 target 或 input.value。module.emits 用 JSON 样本声明事件载荷类型，module.on 将事件绑定到父级动作。内部动作通过 `{"type":"emit","event":"changed","payload":{"kind":"state","key":"draft"}}` 发出数据，父级处理动作通过 `{"kind":"event","path":""}` 或对象字段路径读取载荷。event 只用于处理动作步骤，不可用于界面属性。处理动作可用可选 eventPayload 样本声明类型，适用于尚未激活的动态监听动作。emit 同步执行父级处理动作，调用深度上限 32，原动作仍保持开始时快照。完整协议与配置片段见 [模块通信](14-module-communication.md)。
 
 ### 可安装插件（0.2）
 
@@ -172,7 +172,7 @@ style 额外支持 `primary` 和 `onPrimary`，用于主操作按钮背景与前
 button 的 `events.click` 指向包含 `command` 步骤的动作：
 
 ```json
-{"type":"command","program":"python","args":["scripts/task.py",{"kind":"state","key":"input"}],"cwd":".","timeoutMs":60000,"target":"job"}
+{"type":"command","program":"python","args":["task.py",{"kind":"state","key":"input"}],"cwd":".","timeoutMs":60000,"target":"job"}
 ```
 
 `program` 为程序名或路径；`args` 缺省为空，每个参数为字符串或解析为字符串的 literal/state 绑定，点击时取快照。参数逐项传给进程，不执行 shell 拼接；需要 CMD/PowerShell 时显式指定 `cmd.exe`/`powershell.exe` 及参数。程序名通过系统搜索路径查找；含目录的相对程序路径以描述目录为基准。`cwd` 缺省描述目录，相对 cwd 同样以描述目录为基准；`--app` 使用该 JSON 所在目录，默认加载使用 EXE 所在目录。脚本文件参数由被调用程序按 cwd 解析。
@@ -187,10 +187,10 @@ button 的 `events.click` 指向包含 `command` 步骤的动作：
 
 同一 target 正在执行时拒绝重复启动，其他 target 可以并行执行。command 步骤启动后立即继续后续步骤，不等待完成，后续步骤仍读取动作开始时快照。完成结果由 GUI 更新线程写回，不在后台线程修改业务状态。输出在结束时更新，每条流保留前 16384 字节，继续消费超出部分避免管道堵塞；以 UTF-8 解码，非法字节替换。继承输出管道的后代进程不会使结果提交无限等待；结束后最多为两条流各等待 100ms。非零退出码通过结果状态报告。
 
-可运行示例：[command.json](../examples/command.json) 和 [command-demo.ps1](../examples/command-demo.ps1)。分发时将脚本随应用复制，并按实际目录配置 cwd/args。`--check` 只校验描述，不执行命令或检查程序是否安装。
+上述 `task.py` 表示应用自行提供的脚本。分发时将所需脚本随应用复制，并按实际目录配置 cwd/args。`--check` 只校验描述，不执行命令或检查程序是否安装。
 
 ### 运行与任务日志
 
 0.1/0.2 桌面宿主均提供底部“日志与任务”和“打开日志目录”。命令 stdout/stderr 按原始字节持续写文件，窗口独立显示每条流最近 32 KiB，不影响命令结果状态。0.2 可使用 `{"type":"openLogs"}` 动作步骤打开同一窗口，无参数，不读取或修改业务状态。运行日志按 EXE 名和启动会话保存，完整位置、文件和错误边界见 [运行与任务日志](19-runtime-logs.md)。
 
-完整示例：[dashboard.json](../examples/dashboard.json)。实施和实际验收：[09-component-implementation.md](09-component-implementation.md)。
+组件实现与当前验证范围见 [组件实现](09-component-implementation.md)。

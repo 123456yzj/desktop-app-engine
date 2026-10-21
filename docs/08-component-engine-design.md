@@ -18,15 +18,14 @@
 
 | 已有实现 | 位置 | 后续约束 |
 | --- | --- | --- |
-| 五种组件、字符串状态、literal/state 属性 | src/description.rs | 0.1 独立解析，禁止向其中静默加入字段 |
-| JSON 类型解析、严格字段与语义校验 | src/loader.rs、src/validation.rs | 错误继续包含字段路径、ID 和原因 |
-| 输入快照、动作队列、set/concat | src/engine.rs | 0.1 快照及顺序写入语义保持 |
-| 递归即时布局与绘制 | src/gui.rs | 逐步替换内部实现，先验证等价行为 |
-| 系统字体、系统主题、单次布局通道 | src/gui.rs、src/main.rs | 中文和亮暗主题保持；测量不能触发动作 |
-| 固定运行时加 app.json | docs/06-packaging-decision.md | 编辑描述不编译 Rust，客户机无制作工具 |
+| 五种组件、字符串状态、literal/state 属性 | src/protocol/v01/ | 0.1 独立解析，禁止向其中静默加入字段 |
+| JSON 类型解析、严格字段与语义校验 | src/protocol/、src/compiler/ | 错误继续包含字段路径、ID 和原因 |
+| 输入快照、动作队列、set/concat | src/runtime/ | 快照及顺序写入语义保持 |
+| 递归即时布局与绘制 | src/renderer/legacy.rs | 逐步替换内部实现，先验证等价行为 |
+| 系统字体、系统主题、单次布局通道 | src/renderer/、src/main.rs | 中文和亮暗主题保持；测量不能触发动作 |
+| 应用定义编译进 EXE | docs/06-packaging-decision.md | 每次导出编译对应定义，客户机无制作工具 |
 
-必须持续回归：description 5 项、engine 6 项、external 1 项和 loading 1 项，共 13 项。
-只验证 --check 不代表 GUI 已验收；空白截图不算证据。原项目 fixture 权限受阻属于环境限制，不能据此修改协议语义。
+核心行为回归使用内联描述和临时目录，验证解析、作用域、状态、事件及业务界面。只验证 --check 不代表 GUI 已验收，无窗口绘制也不代替客户机视觉和交互检查。
 
 ## 3. 参考项目中提炼的逻辑与取舍
 
@@ -198,7 +197,7 @@ schema 检查结构；唯一 ID、state 引用和 action 引用等跨节点语�
 
 ### 7.4 Dashboard 描述草案
 
-以下为早期 0.2 草案。运行时已支持该组件体系，正式完整 Dashboard（四指标、趋势、分组柱图、明细表）见 [examples/dashboard.json](../examples/dashboard.json)。下面草案将 progress 放入 grid，虽合法但不代表正式看板排版。
+以下为早期 0.2 草案。运行时已支持该组件体系，当前契约以 [描述格式](05-description-format.md) 为准。下面草案将 progress 放入 grid，虽合法但不代表正式看板排版。
 
 ```json
 {
@@ -309,21 +308,19 @@ hover 在屏幕空间用约 6 point 容差查找点/线段；断点不参与连�
 
 ## 11. 模块规划
 
-在现有 crate 内逐步拆分，不先增加工作区或发布新包：
+在现有 crate 内按以下边界组织；当前实现与公开入口见 [架构](02-architecture.md)：
 
 ```text
 src/
-  description/   # v01、v02、版本分派；迁移时替换现有同名文件
-  component/     # node、公共属性、强类型解析结果
-  layout/        # geometry、constraints、flex、grid、scroll、cache
-  paint/         # 绘制命令、egui 适配、theme、accessibility
-  interaction/   # hit、focus、capture、事件收集
-  widgets/       # text、button、card、metric、badge、progress
-  table/         # model、columns、virtual_rows、state、paint
-  chart/         # model、axis、transform、ticks、series、hit、paint
-  binding/       # state 类型、pointer、依赖索引、format
-  engine.rs      # 动作与状态提交，保持 0.1 兼容
-  gui.rs         # 帧流程宿主与字体/主题安装
+  protocol/      # v01/v02 原始描述、公共字段、绑定和结构解析
+  compiler/      # 名称与作用域解析、语义校验、私有编译元数据
+  components/    # 节点树、表格和图表算法
+  layout.rs      # 几何、约束、布局与测量
+  runtime/       # 状态提交、动作、事件与异步任务调度；保留 legacy
+  services/      # 命令、HTTP、插件、凭据与日志
+  renderer/      # egui 宿主、主题、文本、图表绘制和输入收集
+  loader.rs      # 版本分派、应用输入路径和编译入口
+  bin/vben-package/ # 构建工作台业务入口及控制器
 ```
 
 基础几何、布局、刻度、虚拟区间和绑定算法不能依赖 egui::Ui；可在无窗口环境测试。绘制通过窄接口对接宿主。
@@ -352,7 +349,7 @@ src/
 性能目标是待测目标，不是承诺：参考机 release、1920×1080 下，Dashboard 交互帧 CPU P95 目标 <=16ms；表格绘制调用数随可见行而非总行数增长。
 单调 X 大图降采样需在数据/视口变化时计算并缓存，记录原点数、输出点数、耗时、机器和构建版本；不能只报告“流畅”。
 每阶段运行 fmt、Clippy、离线锁定测试与发布构建。GUI 截图须检查有可见文字和控件，并通过实际输入/点击验证，不仅检测像素非纯色。
-不自动勾选旧 GUI 待办；完整测试权限失败与功能失败分别记录。产物继续使用固定运行时 + app.json。
+不自动勾选旧 GUI 待办；完整测试权限失败与功能失败分别记录。交付产物使用编入应用定义的 EXE，制作端 JSON 修改后重新打包，详见 [分发决策](06-packaging-decision.md)。
 
 ## 13. 持续开发记录模板
 

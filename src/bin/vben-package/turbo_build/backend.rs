@@ -1,4 +1,4 @@
-use desktop_app_engine::{command, logging};
+use desktop_app_engine::services::{command, logging};
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
 use std::{

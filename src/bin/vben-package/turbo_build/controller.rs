@@ -1,14 +1,9 @@
-pub mod backend;
-pub mod settings;
-#[cfg(test)]
-mod tests;
-pub mod view;
-
-use backend::{
+use super::backend::{
     Backend, Branches, Connection, Finished, Operation, Project, ROOT_ID, Scan, Snapshot,
     repository_label,
 };
-use desktop_app_engine::{interaction::UiEvent, logging};
+use super::{backend, settings};
+use desktop_app_engine::{runtime::UiEvent, services::logging};
 use std::{
     collections::{BTreeMap, BTreeSet},
     path::PathBuf,

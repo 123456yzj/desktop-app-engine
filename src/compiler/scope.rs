@@ -1,4 +1,6 @@
 //! Resolve lexical module names once, before runtime. Internal names cannot be authored.
+use super::metadata::ActionMetadata;
+use super::{CompiledDescription, Metadata};
 use crate::{
     binding::{Binding, State},
     v02::{Action, Description, EventAction, Kind, Node, Step},
@@ -97,18 +99,12 @@ fn action(mut action: Action, names: &Names) -> Result<Action, String> {
                     *target = write_target(target, names)?;
                 }
             }
-            Step::Emit {
-                module,
-                payload,
-                event,
-            } => {
+            Step::Emit { payload, event } => {
                 valid_name(event)?;
-                *module = Some(
-                    names
-                        .module
-                        .clone()
-                        .ok_or("emit 动作必须声明在 module 内")?,
-                );
+                names
+                    .module
+                    .as_ref()
+                    .ok_or("emit 动作必须声明在 module 内")?;
                 binding(payload, names, true)?;
             }
             Step::Set { target, value } | Step::ParseJson { target, value } => {
@@ -142,7 +138,10 @@ fn action(mut action: Action, names: &Names) -> Result<Action, String> {
     Ok(action)
 }
 
-pub fn compile(mut d: Description) -> Result<Description, String> {
+pub(super) fn compile(
+    mut d: Description,
+    mut metadata: Metadata,
+) -> Result<CompiledDescription, String> {
     let names = Names {
         state: d
             .state
@@ -178,6 +177,9 @@ pub fn compile(mut d: Description) -> Result<Description, String> {
         }
     }
     for (id, a) in std::mem::take(&mut d.actions) {
+        metadata
+            .actions
+            .insert(id.clone(), ActionMetadata::default());
         actions.insert(id, action(a, &names)?);
     }
     fn node(
@@ -187,6 +189,7 @@ pub fn compile(mut d: Description) -> Result<Description, String> {
         actions: &mut BTreeMap<String, Action>,
         ids: &mut HashSet<String>,
         depth: usize,
+        metadata: &mut Metadata,
     ) -> Result<(), String> {
         if depth > 64 || n.id.trim().is_empty() || !ids.insert(n.id.clone()) {
             return Err("ID 为空、重复组件 ID 或深度超过 64".into());
@@ -221,7 +224,7 @@ pub fn compile(mut d: Description) -> Result<Description, String> {
                 names.state.remove(key);
             }
         }
-        n.listener_action_names = parent.actions.clone();
+        metadata.nodes.get_mut(&n.id).unwrap().listener_action_names = parent.actions.clone();
         for (name, sample) in &n.emits {
             valid_name(name)?;
             crate::binding::ValueType::of(sample)?;
@@ -245,10 +248,18 @@ pub fn compile(mut d: Description) -> Result<Description, String> {
             names.actions.insert(id.clone(), internal(&n.id, id));
         }
         for (id, a) in local_actions {
+            metadata.actions.insert(
+                names.actions[&id].clone(),
+                ActionMetadata {
+                    module: names.module.clone(),
+                    ..Default::default()
+                },
+            );
             actions.insert(names.actions[&id].clone(), action(a, &names)?);
         }
-        n.action_names = names.actions.clone();
-        n.state_names = names.state.clone();
+        let node_metadata = metadata.nodes.get_mut(&n.id).unwrap();
+        node_metadata.action_names = names.actions.clone();
+        node_metadata.state_names = names.state.clone();
         if matches!(n.kind, Kind::Input | Kind::Select)
             && matches!(n.value, Some(Binding::Prop { .. }))
         {
@@ -277,8 +288,16 @@ pub fn compile(mut d: Description) -> Result<Description, String> {
             event(e, &names, state)?;
         }
         for child in &mut n.children {
-            node(&mut child.0, &names, state, actions, ids, depth + 1)
-                .map_err(|e| format!("组件 {:?}: {e}", child.0.id))?;
+            node(
+                &mut child.0,
+                &names,
+                state,
+                actions,
+                ids,
+                depth + 1,
+                metadata,
+            )
+            .map_err(|e| format!("组件 {:?}: {e}", child.0.id))?;
         }
         Ok(())
     }
@@ -289,27 +308,28 @@ pub fn compile(mut d: Description) -> Result<Description, String> {
         &mut actions,
         &mut HashSet::new(),
         0,
+        &mut metadata,
     )?;
     d.actions = actions;
     // Retain initial listener contracts when a dynamic listener switches away later.
-    fn infer(
-        n: &Node,
-        state: &State,
-        actions: &mut BTreeMap<String, Action>,
-    ) -> Result<(), String> {
+    fn infer(n: &Node, state: &State, metadata: &mut Metadata) -> Result<(), String> {
         for (name, sample) in &n.emits {
-            if let Some(id) = crate::v02::listener(n, name, state)? {
-                let action = actions
+            if let Some(id) = super::listener(n, metadata, name, state)? {
+                let action = metadata
+                    .actions
                     .get_mut(&id)
                     .ok_or_else(|| format!("on.{name}: 未定义动作 {id:?}"))?;
                 action.event_samples.push(sample.clone());
             }
         }
         for c in &n.children {
-            infer(&c.0, state, actions)?;
+            infer(&c.0, state, metadata)?;
         }
         Ok(())
     }
-    infer(&d.root, &d.state, &mut d.actions)?;
-    Ok(d)
+    infer(&d.root, &d.state, &mut metadata)?;
+    Ok(CompiledDescription {
+        description: d,
+        metadata,
+    })
 }

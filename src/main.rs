@@ -1,8 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
-use desktop_app_engine::{gui, gui_v02};
-
-use desktop_app_engine::{engine::Engine, loader};
+use desktop_app_engine::{
+    loader, renderer as gui,
+    renderer::DashboardApp,
+    runtime::{Engine, Runtime},
+    services::{credentials, logging},
+};
 use eframe::egui;
 use std::path::PathBuf;
 
@@ -56,7 +59,7 @@ fn options() -> Result<Options, String> {
                         .next()
                         .and_then(|s| s.into_string().ok())
                         .ok_or("凭据管理命令缺少名称")?;
-                    desktop_app_engine::credentials::valid_name(&name)?;
+                    credentials::valid_name(&name)?;
                     if arg == "--credential-set" {
                         CredentialAction::Set(name)
                     } else {
@@ -109,24 +112,23 @@ fn run() -> Result<(), String> {
             let loader::Document::V02(d) = loader::load_document(options.path.as_deref())? else {
                 return Err("凭据管理需要 --credential-store 或 0.2 app.json".into());
             };
-            d.credential_store
+            d.credential_namespace()
                 .ok_or("app.json 未配置 credentialStore")?
+                .to_owned()
         };
-        let store = desktop_app_engine::credentials::Store::new(&namespace)?;
+        let store = credentials::Store::new(&namespace)?;
         match action {
             CredentialAction::Set(name) => {
                 use std::io::{IsTerminal, Read};
                 if std::io::stdin().is_terminal() {
-                    return Err(
-                        "凭据仅从标准输入读取，请使用 scripts/set-credential.ps1 的隐藏输入".into(),
-                    );
+                    return Err("凭据仅从重定向的标准输入读取，请由隐藏输入界面传入".into());
                 }
                 let mut bytes = zeroize::Zeroizing::new(Vec::new());
                 std::io::stdin()
-                    .take(desktop_app_engine::credentials::MAX_SECRET as u64 + 3)
+                    .take(credentials::MAX_SECRET as u64 + 3)
                     .read_to_end(&mut bytes)
                     .map_err(|_| "读取凭据输入失败")?;
-                if bytes.len() > desktop_app_engine::credentials::MAX_SECRET + 2 {
+                if bytes.len() > credentials::MAX_SECRET + 2 {
                     return Err("凭据输入超限".into());
                 }
                 let text = std::str::from_utf8(&bytes).map_err(|_| "凭据输入必须是 UTF-8")?;
@@ -156,7 +158,7 @@ fn run() -> Result<(), String> {
         );
     }
     let description = loader::load_document(options.path.as_deref())?;
-    desktop_app_engine::logging::event(
+    logging::event(
         "INFO",
         "app.loaded",
         serde_json::json!({"name":description.app().name}),
@@ -171,43 +173,18 @@ fn run() -> Result<(), String> {
         })
         .transpose()?;
     if options.check {
-        if options.check_credentials
+        if (options.check_credentials || options.check_plugins)
             && let loader::Document::V02(d) = &description
         {
-            let store = d
-                .credential_store
-                .as_deref()
-                .map(desktop_app_engine::credentials::Store::new)
-                .transpose()?;
-            let mut checked = std::collections::BTreeSet::new();
-            for source in d.data_sources.values() {
-                for header in source.headers.values() {
-                    if let desktop_app_engine::http::HeaderArgument::Credential(
-                        desktop_app_engine::http::CredentialHeader::Credential { name, .. },
-                    ) = header
-                        && checked.insert(name)
-                    {
-                        let secret = store.as_ref().ok_or("缺少 credentialStore")?.get(name)?;
-                        let _ = reqwest::header::HeaderValue::from_str(&secret)
-                            .map_err(|_| "凭据无法作为 HTTP 请求头")?;
-                        println!("凭据可解密: {name}");
-                    }
+            let runtime = Runtime::from_compiled((**d).clone())?;
+            if options.check_credentials {
+                for name in runtime.check_credentials()? {
+                    println!("凭据可解密: {name}");
                 }
             }
-        }
-        if options.check_plugins
-            && let loader::Document::V02(d) = &description
-        {
-            let runtime = desktop_app_engine::interaction::Runtime::new((**d).clone())?;
-            for node in &runtime.tree.nodes {
-                if let Some(r) = &node.spec.registration {
-                    let mut rpc = desktop_app_engine::plugin::Rpc::start(r)?;
-                    let result = rpc.request(&serde_json::json!({"op":"mount","component":r.component,"props":desktop_app_engine::v02::plugin_props(&node.spec,&runtime.state)?,"width":800,"height":400}))?;
-                    if let Some(svg) = result.get("svg").and_then(serde_json::Value::as_str) {
-                        desktop_app_engine::plugin::rasterize(svg)?;
-                    }
-                    rpc.request(&serde_json::json!({"op":"unmount","component":r.component}))?;
-                    println!("插件执行与渲染校验通过: {}", node.spec.id);
+            if options.check_plugins {
+                for id in runtime.check_plugins()? {
+                    println!("插件执行与渲染校验通过: {id}");
                 }
             }
         }
@@ -234,7 +211,7 @@ fn run() -> Result<(), String> {
             match description {
                 loader::Document::V01(d) => Ok(Box::new(gui::DesktopApp::new(Engine::new(d)?))),
                 loader::Document::V02(d) => {
-                    let mut app = gui_v02::DashboardApp::new(*d)?;
+                    let mut app = DashboardApp::from_compiled(*d)?;
                     if let Some(base) = command_base {
                         app.set_command_base(base);
                     }
@@ -247,10 +224,10 @@ fn run() -> Result<(), String> {
 }
 
 fn main() {
-    let _ = desktop_app_engine::logging::global();
+    let _ = logging::global();
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
-        desktop_app_engine::logging::event(
+        logging::event(
             "ERROR",
             "app.panic",
             serde_json::json!({"message":info.to_string(),"backtrace":std::backtrace::Backtrace::force_capture().to_string()}),
@@ -258,11 +235,7 @@ fn main() {
         previous(info);
     }));
     if let Err(error) = run() {
-        desktop_app_engine::logging::event(
-            "ERROR",
-            "app.failed",
-            serde_json::json!({"error":error}),
-        );
+        logging::event("ERROR", "app.failed", serde_json::json!({"error":error}));
         eprintln!("{error}");
         if !std::env::args_os().any(|arg| {
             arg == "--check"
@@ -275,7 +248,7 @@ fn main() {
         }
         std::process::exit(2);
     }
-    desktop_app_engine::logging::event("INFO", "app.exit", serde_json::json!({"exitCode":0}));
+    logging::event("INFO", "app.exit", serde_json::json!({"exitCode":0}));
 }
 
 fn show_error(error: &str) {

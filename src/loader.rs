@@ -1,107 +1,79 @@
-use crate::{EXAMPLE, description::Description, validation};
+//! Select an input document and resolve its resources relative to its own directory.
+use crate::{
+    compiler::{self, CompiledDescription},
+    protocol::{App, v01, v02},
+    validation,
+};
 use std::path::Path;
 
 #[derive(Debug)]
 pub enum Document {
-    V01(Description),
-    V02(Box<crate::v02::Description>),
+    V01(v01::Description),
+    V02(Box<CompiledDescription>),
 }
 impl Document {
-    pub fn app(&self) -> &crate::description::App {
+    pub fn app(&self) -> &App {
         match self {
             Self::V01(d) => &d.app,
-            Self::V02(d) => &d.app,
+            Self::V02(d) => d.app(),
         }
     }
 }
+
 pub fn parse_document(source: &str) -> Result<Document, String> {
+    parse_document_at(source, &std::env::current_dir().map_err(|e| e.to_string())?)
+}
+
+pub fn parse_document_at(source: &str, base: &Path) -> Result<Document, String> {
+    let source = source.trim_start_matches('\u{feff}');
     let raw: serde_json::Value = serde_json::from_str(source).map_err(|e| format!("JSON: {e}"))?;
-    match raw.get("schemaVersion").and_then(serde_json::Value::as_str) {
-        Some("0.2") => crate::v02::parse(source).map(|d| Document::V02(Box::new(d))),
-        // Keep the original parser's diagnostics and semantics for all other inputs.
-        _ => parse(source).map(Document::V01),
-    }
-}
-pub fn load_document(path: Option<&Path>) -> Result<Document, String> {
-    if let Some(value) = crate::application::packaged_definition(path)? {
-        let source = value.to_string();
-        if value
-            .get("schemaVersion")
-            .and_then(serde_json::Value::as_str)
-            == Some("0.2")
-        {
-            let exe = std::env::current_exe().map_err(|e| e.to_string())?;
-            return crate::v02::parse_at(&source, exe.parent().ok_or("无法定位程序目录")?)
-                .map(|d| Document::V02(Box::new(d)));
-        }
-        return parse_document(&source);
-    }
-    let file = if let Some(path) = path {
-        Some(path.to_owned())
+    if raw.get("schemaVersion").and_then(serde_json::Value::as_str) == Some("0.2") {
+        compiler::compile_at(v02::parse(source)?, base).map(|d| Document::V02(Box::new(d)))
     } else {
-        let exe = std::env::current_exe().map_err(|e| format!("无法定位运行时程序: {e}"))?;
-        let candidate = exe
-            .parent()
-            .ok_or("无法确定运行时所在目录")?
-            .join("app.json");
-        match std::fs::metadata(&candidate) {
-            Ok(_) => Some(candidate),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => None,
-            Err(e) => return Err(format!("外部描述 {}: {e}", candidate.display())),
-        }
-    };
-    match file {
-        Some(path) => {
-            let source = std::fs::read_to_string(&path)
-                .map_err(|e| format!("外部描述 {}: {e}", path.display()))?;
-            let raw: serde_json::Value = serde_json::from_str(&source)
-                .map_err(|e| format!("外部描述 {}: JSON: {e}", path.display()))?;
-            if raw.get("schemaVersion").and_then(serde_json::Value::as_str) == Some("0.2") {
-                crate::v02::parse_at(&source, path.parent().unwrap_or(Path::new(".")))
-                    .map(|d| Document::V02(Box::new(d)))
-            } else {
-                parse_document(&source)
-            }
-            .map_err(|e| format!("外部描述 {}: {e}", path.display()))
-        }
-        None => parse_document(EXAMPLE),
+        let mut deserializer = serde_json::Deserializer::from_str(source);
+        let description = serde_path_to_error::deserialize(&mut deserializer)
+            .map_err(|e| format!("描述字段 {}: {}", e.path(), e.inner()))?;
+        deserializer.end().map_err(|e| format!("JSON 尾部: {e}"))?;
+        validation::validate(&description)?;
+        Ok(Document::V01(description))
     }
 }
 
-pub fn parse(source: &str) -> Result<Description, String> {
-    let mut deserializer = serde_json::Deserializer::from_str(source);
-    let description = serde_path_to_error::deserialize(&mut deserializer)
-        .map_err(|e| format!("描述字段 {}: {}", e.path(), e.inner()))?;
-    deserializer.end().map_err(|e| format!("JSON 尾部: {e}"))?;
-    validation::validate(&description)?;
-    Ok(description)
-}
-
-pub fn load(path: Option<&Path>) -> Result<Description, String> {
-    if let Some(path) = path {
-        return load_file(path);
+pub fn load_document(path: Option<&Path>) -> Result<Document, String> {
+    let exe = std::env::current_exe().map_err(|e| format!("无法定位运行时程序: {e}"))?;
+    let base = exe.parent().ok_or("无法确定运行时所在目录")?;
+    if let Some(value) = crate::application::packaged_definition(path)? {
+        return parse_document_at(&value.to_string(), base);
     }
-    let executable = std::env::current_exe().map_err(|e| format!("无法定位运行时程序: {e}"))?;
-    let directory = executable.parent().ok_or("无法确定运行时所在目录")?;
-    load_from_directory(directory)
-}
-
-pub fn load_from_directory(directory: &Path) -> Result<Description, String> {
-    let path = directory.join("app.json");
-    match std::fs::metadata(&path) {
-        Ok(_) => load_file(&path),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => parse(EXAMPLE).map_err(|e| {
+    let path = path
+        .map(Path::to_owned)
+        .unwrap_or_else(|| base.join("app.json"));
+    let source = std::fs::read_to_string(&path).map_err(|e| {
+        if e.kind() == std::io::ErrorKind::NotFound {
             format!(
-                "未提供 --app，{} 不存在，嵌入示例不可用: {e}",
+                "应用描述 {} 不存在：请使用 --app FILE.json，或在 EXE 同目录提供 app.json",
                 path.display()
             )
-        }),
-        Err(error) => Err(format!("外部描述 {}: {error}", path.display())),
-    }
+        } else {
+            format!("外部描述 {}: {e}", path.display())
+        }
+    })?;
+    parse_document_at(&source, path.parent().unwrap_or(Path::new(".")))
+        .map_err(|e| format!("外部描述 {}: {e}", path.display()))
 }
 
-fn load_file(path: &Path) -> Result<Description, String> {
-    let source =
-        std::fs::read_to_string(path).map_err(|e| format!("外部描述 {}: {e}", path.display()))?;
-    parse(&source).map_err(|e| format!("外部描述 {}: {e}", path.display()))
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn legacy_document_accepts_bom_and_rejects_unknown_version() {
+        let mut source = serde_json::json!({"schemaVersion":"0.1","app":{"name":"Legacy","window":{"width":800,"height":600}},"state":{},"root":{"type":"text","id":"root","text":{"kind":"literal","value":"Hello"}},"actions":{}});
+        assert!(matches!(
+            parse_document(&format!("\u{feff}{source}")),
+            Ok(Document::V01(_))
+        ));
+        source["schemaVersion"] = serde_json::json!("0.9");
+        assert!(parse_document(&source.to_string()).is_err());
+    }
 }

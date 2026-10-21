@@ -38,7 +38,7 @@
 
 ## 验证方式
 
-`tests/logging.rs` 使用后台真实 PowerShell 子进程验证双流各 204800 字节的完整二进制落盘、参数不进入元数据、进程结束前预览和文件可见、失败/超时/取消记录、重启会话隔离与保留，以及日志不可写时命令继续执行。无窗口 egui 工作台回归验证 `openLogs` 打开查看器并随追加输出更新文本；不操作系统鼠标或前台窗口。验证结果见 `evidence/runtime-logging-verification.txt`。
+日志落盘位于 `src/services/logging.rs`，通用查看器位于 `src/renderer/logs.rs`，业务预览由工作台控制器组织。实际任务应检查原始 stdout/stderr、result.json 和 outputComplete，以确认退出结果与输出完整性。
 
 ## SSH 工作台退出码修复
 
@@ -46,10 +46,10 @@
 
 远端 EXIT 处理现在先保存真实操作退出码，再执行 `set +e`，报告阶段与当前分支，最后用保存的退出码退出。真正的 fetch、checkout、pull 或构建失败仍返回原始非零码。日志新增 `[vben] stage=... exit=...` 和客户端操作开始/结束记录，即使命令静默失败也能定位阶段；仓库路径无效时报告 repository 阶段，不返回错误目录的当前分支。失败提示指向实时日志，诊断摘要保留最近 80 行。
 
-`python scripts/verify-vben-workflow.py` 覆盖 10 个模拟 SSH 场景，以及实际 Bash 登录退出脚本失败时的成功、fetch/分支列表/构建失败和无效仓库路径，共 6 项退出行为检查。真实服务器刷新验证及结果见 `evidence/vben-refresh-exit-verification.txt`。
+业务测试检查生成命令的阶段与参数引用，真实 SSH 和登录环境行为需在目标环境验证。
 
 ## 打包前清理缓存
 
 打包在仓库验证与实际分支核对通过后，进入 `clean-turbo` 阶段，记录清理开始并执行 `rm -rf -- ./.turbo`，成功后进入 `build` 阶段执行 `pnpm build:dev:tms`。路径固定为当前项目根目录下的 `.turbo`；不存在时正常继续，删除失败时由 `set -e` 停止，结果保留清理退出码并记录失败阶段。分支不一致时在清理前停止，显式退出前关闭 errexit，保证登录 Bash 的登出脚本不会把退出码 4 改写为 1。
 
-工作流验证脚本现包含 10 项实际 Bash 检查，增加了真实临时缓存目录删除、无缓存目录继续构建、清理失败阻止构建、分支变化阻止清理；pnpm 使用本地测试函数，不触发远端构建。结果见 `evidence/vben-turbo-clean-verification.txt`。
+共享清理与逐进程构建由 `src/bin/vben-package/turbo_build/backend.rs` 生成，业务测试检查准备阶段和构建阶段的分离。

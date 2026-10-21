@@ -1,3 +1,4 @@
+pub use crate::protocol::{App, Window};
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
@@ -9,20 +10,6 @@ pub struct Description {
     pub state: BTreeMap<String, String>,
     pub root: Component,
     pub actions: BTreeMap<String, Action>,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct App {
-    pub name: String,
-    pub window: Window,
-}
-
-#[derive(Debug, Clone, Deserialize)]
-#[serde(deny_unknown_fields)]
-pub struct Window {
-    pub width: f32,
-    pub height: f32,
 }
 
 #[derive(Debug, Clone, Deserialize)]
