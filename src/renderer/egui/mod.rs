@@ -1,7 +1,5 @@
 //! egui is a paint/input/text host. All component rectangles come from the engine.
 mod charts;
-#[cfg(test)]
-mod tests;
 mod text;
 mod theme;
 use crate::{

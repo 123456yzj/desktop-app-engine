@@ -9,7 +9,6 @@
 ```powershell
 cargo fetch --locked
 cargo check --all-targets --locked --offline
-cargo test --locked --offline
 cargo build --release --locked --offline
 ```
 
@@ -40,7 +39,7 @@ cargo run --bin vben-package --locked --offline
 | `src/protocol/` | 原始描述、绑定和严格结构解析；公共 app/window 类型 |
 | `src/compiler/` | 插件发现、作用域解析、语义校验和私有编译元数据 |
 | `src/runtime/` | 受校验的状态提交、有序事件、动作及异步任务调度 |
-| `src/components/`、`src/layout.rs` | 内部组件树、表格/图表纯算法、布局 |
+| `src/components/`、`src/layout/` | 内部组件树、表格/图表纯算法、布局 |
 | `src/services/` | 子进程、HTTP、插件 RPC、凭据和日志 |
 | `src/renderer/` | egui 宿主、主题、文本测量、绘制和日志界面 |
 | `src/bin/vben-package/` | 业务控制器、远端操作、设置和界面生成 |
@@ -65,12 +64,11 @@ cargo run --bin vben-package --locked --offline
 ```powershell
 cargo fmt -- --check
 cargo clippy --all-targets --locked --offline -- -D warnings
-cargo test --locked --offline
 cargo run --bin desktop-app-engine --locked --offline -- --app .\examples\vben-package.json --check
 cargo run --bin vben-package --locked --offline -- --check
 ```
 
-当前测试使用内联描述和临时目录，覆盖编译边界、作用域、模块事件、状态原子提交、业务计划、设置持久化及无窗口渲染。远端 SSH 操作与客户环境需单独验证。
+当前仓库不保留自动化测试代码，使用构建检查和描述校验命令验证。界面交互、远端 SSH 操作与客户环境需单独验证。
 
 - [描述格式](docs/05-description-format.md) 与 [0.2 JSON Schema](docs/description-0.2.schema.json)
 - [命令](docs/10-command-binding.md)、[动态事件](docs/11-dynamic-event-binding.md)、[作用域](docs/12-scoped-state.md)

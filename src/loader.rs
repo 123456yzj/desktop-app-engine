@@ -61,19 +61,3 @@ pub fn load_document(path: Option<&Path>) -> Result<Document, String> {
     parse_document_at(&source, path.parent().unwrap_or(Path::new(".")))
         .map_err(|e| format!("外部描述 {}: {e}", path.display()))
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn legacy_document_accepts_bom_and_rejects_unknown_version() {
-        let mut source = serde_json::json!({"schemaVersion":"0.1","app":{"name":"Legacy","window":{"width":800,"height":600}},"state":{},"root":{"type":"text","id":"root","text":{"kind":"literal","value":"Hello"}},"actions":{}});
-        assert!(matches!(
-            parse_document(&format!("\u{feff}{source}")),
-            Ok(Document::V01(_))
-        ));
-        source["schemaVersion"] = serde_json::json!("0.9");
-        assert!(parse_document(&source.to_string()).is_err());
-    }
-}

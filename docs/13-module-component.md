@@ -27,4 +27,4 @@ module 具有纵向容器布局、尺寸约束、gap/padding、对齐、滚动�
 
 这是组件实例的作用域封装。现已增加 props/emit/on 通信，详见 [模块通信](14-module-communication.md)。尚未提供 Vue 的模板注册/复用、computed、watch 或 JavaScript 执行环境；隐藏模块保留状态，无动态卸载生命周期。模块组件不依赖前端框架。
 
-类型与结构解析位于 `src/protocol/v02/`，作用域编译位于 `src/compiler/scope.rs`。内联模块回归位于 `src/runtime/tests.rs`，使用实际 Runtime 验证同名状态和动作隔离。
+类型与结构解析位于 `src/protocol/v02/`，作用域编译位于 `src/compiler/scope.rs`。

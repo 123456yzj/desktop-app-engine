@@ -119,4 +119,4 @@ target 是全树唯一组件 ID，method 必须已注册；args 支持 literal/s
 
 ## 验证入口
 
-`--check` 校验结构、manifest 和组件契约；`--check-plugins` 执行已引用插件的挂载、SVG 栅格化和卸载。插件包和 Node 由应用提供，需要在实际交付目录检查。当前通用离线回归不安装或运行第三方插件依赖。
+`--check` 校验结构、manifest 和组件契约；`--check-plugins` 执行已引用插件的挂载、SVG 栅格化和卸载。插件包和 Node 由应用提供，需要在实际交付目录检查。

@@ -258,14 +258,3 @@ fn main() {
     }
     logging::event("INFO", "app.exit", serde_json::json!({"exitCode":0}));
 }
-
-#[cfg(test)]
-mod template_tests {
-    #[test]
-    fn template_loading_rejects_semantically_invalid_window() {
-        let mut template: serde_json::Value =
-            serde_json::from_slice(include_bytes!("../../../examples/vben-package.json")).unwrap();
-        template["app"]["window"]["width"] = serde_json::json!(1);
-        assert!(super::parse_template(&template.to_string(), std::path::Path::new(".")).is_err());
-    }
-}

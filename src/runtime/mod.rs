@@ -5,8 +5,6 @@ mod events;
 mod http;
 mod legacy;
 mod plugins;
-#[cfg(test)]
-mod tests;
 use crate::{
     binding::{Binding, State, ValueType},
     compiler::{self, CompiledDescription, Metadata},

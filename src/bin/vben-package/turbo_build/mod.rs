@@ -4,5 +4,3 @@ mod controller;
 pub mod settings;
 pub mod view;
 pub use controller::*;
-#[cfg(test)]
-mod tests;

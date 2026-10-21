@@ -18,4 +18,4 @@ wizard 可以初始化为 `{"label":"下一步","action":"toSecond","enabled":tr
 
 加载、状态赋值时校验绑定必须为字符串、非空、路径存在且指向已定义动作。非法状态更新保持旧值与版本。运行时再次解析并校验动作，错误通过 `Runtime::error()` 获取。动作 ID 不是脚本表达式；不新增条件分支或数值运算。
 
-`src/protocol/v02/` 定义 `EventAction`；`src/compiler/` 校验作用域和绑定目标；`src/runtime/events.rs` 在提交时选择动作。自包含状态和事件回归位于 `src/runtime/tests.rs`。
+`src/protocol/v02/` 定义 `EventAction`；`src/compiler/` 校验作用域和绑定目标；`src/runtime/events.rs` 在提交时选择动作。

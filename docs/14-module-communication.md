@@ -62,4 +62,4 @@ emit 按动作声明所在的最近 module 选择事件源，payload 支持 lite
 
 ## 实现与验证
 
-`src/compiler/scope.rs` 解析 props、父级监听动作和 emit 所在模块；事件样例及名称映射保存在 `src/compiler/metadata.rs`。运行时动作读取这些元数据执行同步通信。`src/runtime/tests.rs` 使用内联描述验证父级监听器、共享状态更新和只读 prop。
+`src/compiler/scope.rs` 解析 props、父级监听动作和 emit 所在模块；事件样例及名称映射保存在 `src/compiler/metadata.rs`。运行时动作读取这些元数据执行同步通信。

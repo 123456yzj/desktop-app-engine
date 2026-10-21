@@ -30,6 +30,8 @@ loader：选择输入与协议版本，确定资源基准目录
 
 库只公开分层入口，原平铺短名仅在 crate 内作为别名使用。协议 0.1 的执行和渲染位于各层 legacy 实现，保持独立版本语义。
 
+`src/layout/mod.rs` 保留布局入口与结果类型，通过导出维持 `layout::arrange`、`layout::measure` 等调用路径。`geometry.rs` 定义几何与约束，`flex.rs` 分配轨道空间，`measure.rs` 测量组件自然尺寸，`arrange.rs` 计算位置、裁剪和滚动。网格排列复用同一批子节点测量结果计算行高和单元格位置；文本尺寸由宿主实现 `TextMeasure` 提供。
+
 ## 资源与交付
 
 开发运行时优先使用 `--app FILE`，其次为 EXE 同目录 `app.json`，缺少描述时报错。插件相对输入目录发现；打包描述的插件相对 EXE 目录发现。
