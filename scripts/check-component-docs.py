@@ -70,12 +70,22 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--engine", type=Path, default=ROOT / "target/debug/desktop-app-engine.exe")
     parser.add_argument("--temp-dir", type=Path, help="Existing parent for temporary example files")
+    parser.add_argument("--schema", action="store_true", help="Also validate JSON Schema (requires Python jsonschema)")
     options = parser.parse_args()
     engine = options.engine.resolve()
     if not engine.is_file():
         parser.error(f"engine not found: {engine}; build desktop-app-engine first")
     if options.temp_dir is not None and not options.temp_dir.is_dir():
         parser.error(f"temporary parent does not exist: {options.temp_dir}")
+    validator = None
+    if options.schema:
+        try:
+            from jsonschema import Draft202012Validator
+        except ImportError:
+            parser.error("--schema requires the Python jsonschema package")
+        schema = json.loads((ROOT / "docs/description-0.2.schema.json").read_text(encoding="utf-8"))
+        Draft202012Validator.check_schema(schema)
+        validator = Draft202012Validator(schema)
 
     failures = []
     checked = 0
@@ -97,6 +107,10 @@ def main():
                     required = {"schemaVersion", "app", "state", "root", "actions"}
                     if not isinstance(document, dict) or not required.issubset(document):
                         raise ValueError("expected a complete application, not a JSON fragment")
+                    if validator is not None:
+                        error = next(validator.iter_errors(document), None)
+                        if error is not None:
+                            raise ValueError(f"JSON Schema {error.json_path}: {error.validator} validation failed")
                     prepare_plugins(document, temporary)
                     fixture = temporary / f"{page.stem}-{number}.json"
                     fixture.write_text(json.dumps(document, ensure_ascii=False), encoding="utf-8")

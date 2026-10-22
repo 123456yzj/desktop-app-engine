@@ -49,17 +49,20 @@
 
 ## 容器排列 API
 
-以下字段仅用于 Row、Column、Grid、Panel、Card、Module，放在 `layout` 内。叶组件声明这些字段会被拒绝。
+以下字段用于容器，放在 `layout` 内。新增 Flex、Space、Layout 及其区域、Masonry 均遵守这些规则；Splitter 的间距与面板排布由自身 API 控制。叶组件声明这些字段会被拒绝。
 
 | 属性 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `gap` | 非负数 | 0 | 相邻子项间距；Grid 行列共用 |
+| `rowGap` / `columnGap` | 可选非负数 | 回退到 gap | 分别控制纵向、横向间距 |
 | `align` | `stretch` / `start` / `center` / `end` | `stretch` | 交叉轴对齐；Grid 控制单元格内对齐 |
-| `justify` | `start` / `center` / `end` / `spaceBetween` | `start` | 主轴剩余空间对齐；Grid 不接受该字段 |
-| `wrap` | 布尔 | `false` | 只有 Row 可设置为 `true` |
+| `justify` | `start` / `center` / `end` / `spaceBetween` / `spaceAround` / `spaceEvenly` | `start` | 主轴剩余空间对齐；Grid/Masonry 不接受该字段 |
+| `wrap` | 布尔 | `false` | Row、横向 Flex/Space 可设置为 `true` |
 | `overflow` | `clip` / `scroll` | `clip` | 裁剪或滚动；scroll 预留 12 point 双轴滚动槽 |
 
 Row 的主轴为横向，Column、Panel、Card、Module 为纵向。`justify` 只有存在剩余空间时才有可见效果；子项 `fr` 已占满主轴时一般没有额外空间可分。
+
+Flex/Space 通过 `vertical` 切换主轴；Space 默认 gap=8、align=center。Layout 的直属子节点包含 Sider 时横向，否则纵向；Header/Sider/Content/Footer 内部纵向排列。详见 [Flex](21-flex.md)、[Layout](24-layout.md)、[Splitter](25-splitter.md) 和 [Masonry](26-masonry.md)。
 
 需要纵向滚动时，给容器有限高度，再设置 `overflow: "scroll"`。普通 Column 可能收缩子项以适应高度；固定子项高度或适当设置 `shrink: 0` 可保留内容尺寸。嵌套滚动先由最深容器消费，到边界后向外层传递。
 

@@ -82,11 +82,12 @@ target\release\desktop-app-engine.exe package --output exports\Monitor.exe < C:\
 ```powershell
 cargo fmt -- --check
 cargo clippy --all-targets --locked --offline -- -D warnings
+cargo test --lib --locked --offline
 cargo run --bin desktop-app-engine --locked --offline -- --app .\examples\vben-package.json --check
 cargo run --bin vben-package --locked --offline -- --check
 ```
 
-当前仓库不保留自动化测试代码，使用构建检查和描述校验命令验证。界面交互、远端 SSH 操作与客户环境需单独验证。
+布局组件包含自动化几何、状态及 egui 输入测试，教程示例可通过 `python scripts/check-component-docs.py` 批量校验。当前提供 Flex、Space、Divider、Layout、Splitter 和 Masonry 等布局组件，详见 [布局教程](docs/components/21-flex.md) 与 [参考组件覆盖对照](docs/21-component-coverage.md)。远端 SSH 操作与客户环境需单独验证。
 
 - [描述格式](docs/05-description-format.md) 与 [0.2 JSON Schema](docs/description-0.2.schema.json)
 - [命令](docs/10-command-binding.md)、[动态事件](docs/11-dynamic-event-binding.md)、[作用域](docs/12-scoped-state.md)

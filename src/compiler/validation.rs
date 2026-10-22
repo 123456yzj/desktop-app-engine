@@ -251,6 +251,8 @@ fn validate_node(
         for v in [
             Some(l.padding),
             Some(l.gap),
+            l.row_gap,
+            l.column_gap,
             l.min_width,
             l.max_width,
             l.min_height,
@@ -274,14 +276,17 @@ fn validate_node(
         {
             return Err("layout: min > max".into());
         }
-        if l.wrap && n.kind != Kind::Row {
-            return Err("layout.wrap 仅用于 row".into());
+        if l.wrap
+            && !(n.kind == Kind::Row || matches!(n.kind, Kind::Flex | Kind::Space) && !n.vertical)
+        {
+            return Err("layout.wrap 仅用于 row 或横向 flex/space".into());
         }
         for (event, action) in &n.events {
             let allowed: &[&str] = match n.kind {
                 Kind::Button => &["click"],
                 Kind::Input => &["change", "submit"],
                 Kind::Select => &["change", "open"],
+                Kind::Splitter => &["change"],
                 Kind::Table => &["rowSelect", "sortChange"],
                 _ => &[],
             };
@@ -336,6 +341,41 @@ fn validate_node(
             }
         }
         match n.kind {
+            Kind::Splitter => {
+                if n.children.len() != 2 {
+                    return Err("splitter.children 必须恰好包含两个面板（可嵌套 splitter）".into());
+                }
+                if n.bar_size
+                    .is_some_and(|v| !v.is_finite() || !(4.0..=32.0).contains(&v))
+                {
+                    return Err("splitter.barSize 必须在 4..32".into());
+                }
+                if let Some(b) = &n.value {
+                    let ratio = b
+                        .resolve(&d.state)?
+                        .as_f64()
+                        .ok_or("splitter.value 必须为数字")?;
+                    if !ratio.is_finite() || !(0.0..=1.0).contains(&ratio) {
+                        return Err("splitter.value 必须在 [0,1]".into());
+                    }
+                    if matches!(b, Binding::State { path, .. } if !path.is_empty()) {
+                        return Err("splitter.value 仅支持顶层状态（path 为空）".into());
+                    }
+                }
+            }
+            Kind::Masonry => {
+                if !(1..=64).contains(&n.column_count.unwrap_or(3)) {
+                    return Err("masonry.columnCount 必须在 1..64".into());
+                }
+                if n.min_column_width
+                    .is_some_and(|v| !v.is_finite() || v <= 0.0 || v > 1_000_000.0)
+                {
+                    return Err("masonry.minColumnWidth 必须大于 0 且不超过 1000000".into());
+                }
+            }
+            Kind::Divider if n.vertical && n.text.is_some() => {
+                return Err("纵向 divider 不接受 text".into());
+            }
             Kind::Plugin => {
                 compiled
                     .registration

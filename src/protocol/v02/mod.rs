@@ -34,6 +34,16 @@ pub enum Kind {
     Grid,
     Panel,
     Card,
+    Flex,
+    Space,
+    Divider,
+    Layout,
+    Header,
+    Sider,
+    Content,
+    Footer,
+    Splitter,
+    Masonry,
     Text,
     Input,
     Select,
@@ -44,6 +54,29 @@ pub enum Kind {
     Table,
     LineChart,
     BarChart,
+}
+
+impl Kind {
+    pub fn is_container(self) -> bool {
+        matches!(
+            self,
+            Self::Module
+                | Self::Row
+                | Self::Column
+                | Self::Grid
+                | Self::Panel
+                | Self::Card
+                | Self::Flex
+                | Self::Space
+                | Self::Layout
+                | Self::Header
+                | Self::Sider
+                | Self::Content
+                | Self::Footer
+                | Self::Splitter
+                | Self::Masonry
+        )
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -94,6 +127,24 @@ pub struct Node {
     pub legend: Option<bool>,
     pub zoom: Option<bool>,
     pub pan: Option<bool>,
+    #[serde(default)]
+    pub vertical: bool,
+    #[serde(default)]
+    pub variant: LineVariant,
+    pub title_placement: Option<TextAlign>,
+    pub column_count: Option<usize>,
+    pub min_column_width: Option<f32>,
+    pub bar_size: Option<f32>,
+    pub resizable: Option<bool>,
+}
+
+#[derive(Debug, Clone, Copy, Default, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum LineVariant {
+    #[default]
+    Solid,
+    Dashed,
+    Dotted,
 }
 
 #[derive(Debug, Clone, Copy, Default, Deserialize)]
@@ -249,6 +300,8 @@ pub struct Layout {
     pub padding: f32,
     #[serde(default)]
     pub gap: f32,
+    pub row_gap: Option<f32>,
+    pub column_gap: Option<f32>,
     pub shrink: Option<f32>,
     #[serde(default)]
     pub wrap: bool,
@@ -258,6 +311,21 @@ pub struct Layout {
     pub justify: Justify,
     #[serde(default)]
     pub overflow: Overflow,
+}
+impl Layout {
+    pub fn row_gap(&self) -> f32 {
+        self.row_gap.unwrap_or(self.gap)
+    }
+    pub fn column_gap(&self) -> f32 {
+        self.column_gap.unwrap_or(self.gap)
+    }
+    pub fn main_gap(&self, horizontal: bool) -> f32 {
+        if horizontal {
+            self.column_gap()
+        } else {
+            self.row_gap()
+        }
+    }
 }
 #[derive(Debug, Clone, Copy, Default, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -276,6 +344,8 @@ pub enum Justify {
     Center,
     End,
     SpaceBetween,
+    SpaceAround,
+    SpaceEvenly,
 }
 #[derive(Debug, Clone, Copy, Default, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]

@@ -1,5 +1,6 @@
 //! egui is a paint/input/text host. All component rectangles come from the engine.
 mod charts;
+mod layout_controls;
 mod text;
 mod theme;
 use crate::{
@@ -57,6 +58,7 @@ pub struct DashboardApp {
     inputs: BTreeMap<String, String>,
     tables: BTreeMap<String, TableState>,
     charts: BTreeMap<String, ChartState>,
+    splitters: BTreeMap<String, f32>,
     plugin_textures: BTreeMap<String, egui::TextureHandle>,
     sequence: u64,
     resolved: Vec<Resolved>,
@@ -85,6 +87,7 @@ impl DashboardApp {
             inputs: BTreeMap::new(),
             tables: BTreeMap::new(),
             charts: BTreeMap::new(),
+            splitters: BTreeMap::new(),
             plugin_textures: BTreeMap::new(),
             sequence: 0,
             resolved: vec![],
@@ -129,6 +132,7 @@ impl DashboardApp {
             .map(|n| positions.get(&n.spec.id).copied().unwrap_or_default())
             .collect();
         self.runtime = runtime;
+        self.splitters.clear();
         self.resolved.clear();
         self.resolved_version = 0;
         Ok(())
@@ -203,6 +207,14 @@ impl DashboardApp {
             }
         }
         let mut events = vec![];
+        for (id, node) in self.runtime.tree.nodes.iter().enumerate() {
+            if node.spec.kind == Kind::Splitter
+                && !matches!(node.spec.value, Some(Binding::State { .. }))
+                && let Some(&ratio) = self.splitters.get(&node.spec.id)
+            {
+                self.resolved[id].value = Some(serde_json::json!(ratio));
+            }
+        }
         let embedded = self.embedded;
         let mut paint = |ui: &mut egui::Ui| {
             if let Some(error) = &self.runtime.error {
@@ -372,7 +384,10 @@ impl DashboardApp {
                     );
                 }
                 if n.style.border_width > 0.0
-                    && !matches!(n.kind, Kind::Button | Kind::Input | Kind::Select)
+                    && !matches!(
+                        n.kind,
+                        Kind::Button | Kind::Input | Kind::Select | Kind::Divider
+                    )
                 {
                     painter.rect_stroke(
                         rect,
@@ -404,6 +419,32 @@ impl DashboardApp {
                     component: &n.id,
                 };
                 match n.kind {
+                    Kind::Divider => layout_controls::divider(ui, &painter, n, content, &r.text),
+                    Kind::Splitter => {
+                        let children: Vec<_> = node
+                            .children
+                            .iter()
+                            .copied()
+                            .filter(|&child| self.resolved[child].visible)
+                            .collect();
+                        if children.len() == 2 {
+                            let first = &self.runtime.tree.nodes[children[0]].spec.layout;
+                            let second = &self.runtime.tree.nodes[children[1]].spec.layout;
+                            if let Some(ratio) = layout_controls::splitter(
+                                ui,
+                                &painter,
+                                n,
+                                content,
+                                er(boxes.boxes[children[0]].rect),
+                                [first, second],
+                                r.enabled,
+                            ) {
+                                self.splitters.insert(n.id.clone(), ratio);
+                                collector.push(ui, "change", None, serde_json::json!(ratio));
+                                ctx.request_repaint();
+                            }
+                        }
+                    }
                     Kind::Plugin => {
                         if let Err(e) = paint_plugin(
                             ui,

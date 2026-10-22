@@ -47,6 +47,19 @@ impl Runtime {
                 }
             }
             let action_names = node.metadata.action_names.clone();
+            if node.spec.kind == crate::v02::Kind::Splitter && e.kind == "change" {
+                if node.spec.resizable == Some(false) {
+                    continue;
+                }
+                if !e
+                    .payload
+                    .as_f64()
+                    .is_some_and(|v| v.is_finite() && (0.0..=1.0).contains(&v))
+                {
+                    self.error = Some("splitter.change 必须为 [0,1] 的比例".into());
+                    continue;
+                }
+            }
             if node.spec.kind == crate::v02::Kind::Select && e.kind == "change" {
                 let allowed =
                     crate::v02::select_options(&node.spec, &self.state).is_ok_and(|options| {

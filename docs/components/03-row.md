@@ -60,8 +60,9 @@
 | `type` | 字符串 | 必填 `"row"` | 横向容器 |
 | `children` | 组件数组 | `[]` | 按数组顺序排列 |
 | `layout.gap` | 非负数 | 0 | 相邻项和换行间距 |
+| `layout.rowGap` / `columnGap` | 非负数 | 回退到 gap | 独立行间距与项间距 |
 | `layout.align` | 对齐枚举 | `stretch` | 纵向对齐，工具栏常用 center |
-| `layout.justify` | 主轴对齐枚举 | `start` | 横向对齐或 spaceBetween |
+| `layout.justify` | 主轴对齐枚举 | `start` | start/center/end/spaceBetween/spaceAround/spaceEvenly |
 | `layout.wrap` | 布尔 | `false` | 按子项基准宽度换行 |
 | `layout.overflow` | `clip` / `scroll` | `clip` | 区域溢出处理 |
 | `state` / `actions` | 对象 | `{}` | 兼容容器局部作用域；独立模块推荐 Module |

@@ -103,14 +103,15 @@ layout 所有尺寸为逻辑 point，有限非负且 <=1,000,000，min <= max。
 | --- | --- |
 | minWidth/maxWidth/minHeight/maxHeight | 0/内部有限上界；冻结 flex 分配，最小尺寸超出可用空间时按 overflow 裁剪/滚动 |
 | padding | 0，各边等距，border-box 内部扣除 |
-| gap | 0，容器子项间距，grid 行列共用 |
+| gap | 0，容器子项间距；Space 缺省为 8 |
+| rowGap/columnGap | 可选，分别覆盖纵向/横向间距，缺省回退到 gap |
 | shrink | auto/fr 缺省 1，fixed 缺省 0；负空间按 shrink × 基准尺寸分配 |
 | align | stretch；可选 start/center/end，交叉轴对齐 |
-| justify | start；可选 center/end/spaceBetween；grid 不接受此字段 |
-| wrap | false；只有 row 可以 true，按基准尺寸贪心分行 |
+| justify | start；可选 center/end/spaceBetween/spaceAround/spaceEvenly；grid/masonry 不接受此字段 |
+| wrap | false；row 和横向 flex/space 可以 true，按基准尺寸贪心分行 |
 | overflow | clip；scroll 保留 12 point 双轴滚动槽，滚轮最深容器先消费，余量向父传递 |
 
-gap/align/justify/wrap/overflow 只用于容器，叶节点声明会被拒绝。表格自身提供双轴滚动，图表的滚轮由 zoom 单独控制。width/height、约束和 padding 可用于所有组件。坐标按边界对齐像素，避免累加四舍五入误差。
+gap/rowGap/columnGap/align/justify/wrap/overflow 只用于容器，叶节点声明会被拒绝。splitter 不接受 gap/rowGap/columnGap/align/justify/wrap，其间距由 barSize 控制。表格自身提供双轴滚动，图表的滚轮由 zoom 单独控制。width/height、约束和 padding 可用于所有组件。坐标按边界对齐像素，避免累加四舍五入误差。
 
 style：background/color/borderColor 可使用 surface、surfaceRaised、textPrimary、textMuted、border、accent、success、warning、danger、focus、primary、onPrimary Token，或 `#RRGGBB` / `#RRGGBBAA` 精确颜色。Token 随主题变化，精确颜色保持不变。fontSize 缺省 16，borderWidth/radius 缺省 0。card/panel 缺省 raised surface 与至少 6 point 圆角，badge/button 有自身最小圆角。样式无继承，每节点单独指定。
 
@@ -127,6 +128,11 @@ Grid 中声明 `height: {"fr": n}` 的子项使对应行按权重分配剩余高
 | module | 无 | state={}、actions={}、children=[]、props={}、emits={}、on={}；纵向排列，wrap 不可为 true，无默认外观 |
 | plugin | component | props={}；由已安装包注册的组件叶节点，事件及属性由 manifest 校验 |
 | row/column | 无 | children=[] |
+| flex/space | 无 | children=[]、vertical=false；space 默认 gap=8、align=center；[教程](components/21-flex.md) |
+| divider | 无 | text 字符串绑定、vertical=false、variant=solid/dashed/dotted、titlePlacement=start/center/end；纵线不接受 text；[教程](components/23-divider.md) |
+| layout/header/sider/content/footer | 无 | children=[]；layout 有直属 sider 时横向，否则纵向；header 高 64、footer 高 48、sider 宽 200，其余轴默认 fr=1；[教程](components/24-layout.md) |
+| splitter | children 恰好两个 | vertical=false、value 数字绑定 [0,1] 缺省 0.5、barSize=8（4..32）、resizable=true；change 先写比例再调用动作；[教程](components/25-splitter.md) |
+| masonry | 无 | children=[]、columnCount=3（1..64）、minColumnWidth 可选正数；最短列排布，尺寸变化重新测量；[教程](components/26-masonry.md) |
 | grid | columns，1..64 个 fixed/fr 轨道 | children=[]，行高取行内测量最大值，无 span/自动列 |
 | panel/card | 无 | children=[]、title 字符串绑定 |
 | text | text 字符串绑定 | 无 |
@@ -149,7 +155,7 @@ Grid 中声明 `height: {"fr": n}` 的子项使对应行按权重分配剩余高
 
 events 是该组件支持的事件名到动作 ID 或动作绑定的对象。固定写法 `{"click":"advance"}` 保持兼容，也支持 `{"click":{"kind":"state","key":"wizard","path":"/action"}}` 和字符串 literal 绑定。绑定必须解析为非空字符串，并引用 actions 中已定义的动作；加载与每次状态更新均校验，非法更新不改变状态。每个事件提交时读取当时状态中的动作 ID，前一个事件的成功状态更新会影响后一个事件的动作选择；一次动作开始后不因后续状态变化而切换其步骤。
 
-容器、指标、badge、progress、图表不接受业务 events。输入 change 先写状态，再解析事件动作并触发，submit 由 Enter 提交；button 支持 click；table 支持 rowSelect、sortChange。内部事件包含 componentId、targetKey、kind、payload、sequence、generation；按输入序号提交，只消费一次，隐藏/禁用/过期 generation 的事件丢弃。表格 rowSelect payload 是行键字符串，sortChange payload 为 `{field,descending}`；控件原始 payload 尚不作为 event 绑定上下文。event 绑定由模块 emit/on 提供，见下节。
+除 splitter 外的容器、divider、指标、badge、progress、图表不接受业务 events。输入和 splitter 的 change 先写状态，再解析事件动作并触发；splitter.change payload 必须为 [0,1] 数字，value 的 state 绑定仅接受空 path，禁用或 resizable=false 时不允许用户调整。submit 由 Enter 提交；button 支持 click；table 支持 rowSelect、sortChange。内部事件包含 componentId、targetKey、kind、payload、sequence、generation；按输入序号提交，只消费一次，隐藏/禁用/过期 generation 的事件丢弃。表格 rowSelect payload 是行键字符串，sortChange payload 为 `{field,descending}`；控件原始 payload 尚不作为 event 绑定上下文。event 绑定由模块 emit/on 提供，见下节。
 
 actions.steps 非空。set 的 value 可为任意已匹配类型的绑定；concat.parts 仅为字符串绑定。每次动作读取触发时快照，顺序写入，失败停止后续步骤、保留成功写入、显示步骤诊断。measure/arrange/paint 不执行动作；输入事件统一交给 commit。
 

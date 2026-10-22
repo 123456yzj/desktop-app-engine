@@ -24,6 +24,18 @@ pub struct Resolved {
     pub value: Option<serde_json::Value>,
 }
 impl Tree {
+    pub fn horizontal(&self, id: NodeId) -> bool {
+        let node = &self.nodes[id];
+        match node.spec.kind {
+            Kind::Row => true,
+            Kind::Flex | Kind::Space | Kind::Splitter => !node.spec.vertical,
+            Kind::Layout => node
+                .children
+                .iter()
+                .any(|&id| self.nodes[id].spec.kind == Kind::Sider),
+            _ => false,
+        }
+    }
     pub(crate) fn new(root: &Node, metadata: &crate::compiler::Metadata) -> Self {
         fn add(
             tree: &mut Tree,
@@ -125,7 +137,7 @@ fn resolve_node(n: &ComponentNode, state: &State) -> Result<Resolved, String> {
             .to_owned())
     };
     let mut value = match n.spec.kind {
-        Kind::Metric | Kind::Progress | Kind::Input | Kind::Select => n
+        Kind::Metric | Kind::Progress | Kind::Input | Kind::Select | Kind::Splitter => n
             .spec
             .value
             .as_ref()

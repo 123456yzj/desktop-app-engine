@@ -144,5 +144,5 @@ pub(super) fn grid_widths(node: &Node, available: f32) -> Vec<f32> {
             }
         })
         .collect();
-    flex(&items, available, node.layout.gap)
+    flex(&items, available, node.layout.column_gap())
 }

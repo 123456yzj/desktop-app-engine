@@ -132,8 +132,28 @@ impl<T: TextMeasure> Measurer<'_, T> {
                 },
                 h: 240.0,
             },
+            Kind::Divider => {
+                if node.vertical {
+                    Size { w: 16.0, h: 24.0 }
+                } else {
+                    Size {
+                        w: if matches!(width, Limit::Unbounded) {
+                            160.0
+                        } else {
+                            inner
+                        },
+                        h: if resolved.text.is_empty() {
+                            16.0
+                        } else {
+                            font + 12.0
+                        },
+                    }
+                }
+            }
+            Kind::Masonry => self.masonry(id, inner),
+            Kind::Splitter if !node.vertical => self.splitter(id, inner),
             Kind::Grid => self.grid(id, inner, width),
-            Kind::Row => self.row(id, inner),
+            _ if self.tree.horizontal(id) => self.row(id, inner),
             _ => self.column(id, inner),
         }
     }
@@ -174,14 +194,17 @@ impl<T: TextMeasure> Measurer<'_, T> {
             heights[j / widths.len()] = heights[j / widths.len()].max(size.h);
         }
         Size {
-            w: widths.iter().sum::<f32>() + node.layout.gap * widths.len().saturating_sub(1) as f32,
+            w: widths.iter().sum::<f32>()
+                + node.layout.column_gap() * widths.len().saturating_sub(1) as f32,
             h: heights.iter().sum::<f32>()
-                + node.layout.gap * heights.len().saturating_sub(1) as f32,
+                + node.layout.row_gap() * heights.len().saturating_sub(1) as f32,
         }
     }
 
     fn row(&self, id: NodeId, inner: f32) -> Size {
-        let layout = &self.tree.nodes[id].spec.layout;
+        let node = &self.tree.nodes[id].spec;
+        let layout = &node.layout;
+        let gap = layout.column_gap();
         let children = visible_children(self.tree, self.resolved, id);
         let items: Vec<_> = children
             .iter()
@@ -193,9 +216,12 @@ impl<T: TextMeasure> Measurer<'_, T> {
                 )
             })
             .collect();
-        let bases: Vec<_> = items.iter().map(|item| item.base).collect();
+        let bases: Vec<_> = items
+            .iter()
+            .map(|item| item.base.clamp(item.min, item.max))
+            .collect();
         let lines = if layout.wrap {
-            wrap_lines(&bases, inner, layout.gap)
+            wrap_lines(&bases, inner, gap)
         } else if children.is_empty() {
             vec![]
         } else {
@@ -203,18 +229,18 @@ impl<T: TextMeasure> Measurer<'_, T> {
         };
         let mut size = Size::default();
         for line in &lines {
-            let widths = flex(&items[line.clone()], inner, layout.gap);
+            let widths = flex(&items[line.clone()], inner, gap);
             let height = line
                 .clone()
                 .zip(&widths)
                 .map(|(j, &width)| self.at_width(children[j], Limit::Bounded(width)).h)
                 .fold(0.0, f32::max);
             size.h += height;
-            size.w = size.w.max(
-                widths.iter().sum::<f32>() + layout.gap * widths.len().saturating_sub(1) as f32,
-            );
+            size.w = size
+                .w
+                .max(widths.iter().sum::<f32>() + gap * widths.len().saturating_sub(1) as f32);
         }
-        size.h += layout.gap * lines.len().saturating_sub(1) as f32;
+        size.h += layout.row_gap() * lines.len().saturating_sub(1) as f32;
         size
     }
 
@@ -227,10 +253,56 @@ impl<T: TextMeasure> Measurer<'_, T> {
             size.w = size.w.max(measured.w);
             size.h += measured.h;
         }
-        size.h += node.layout.gap * children.len().saturating_sub(1) as f32;
+        let gap = if node.kind == Kind::Splitter {
+            node.bar_size.unwrap_or(8.0)
+        } else {
+            node.layout.row_gap()
+        };
+        size.h += gap * children.len().saturating_sub(1) as f32;
         if !self.resolved[id].title.is_empty() {
             size.h += node.style.font_size.unwrap_or(16.0) + 12.0;
         }
         size
+    }
+
+    fn masonry(&self, id: NodeId, inner: f32) -> Size {
+        let node = &self.tree.nodes[id].spec;
+        let (_, width) = super::masonry::columns(node, inner);
+        let heights: Vec<_> = visible_children(self.tree, self.resolved, id)
+            .iter()
+            .map(|&child| self.at_width(child, Limit::Bounded(width)).h)
+            .collect();
+        let positions = super::masonry::positions(node, inner, &heights);
+        Size {
+            w: inner,
+            h: positions.iter().map(|r| r.y + r.h).fold(0.0, f32::max),
+        }
+    }
+
+    fn splitter(&self, id: NodeId, inner: f32) -> Size {
+        let node = &self.tree.nodes[id].spec;
+        let children = visible_children(self.tree, self.resolved, id);
+        if children.len() != 2 {
+            return self.column(id, inner);
+        }
+        let bar = super::splitter::bar_size(node, inner);
+        let sizes = super::splitter::sizes(
+            inner - bar,
+            self.resolved[id]
+                .value
+                .as_ref()
+                .and_then(|v| v.as_f64())
+                .unwrap_or(0.5) as f32,
+            super::splitter::limits(&self.tree.nodes[children[0]].spec.layout, true),
+            super::splitter::limits(&self.tree.nodes[children[1]].spec.layout, true),
+        );
+        Size {
+            w: sizes.iter().sum::<f32>() + bar,
+            h: children
+                .iter()
+                .zip(sizes)
+                .map(|(&child, width)| self.at_width(child, Limit::Bounded(width)).h)
+                .fold(0.0, f32::max),
+        }
     }
 }

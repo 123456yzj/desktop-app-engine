@@ -194,12 +194,7 @@ pub(super) fn compile(
         if depth > 64 || n.id.trim().is_empty() || !ids.insert(n.id.clone()) {
             return Err("ID 为空、重复组件 ID 或深度超过 64".into());
         }
-        if (!n.state.is_empty() || !n.actions.is_empty())
-            && !matches!(
-                n.kind,
-                Kind::Module | Kind::Row | Kind::Column | Kind::Grid | Kind::Panel | Kind::Card
-            )
-        {
+        if (!n.state.is_empty() || !n.actions.is_empty()) && !n.kind.is_container() {
             return Err("只有容器可声明局部 state/actions".into());
         }
         let mut names = parent.clone();
@@ -260,10 +255,10 @@ pub(super) fn compile(
         let node_metadata = metadata.nodes.get_mut(&n.id).unwrap();
         node_metadata.action_names = names.actions.clone();
         node_metadata.state_names = names.state.clone();
-        if matches!(n.kind, Kind::Input | Kind::Select)
+        if matches!(n.kind, Kind::Input | Kind::Select | Kind::Splitter)
             && matches!(n.value, Some(Binding::Prop { .. }))
         {
-            return Err("prop 为只读，input.value 请绑定局部 state 并通过 emit 通知父级".into());
+            return Err("prop 为只读，可写 value 请绑定局部 state 并通过 emit 通知父级".into());
         }
         for b in [
             &mut n.visible,

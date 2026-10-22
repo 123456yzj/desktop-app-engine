@@ -79,12 +79,15 @@ impl<T: TextMeasure> Arranger<'_, T> {
         }
         let clip = parent_clip.intersect(rect);
         let children = visible_children(self.measurer.tree, self.measurer.resolved, id);
-        let placements = if node.kind == Kind::Grid {
-            self.grid(id, &children, content)
-        } else if children.is_empty() {
+        let placements = if children.is_empty() {
             vec![]
         } else {
-            self.linear(id, &children, content)
+            match node.kind {
+                Kind::Grid => self.grid(id, &children, content),
+                Kind::Masonry => self.masonry(id, &children, content),
+                Kind::Splitter => self.splitter(id, &children, content),
+                _ => self.linear(id, &children, content),
+            }
         };
         let extent = placements
             .iter()
@@ -158,7 +161,7 @@ impl<T: TextMeasure> Arranger<'_, T> {
                 }
             })
             .collect();
-        let heights = flex(&row_items, content.h, layout.gap);
+        let heights = flex(&row_items, content.h, layout.row_gap());
         let mut placements = Vec::with_capacity(children.len());
         let mut y = 0.0;
         for ((chunk, sizes), height) in children
@@ -194,9 +197,9 @@ impl<T: TextMeasure> Arranger<'_, T> {
                         h,
                     },
                 ));
-                x += available + layout.gap;
+                x += available + layout.column_gap();
             }
-            y += height + layout.gap;
+            y += height + layout.row_gap();
         }
         placements
     }
@@ -204,45 +207,47 @@ impl<T: TextMeasure> Arranger<'_, T> {
     fn linear(&self, id: NodeId, children: &[NodeId], content: Rect) -> Vec<(NodeId, Rect)> {
         let node = &self.measurer.tree.nodes[id].spec;
         let layout = &node.layout;
-        let horizontal = node.kind == Kind::Row;
+        let horizontal = self.measurer.tree.horizontal(id);
+        let main_gap = layout.main_gap(horizontal);
         let natural: Vec<_> = children
             .iter()
             .map(|&child| self.measurer.at_width(child, Limit::Bounded(content.w)))
             .collect();
-        let bases: Vec<_> = natural
+        let items: Vec<_> = natural
             .iter()
-            .map(|size| if horizontal { size.w } else { size.h })
+            .enumerate()
+            .map(|(j, size)| {
+                item(
+                    &self.measurer.tree.nodes[children[j]].spec.layout,
+                    if horizontal { size.w } else { size.h },
+                    horizontal,
+                )
+            })
+            .collect();
+        let bases: Vec<_> = items
+            .iter()
+            .map(|item| item.base.clamp(item.min, item.max))
             .collect();
         let lines = if horizontal && layout.wrap {
-            wrap_lines(&bases, content.w, layout.gap)
+            wrap_lines(&bases, content.w, main_gap)
         } else {
             std::iter::once(0..children.len()).collect()
         };
         let mut placements = Vec::with_capacity(children.len());
         let mut line_y = 0.0;
         for line in lines {
-            let items: Vec<_> = line
-                .clone()
-                .map(|j| {
-                    item(
-                        &self.measurer.tree.nodes[children[j]].spec.layout,
-                        bases[j],
-                        horizontal,
-                    )
-                })
-                .collect();
             let available = if horizontal {
                 content.w
             } else if layout.overflow == Overflow::Scroll {
                 content.h.max(
-                    bases.iter().sum::<f32>()
-                        + layout.gap * children.len().saturating_sub(1) as f32,
+                    natural.iter().map(|size| size.h).sum::<f32>()
+                        + main_gap * children.len().saturating_sub(1) as f32,
                 )
             } else {
                 content.h
             };
-            let sizes = flex(&items, available, layout.gap);
-            let (mut position, gap) = justify(layout.justify, available, &sizes, layout.gap);
+            let sizes = flex(&items[line.clone()], available, main_gap);
+            let (mut position, gap) = justify(layout.justify, available, &sizes, main_gap);
             let cross_sizes: Vec<_> = line
                 .clone()
                 .enumerate()
@@ -295,9 +300,95 @@ impl<T: TextMeasure> Arranger<'_, T> {
                 placements.push((children[j], rect));
                 position += sizes[k] + gap;
             }
-            line_y += cross_available + layout.gap;
+            line_y += cross_available + layout.row_gap();
         }
         placements
+    }
+
+    fn masonry(&self, id: NodeId, children: &[NodeId], content: Rect) -> Vec<(NodeId, Rect)> {
+        let node = &self.measurer.tree.nodes[id].spec;
+        let (_, width) = super::masonry::columns(node, content.w);
+        let heights: Vec<_> = children
+            .iter()
+            .map(|&child| self.measurer.at_width(child, Limit::Bounded(width)).h)
+            .collect();
+        children
+            .iter()
+            .copied()
+            .zip(super::masonry::positions(node, content.w, &heights))
+            .map(|(child, mut rect)| {
+                let layout = &self.measurer.tree.nodes[child].spec.layout;
+                let desired = dimension(
+                    layout.width.as_ref(),
+                    if node.layout.align == Align::Stretch {
+                        rect.w
+                    } else {
+                        self.measurer.at_width(child, Limit::Bounded(width)).w
+                    },
+                    Limit::Bounded(width),
+                    layout.min_width,
+                    layout.max_width,
+                );
+                rect.x += cross(node.layout.align, width, desired).0;
+                rect.w = desired;
+                (child, rect)
+            })
+            .collect()
+    }
+
+    fn splitter(&self, id: NodeId, children: &[NodeId], content: Rect) -> Vec<(NodeId, Rect)> {
+        let node = &self.measurer.tree.nodes[id].spec;
+        let horizontal = !node.vertical;
+        let available = if horizontal { content.w } else { content.h };
+        let bar = if children.len() == 2 {
+            super::splitter::bar_size(node, available)
+        } else {
+            0.0
+        };
+        let sizes = if children.len() == 2 {
+            super::splitter::sizes(
+                available - bar,
+                self.measurer.resolved[id]
+                    .value
+                    .as_ref()
+                    .and_then(|v| v.as_f64())
+                    .unwrap_or(0.5) as f32,
+                super::splitter::limits(
+                    &self.measurer.tree.nodes[children[0]].spec.layout,
+                    horizontal,
+                ),
+                super::splitter::limits(
+                    &self.measurer.tree.nodes[children[1]].spec.layout,
+                    horizontal,
+                ),
+            )
+        } else {
+            [available, 0.0]
+        };
+        let mut position = 0.0;
+        children
+            .iter()
+            .enumerate()
+            .map(|(j, &child)| {
+                let rect = if horizontal {
+                    Rect {
+                        x: position,
+                        y: 0.0,
+                        w: sizes[j],
+                        h: content.h,
+                    }
+                } else {
+                    Rect {
+                        x: 0.0,
+                        y: position,
+                        w: content.w,
+                        h: sizes[j],
+                    }
+                };
+                position += sizes[j] + bar;
+                (child, rect)
+            })
+            .collect()
     }
 }
 
@@ -325,6 +416,14 @@ fn justify(justify: Justify, available: f32, sizes: &[f32], gap: f32) -> (f32, f
                 0.0
             },
         ),
+        Justify::SpaceAround => {
+            let extra = free / sizes.len().max(1) as f32;
+            (extra / 2.0, gap + extra)
+        }
+        Justify::SpaceEvenly => {
+            let extra = free / (sizes.len() + 1) as f32;
+            (extra, gap + extra)
+        }
     }
 }
 

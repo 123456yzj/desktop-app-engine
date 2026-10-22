@@ -47,13 +47,34 @@ pub fn parse(source: &str) -> Result<Description, String> {
     Ok(description)
 }
 
-pub(super) fn parse_node(value: Value) -> Result<Node, String> {
+pub(super) fn parse_node(mut value: Value) -> Result<Node, String> {
     let kind: Kind = serde_json::from_value(value.get("type").cloned().ok_or("缺少 type")?)
         .map_err(|e| e.to_string())?;
     let specific: &[&str] = match kind {
         Kind::Plugin => &["component", "props"],
         Kind::Module => &["children", "state", "actions", "props", "emits", "on"],
         Kind::Row | Kind::Column => &["children", "state", "actions"],
+        Kind::Flex | Kind::Space => &["children", "state", "actions", "vertical"],
+        Kind::Layout | Kind::Header | Kind::Sider | Kind::Content | Kind::Footer => {
+            &["children", "state", "actions"]
+        }
+        Kind::Splitter => &[
+            "children",
+            "state",
+            "actions",
+            "vertical",
+            "value",
+            "barSize",
+            "resizable",
+        ],
+        Kind::Masonry => &[
+            "children",
+            "state",
+            "actions",
+            "columnCount",
+            "minColumnWidth",
+        ],
+        Kind::Divider => &["text", "vertical", "variant", "titlePlacement"],
         Kind::Grid => &["children", "columns", "state", "actions"],
         Kind::Panel | Kind::Card => &["children", "title", "state", "actions"],
         Kind::Text => &["text"],
@@ -79,21 +100,63 @@ pub(super) fn parse_node(value: Value) -> Result<Node, String> {
         }
     }
     if let Some(layout) = value.get("layout").and_then(Value::as_object) {
-        let container = matches!(
-            kind,
-            Kind::Module | Kind::Row | Kind::Column | Kind::Grid | Kind::Panel | Kind::Card
-        );
+        let container = kind.is_container();
         for key in layout.keys() {
-            if !container && ["gap", "align", "justify", "wrap", "overflow"].contains(&key.as_str())
+            if !container
+                && [
+                    "gap",
+                    "rowGap",
+                    "columnGap",
+                    "align",
+                    "justify",
+                    "wrap",
+                    "overflow",
+                ]
+                .contains(&key.as_str())
             {
                 return Err(format!(
                     "组件 {:?}: layout.{key} 仅用于容器",
                     value.get("id")
                 ));
             }
-            if kind == Kind::Grid && key == "justify" {
-                return Err("grid 不接受 layout.justify（轨道定义列宽）".into());
+            if matches!(kind, Kind::Grid | Kind::Masonry) && key == "justify" {
+                return Err("grid/masonry 不接受 layout.justify（轨道定义列宽）".into());
             }
+            if kind == Kind::Splitter
+                && ["gap", "rowGap", "columnGap", "wrap", "align", "justify"]
+                    .contains(&key.as_str())
+            {
+                return Err("splitter 的间距由 barSize 控制，面板填满交叉轴；不接受 gap/rowGap/columnGap/wrap/align/justify".into());
+            }
+        }
+    }
+    // Apply semantic defaults once so measurement and rendering share the same values.
+    if matches!(
+        kind,
+        Kind::Space | Kind::Layout | Kind::Header | Kind::Sider | Kind::Content | Kind::Footer
+    ) {
+        let layout = value
+            .as_object_mut()
+            .unwrap()
+            .entry("layout")
+            .or_insert_with(|| serde_json::json!({}));
+        let layout = layout.as_object_mut().ok_or("layout 必须是对象")?;
+        if kind == Kind::Space {
+            layout.entry("gap").or_insert(serde_json::json!(8));
+            layout.entry("align").or_insert(serde_json::json!("center"));
+        } else {
+            let width = if kind == Kind::Sider {
+                serde_json::json!({"fixed":200})
+            } else {
+                serde_json::json!({"fr":1})
+            };
+            let height = match kind {
+                Kind::Header => serde_json::json!({"fixed":64}),
+                Kind::Footer => serde_json::json!({"fixed":48}),
+                _ => serde_json::json!({"fr":1}),
+            };
+            layout.entry("width").or_insert(width);
+            layout.entry("height").or_insert(height);
         }
     }
     serde_json::from_value(value).map_err(|e| e.to_string())

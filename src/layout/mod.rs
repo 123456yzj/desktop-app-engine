@@ -2,7 +2,11 @@
 mod arrange;
 mod flex;
 mod geometry;
+mod masonry;
 mod measure;
+pub(crate) mod splitter;
+#[cfg(test)]
+mod tests;
 
 pub use arrange::{arrange, scroll_axis};
 pub use flex::{FlexItem, flex, wrap_lines};
