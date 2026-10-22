@@ -77,6 +77,8 @@ target\release\desktop-app-engine.exe package --output exports\Monitor.exe < C:\
 
 ## 验证与协议
 
+编写界面可从 [组件使用教程](docs/components/README.md) 开始：按布局容器、基础组件、数据录入、数据展示与扩展分类，提供完整 JSON 示例、属性表、事件说明和常见问题。首次使用建议先读 [01 快速开始](docs/components/01-quick-start.md) 和 [02 公共属性与布局](docs/components/02-common.md)。
+
 ```powershell
 cargo fmt -- --check
 cargo clippy --all-targets --locked --offline -- -D warnings
