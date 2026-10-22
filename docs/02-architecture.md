@@ -1,6 +1,6 @@
 # 引擎架构
 
-工程为单 Cargo crate。通用运行时和业务工作台是两个二进制，业务代码位于 `src/bin/vben-package/`，通过公开库接口使用引擎。
+工程为单 Cargo crate，对外提供 `desktop-app-engine.exe package`，接收 JSON 内容并导出一个应用 EXE。内部业务开发宿主位于 `src/bin/vben-package/`，通过库接口使用引擎。
 
 ## 描述到运行时
 
@@ -34,8 +34,8 @@ loader：选择输入与协议版本，确定资源基准目录
 
 ## 资源与交付
 
-开发运行时优先使用 `--app FILE`，其次为 EXE 同目录 `app.json`，缺少描述时报错。插件相对输入目录发现；打包描述的插件相对 EXE 目录发现。
+开发运行时优先使用 `--app FILE`，其次为 EXE 同目录 `app.json`，缺少描述时报错。开发插件相对输入目录发现；原生打包命令使用引擎已安装的插件目录，Cargo 开发运行时可使用仓库插件目录。
 
-`build.rs` 根据 `DAE_APP_DESCRIPTION` 生成内嵌定义，每次应用导出都编译对应运行时。通用打包脚本使用显式 `-Runtime` 参数，业务使用说明由独立模板提供。打包 EXE 固定使用内嵌定义，详见 [分发决策](06-packaging-decision.md)。
+`packaging::package` 接收 JSON 内容和输出路径，校验后按 `app.host` 选择制作端引擎旁的原生宿主模板，缺省使用通用引擎。随后将插件资源、应用定义及版本化索引追加到 EXE，并将 PE 子系统设为 Windows GUI。每次应用导出不调用编译工具。`application` 从 EXE 尾部读取索引，校验资源范围和路径；插件按资源内容标识释放到当前用户缓存，加载器及原生宿主以缓存目录作为资源基准。打包 EXE 固定使用内置定义，详见 [分发决策](06-packaging-decision.md)。
 
 egui/eframe 0.31.1 提供窗口、输入和基础图元；resvg 0.48.1 处理插件 SVG。中文字体来自 Windows 标准字体目录。版本由 `Cargo.lock` 锁定。

@@ -1,6 +1,6 @@
 {
   "schemaVersion":"0.2",
-  "app":{"name":"vben-package","window":{"width":1440,"height":900}},
+  "app":{"name":"vben-package","host":"vben-package","window":{"width":1440,"height":900}},
   "state":{
     "sshTarget":"",
     "repository":"/home/wwwroot/web-framework/current/",

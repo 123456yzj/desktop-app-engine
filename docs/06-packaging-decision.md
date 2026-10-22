@@ -1,45 +1,49 @@
-# 分发决策：输入描述编译为应用 EXE
+# 分发决策：JSON 内容输入，单 EXE 输出
 
-日期：2026-10-15。正式交付采用应用专属 EXE；JSON 是制作端必备输入，不作为交付包中的运行依赖。
+对外只有一个打包入口：`desktop-app-engine.exe package --output <应用.exe>`。标准输入是 UTF-8 JSON 内容，结果是一个可独立交付的 Windows 应用 EXE。
+
+## 调用契约
+
+```cmd
+desktop-app-engine.exe package --output exports\Monitor.exe < C:\Apps\monitor.json
+```
+
+上例使用 `cmd.exe` 的标准输入重定向。调用程序可将 JSON 内容直接写入引擎进程的标准输入，不必创建描述文件。唯一的业务输入是 JSON；`--output` 指定产物位置，不提供运行时选择、说明模板或插件复制参数。
+
+- 成功退出 0，标准输出只返回产物绝对路径。
+- 失败退出 2，原因写入标准错误；已有输出文件拒绝覆盖。
+- 打包先校验结构、作用域、引用和类型，再生成临时 EXE，执行 `--check-plugins` 后发布。无插件时此检查仅校验应用，不执行插件。
+- 临时文件在成功或正常报错时清理；非法 JSON 和校验失败不会生成正式输出 EXE。
 
 ## 构建与产物
 
 ```text
-源应用描述 JSON
-  → build.rs 解析并生成 Rust 数据定义
-  → Cargo 编译对应运行时与应用定义
-  → 应用 EXE + 按需配套的组件/资源 + 使用说明
+JSON 内容
+  → 协议解析和语义校验
+  → 按 app.host 复制已安装原生宿主，默认使用制作端引擎，设置 Windows GUI 子系统
+  → 嵌入 JSON 定义、所需插件文件和版本化资源索引
+  → 执行应用 EXE 校验
+  → 输出一个应用 EXE
 ```
 
-每次打包都会用 `DAE_APP_DESCRIPTION` 指向本次实际输入。生成的 Rust 定义进入 EXE，不复制应用描述 JSON，不把固定示例当作传入描述。Cargo 同时跟踪输入路径、输入内容和构建环境变化；应用定义修改后需要重新打包。
+制作端引擎仅在引擎版本更新时使用 Rust/Cargo 构建。每次导出应用直接操作 EXE，不调用 PowerShell、Cargo 或编译器，不需要项目源码。嵌入数据采用 `DAEPKG01` 版本标识，资源索引记录文件在 EXE 中的偏移和长度；加载器检查数据范围及资源相对路径。
 
-```powershell
-.\scripts\package.ps1 -Description C:\Apps\monitor.json -Output .\exports -Name Monitor
-.\scripts\package.ps1 -Description .\examples\vben-package.json -Output .\exports -Name BuildWorkbench -Runtime vben-package -InstructionsTemplate .\src\bin\vben-package\README.template.txt
-```
+原生业务应用通过 JSON 的 `app.host` 声明已安装宿主模板，名称仅接受 1..64 位字母、数字、下划线或连字符。模板 `<host>.exe` 放在制作端引擎旁；省略或指定 `desktop-app-engine` 时使用通用引擎。缺少模板时报错，不按 `app.name` 猜测，不额外暴露运行时选择参数。模板必须与引擎的嵌入格式兼容并实现 `--check-plugins` 无窗口校验。原生宿主在制作端预先构建或安装，导出时直接使用模板。
 
-制作端需要 Rust/Cargo 和已缓存的锁定依赖，脚本执行 `cargo build --release --bin <运行时> --locked --offline`。`CARGO_TARGET_DIR` 指定编译缓存目录，默认使用项目 `target`。脚本在编译后复制应用 EXE、按需复制插件基础件，生成 README 并执行包内 `--check` 或 `--check-plugins`。应用名称默认取描述的 `app.name`；可通过 `-Name` 指定有效 Windows 文件名，已有目录拒绝覆盖。失败返回 2。
+交付物只有指定的 EXE，不生成外置应用 JSON、README 或插件目录。应用定义保存在 EXE 内，不再转换成 Rust 源码。修改 JSON 后需要重新打包，已交付应用不受制作端输入变化影响。
 
-无插件应用的交付目录为：
+插件必须预先安装在制作端引擎旁的 `plugins/<包名>/`，包括 manifest、入口、生产依赖和许可证；同时准备 `plugins/runtime/node.exe` 及许可证。开发运行可使用仓库插件目录。打包自动嵌入引用插件和运行库，禁止符号链接及特殊文件，缺失资源会报错。客户机无需安装 Node、Rust 或制作工具。
 
-```text
-应用名/
-  应用名.exe
-  README.txt
-```
-
-使用插件时携带相应插件和运行库，客户机无需 Rust、项目源码或制作端源描述。插件自身的 manifest、依赖元数据属于组件基础件，不是外置应用描述。当前工具没有需要预置的业务数据库，不生成空数据库占位。
+应用首次运行时将内置插件释放到 `%LOCALAPPDATA%\DesktopAppEngine\resources\<资源内容标识>\`，后续启动复用缓存。缓存通过暂存目录发布，并发首次启动可复用已完成缓存。无插件应用不创建资源缓存。Windows 系统字体、OpenGL 驱动和 JSON 中显式声明的外部业务程序仍由运行环境提供。
 
 ## 应用定义与运行数据
 
-打包 EXE 只使用编入的应用定义，忽略同目录 `app.json`，拒绝 `--app` 覆盖。`--check` 无窗口校验编入的定义；校验成功退出 0。源描述删除、移动或修改都不会改变已交付应用。
+打包 EXE 只使用内置定义，忽略同目录 `app.json`，拒绝 `--app` 覆盖。`--check` 无窗口校验定义；`--check-plugins` 额外执行插件 mount、SVG 栅格化和 unmount。成功退出 0，错误退出 2。
 
-Turbo 构建工具的连接设置保存在 `%LOCALAPPDATA%\DesktopAppEngine\apps\<EXE名>\connection.dat`。该文件采用带版本标识的二进制格式，独立保存用户修改的 SSH 地址和工作区路径，不回写源描述或应用 EXE。首次启动使用编入的初始连接；后续读取当前用户保存的连接设置。设置先校验、写临时文件并同步，再替换正式文件；保存失败不更改当前连接。`--check` 不读取连接覆盖、不发起远端操作。任务日志继续写入用户日志目录。
+凭据、日志及用户设置保存在当前用户目录，不嵌入应用包。打包不会复制制作机凭据。应用改名可能改变以 EXE 名区分的日志或设置目录；显式声明的 credentialStore 名称不随 EXE 名变化。
 
-开发构建未指定 `DAE_APP_DESCRIPTION` 时，依次使用 `--app FILE`、EXE 同目录 `app.json`；缺少描述时报错。构建工作台的默认模板由业务二进制持有。该开发加载规则不适用于打包 EXE。
+开发宿主可继续用 `--app FILE` 和 EXE 同目录 `app.json` 调试。仓库中的 `vben-package` 通过 `app.host: "vben-package"` 接入统一打包命令，导出的单 EXE 同时包含 JSON 定义和原生业务控制器。宿主仍是内部模板，对外只有一个打包入口。
 
 ## 验证
 
-通用脚本默认运行时为 `desktop-app-engine`，通过 `-Runtime` 显式选择二进制，不根据应用名称推断业务类型。`-InstructionsTemplate` 可指定交付说明，其中 `{{Name}}` 替换为导出名称。
-
-每次打包后执行包内校验。当前仓库不保留自动化测试代码；交付环境应补充启动、交互及外部资源检查。
+每次导出都运行最终 EXE 的无窗口校验。单文件移动、异目录启动、拒绝外部描述覆盖和插件资源释放应在实际产物上验证。界面交互、网络接口及外部业务命令需在目标环境单独验证。

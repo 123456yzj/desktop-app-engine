@@ -1,6 +1,12 @@
 # 桌面应用描述引擎
 
-以 JSON 描述作为制作端输入，校验并运行 Windows 桌面界面，或编译为应用专属 EXE。支持协议 0.1 和 0.2；0.2 提供组件树、布局、类型化状态、模块作用域、表格、图表、命令、HTTP 数据源和 JavaScript 插件。
+对外提供一个原生打包入口：输入 JSON 内容，输出应用专属的 Windows EXE。支持协议 0.1 和 0.2；0.2 提供组件树、布局、类型化状态、模块作用域、表格、图表、命令、HTTP 数据源和 JavaScript 插件。
+
+```cmd
+desktop-app-engine.exe package --output MyApp.exe < app.json
+```
+
+命令通过标准输入接收 UTF-8 JSON；上例的文件重定向语法用于 `cmd.exe`。调用程序也可直接将 JSON 字节写入子进程标准输入。打包时无需 Rust、Cargo、PowerShell 或项目源码，只需制作端引擎及 JSON 声明的已安装原生宿主、插件资源。
 
 ## 开发运行
 
@@ -9,10 +15,10 @@
 ```powershell
 cargo fetch --locked
 cargo check --all-targets --locked --offline
-cargo build --release --locked --offline
+cargo build --release --bin desktop-app-engine --locked --offline
 ```
 
-通用运行时使用显式输入，或加载 EXE 同目录的 `app.json`。缺少应用描述时返回错误；外部输入错误时直接报告原因。以下 `C:\Apps\monitor.json` 表示自行制作的应用描述路径：
+制作端引擎无参数运行时显示打包用法。内部运行时调试通过 `--app` 显式指定输入；开发加载器也支持 EXE 同目录的 `app.json`。外部输入错误时直接报告原因。以下 `C:\Apps\monitor.json` 表示自行制作的应用描述路径：
 
 ```powershell
 cargo run --bin desktop-app-engine --locked --offline -- --app C:\Apps\monitor.json --check
@@ -30,9 +36,19 @@ cargo run --bin vben-package --locked --offline
 
 工作台启动后的扫描和构建会使用用户配置的 SSH 连接，操作规则见 [构建工作台](docs/20-turbo-build.md)。
 
+工作台 JSON 通过 `app.host: "vben-package"` 声明所需原生宿主。先构建一次宿主模板，随后仍由统一命令导出完整应用：
+
+```powershell
+cargo build --release --bin vben-package --locked --offline
+```
+
+```cmd
+target\release\desktop-app-engine.exe package --output exports\vben-package.exe < examples\vben-package.json
+```
+
 ## 分层与入口
 
-工程保留一个 Cargo crate，两个二进制。通用引擎与构建工作台通过库接口连接：
+工程保留一个 Cargo crate，对外命令是 `desktop-app-engine.exe package`。仓库中的 `vben-package` 是使用库接口的内部业务开发宿主：
 
 | 目录 | 职责 |
 | --- | --- |
@@ -41,6 +57,7 @@ cargo run --bin vben-package --locked --offline
 | `src/runtime/` | 受校验的状态提交、有序事件、动作及异步任务调度 |
 | `src/components/`、`src/layout/` | 内部组件树、表格/图表纯算法、布局 |
 | `src/services/` | 子进程、HTTP、插件 RPC、凭据和日志 |
+| `src/packaging.rs`、`src/application.rs` | 单 EXE 导出、内置定义读取和插件资源缓存 |
 | `src/renderer/` | egui 宿主、主题、文本测量、绘制和日志界面 |
 | `src/bin/vben-package/` | 业务控制器、远端操作、设置和界面生成 |
 
@@ -48,16 +65,15 @@ cargo run --bin vben-package --locked --offline
 
 ## 应用打包
 
-通用打包默认使用 `desktop-app-engine`，通过 `-Runtime` 显式选择其他运行时：
+统一接口接收 JSON 内容和输出 EXE 路径，宿主从 JSON 的 `app.host` 自动解析；省略时使用通用引擎。原生宿主模板 `<host>.exe` 安装在制作端引擎旁，缺失时报错。先构建一次制作端引擎，随后直接调用原生命令：
 
-```powershell
-.\scripts\package.ps1 -Description C:\Apps\monitor.json -Output .\exports -Name Monitor
-.\scripts\package.ps1 -Description .\examples\vben-package.json -Output .\exports -Name BuildWorkbench -Runtime vben-package -InstructionsTemplate .\src\bin\vben-package\README.template.txt
+```cmd
+target\release\desktop-app-engine.exe package --output exports\Monitor.exe < C:\Apps\monitor.json
 ```
 
-脚本将输入通过 `DAE_APP_DESCRIPTION` 编译进 EXE，生成应用目录及 `README.txt`，按需复制插件，并执行包内校验。已有应用目录拒绝覆盖。自定义说明模板中的 `{{Name}}` 替换为导出名称，业务交付说明放在业务目录。
+引擎先完成结构和语义校验，将定义及所需插件资源嵌入 EXE，再执行包内校验；通过后写入指定输出路径。最终只交付一个 EXE，已有输出路径拒绝覆盖。成功退出 0，标准输出为产物绝对路径；失败退出 2，原因写入标准错误。
 
-打包 EXE 固定使用编入的定义，拒绝 `--app` 覆盖。修改源描述后重新打包。客户机需要 Windows 系统中文字体、OpenGL 驱动及应用声明的外部程序；使用插件时需准备随包分发的插件与运行库。凭据和用户设置保存在当前用户目录。详见 [分发决策](docs/06-packaging-decision.md)。
+打包 EXE 固定使用内置定义，拒绝 `--app` 覆盖。修改 JSON 后重新打包。客户机需要 Windows 系统中文字体、OpenGL 驱动及应用声明的外部程序；插件及其 Node 运行库自动释放到用户资源缓存。凭据和用户设置保存在当前用户目录。详见 [分发决策](docs/06-packaging-decision.md)。
 
 ## 验证与协议
 

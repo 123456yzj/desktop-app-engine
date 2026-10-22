@@ -1,19 +1,29 @@
 # 多仓库构建工具
 
-`vben-package` 是独立 Windows 二进制，复用引擎的 0.2 描述、布局、事件和日志。源界面模板位于 `examples/vben-package.json`，原生控制器位于 `src/bin/vben-package/turbo_build/`。正式打包会把本次输入编译进 EXE，不交付外置 `app.json`；开发时可使用 `--app` 调试模板。
+`vben-package` 是 Windows 构建工作台，复用引擎的 0.2 描述、布局、事件和日志。源界面模板位于 `examples/vben-package.json`，通过 `app.host: "vben-package"` 声明原生宿主；原生控制器位于 `src/bin/vben-package/turbo_build/`。统一引擎命令将 JSON 与宿主模板组合成单个可交付 EXE，保留扫描、分支切换和构建行为；开发时可使用 `--app` 调试模板。
 
 工作台通过通用样式字段指定浅色背景、白色仓库面板、深色日志面板、蓝色主按钮、项目色标与分组连接栏。Grid 的 fr 高度将左右面板撑满剩余窗口空间。
 
 会话日志预览显示扫描进度和仓库分支，扫描与分支列表的结构化 JSON 保留在原始 stdout 文件中，避免大段数据占满面板。构建进程的 stdout/stderr 仍可实时查看。
 
 ```powershell
-.\scripts\package.ps1 -Description .\examples\vben-package.json -Output .\exports\multi-repo -Name vben-package -Runtime vben-package -InstructionsTemplate .\src\bin\vben-package\README.template.txt
-.\exports\multi-repo\vben-package\vben-package.exe --check
+cargo run --bin vben-package --locked --offline -- --check
+cargo run --bin vben-package --locked --offline
 ```
 
-构建和打包共用 `CARGO_TARGET_DIR`；未设置时为 `target`。业务运行时通过 `-Runtime vben-package` 显式选择，专属交付说明由业务目录中的模板提供。
+先构建制作端引擎和宿主模板，再通过统一原生命令导出（后一条在 `cmd.exe` 中执行）：
 
-初始连接取自编入的 `state.sshTarget` 与 `state.repository`；当前用户保存的连接优先，保存在 `%LOCALAPPDATA%\DesktopAppEngine\apps\<EXE名>\connection.dat`，不回写应用定义。连接无效时打开设置；已有合法配置会自动扫描。认证由本机 OpenSSH 管理，不随包复制密钥。`--check` 仅校验编入的定义；`--inspect` 无窗口执行只读扫描，输出数组包含根仓库（`id: "@root"`，存在时）及业务仓库。
+```powershell
+cargo build --release --bin desktop-app-engine --bin vben-package --locked --offline
+```
+
+```cmd
+target\release\desktop-app-engine.exe package --output exports\vben-package.exe < examples\vben-package.json
+```
+
+制作端的宿主模板与引擎放在同一目录；客户只需导出的 `vben-package.exe`。统一接口见 [分发决策](06-packaging-decision.md)。
+
+初始连接取自模板的 `state.sshTarget` 与 `state.repository`；当前用户保存的连接优先，保存在 `%LOCALAPPDATA%\DesktopAppEngine\apps\<EXE名>\connection.dat`，不回写应用定义。连接无效时打开设置；已有合法配置会自动扫描。认证由本机 OpenSSH 管理，不随包复制密钥。`--check` 仅校验定义；`--inspect` 无窗口执行只读扫描，输出数组包含根仓库（`id: "@root"`，存在时）及业务仓库。
 
 扫描只列出 `apps` 一级目录中带独立 `.git` 和 `package.json` 的业务仓库，读取各自当前分支与提交。按目录名去掉 `web-` 前缀推导脚本名，再检查 Turbo 根目录 `package.json` 中真实存在的脚本。缺脚本或处于 detached HEAD 的仓库不可选择构建。
 

@@ -3,6 +3,7 @@ pub mod compiler;
 mod components;
 pub mod layout;
 pub mod loader;
+pub mod packaging;
 pub mod protocol;
 pub mod renderer;
 pub mod runtime;

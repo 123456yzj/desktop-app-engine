@@ -1,5 +1,3 @@
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
-
 use desktop_app_engine::{
     loader, renderer as gui,
     renderer::DashboardApp,
@@ -191,6 +189,13 @@ fn run() -> Result<(), String> {
         println!("描述校验通过: {}", description.app().name);
         return Ok(());
     }
+    if let Some(host) = &description.app().host
+        && host != "desktop-app-engine"
+    {
+        return Err(format!(
+            "此应用需要原生宿主 {host}，请通过 package 命令导出后运行，或使用对应宿主调试"
+        ));
+    }
     let title = description.app().name.clone();
     let window = &description.app().window;
     let native_options = eframe::NativeOptions {
@@ -209,7 +214,7 @@ fn run() -> Result<(), String> {
             cc.egui_ctx
                 .options_mut(|o| o.max_passes = std::num::NonZeroUsize::new(1).unwrap());
             match description {
-                loader::Document::V01(d) => Ok(Box::new(gui::DesktopApp::new(Engine::new(d)?))),
+                loader::Document::V01(d) => Ok(Box::new(gui::DesktopApp::new(Engine::new(*d)?))),
                 loader::Document::V02(d) => {
                     let mut app = DashboardApp::from_compiled(*d)?;
                     if let Some(base) = command_base {
@@ -224,6 +229,20 @@ fn run() -> Result<(), String> {
 }
 
 fn main() {
+    if matches!(desktop_app_engine::application::is_packaged(), Ok(false)) {
+        let first = std::env::args_os().nth(1);
+        if first.is_none()
+            || first
+                .as_deref()
+                .is_some_and(|arg| arg == "package" || arg == "--help" || arg == "-h")
+        {
+            if let Err(error) = package_command() {
+                eprintln!("打包失败：{error}");
+                std::process::exit(2);
+            }
+            return;
+        }
+    }
     let _ = logging::global();
     let previous = std::panic::take_hook();
     std::panic::set_hook(Box::new(move |info| {
@@ -249,6 +268,44 @@ fn main() {
         std::process::exit(2);
     }
     logging::event("INFO", "app.exit", serde_json::json!({"exitCode":0}));
+}
+
+fn package_command() -> Result<(), String> {
+    use std::io::{IsTerminal, Read};
+    const HELP: &str = "用法：desktop-app-engine.exe package --output <应用.exe>\n\n从标准输入读取 UTF-8 JSON 内容，输出独立 EXE。已有文件拒绝覆盖。\n成功退出 0，标准输出为 EXE 的绝对路径；失败退出 2，原因写入标准错误。\n\n示例（cmd.exe）：\n  desktop-app-engine.exe package --output MyApp.exe < app.json\n";
+    let mut args = std::env::args_os().skip(1);
+    match args.next().as_deref().and_then(|arg| arg.to_str()) {
+        None | Some("--help" | "-h") => {
+            print!("{HELP}");
+            return Ok(());
+        }
+        Some("package") => {}
+        _ => return Err(HELP.into()),
+    }
+    let mut output = None;
+    while let Some(arg) = args.next() {
+        match arg.to_str() {
+            Some("--help" | "-h") => {
+                print!("{HELP}");
+                return Ok(());
+            }
+            Some("--output") if output.is_none() => {
+                output = Some(PathBuf::from(args.next().ok_or("--output 缺少 EXE 路径")?));
+            }
+            _ => return Err(format!("未知或重复参数：{}\n{HELP}", arg.to_string_lossy())),
+        }
+    }
+    let output = output.ok_or("必须通过 --output 指定输出 EXE")?;
+    if std::io::stdin().is_terminal() {
+        return Err("请通过标准输入传入 UTF-8 JSON 内容".into());
+    }
+    let mut json = String::new();
+    std::io::stdin()
+        .read_to_string(&mut json)
+        .map_err(|e| format!("无法读取 UTF-8 JSON 输入：{e}"))?;
+    let output = desktop_app_engine::packaging::package(&json, &output)?;
+    println!("{}", output.display());
+    Ok(())
 }
 
 fn show_error(error: &str) {

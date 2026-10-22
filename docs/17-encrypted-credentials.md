@@ -61,6 +61,6 @@ Authorization、Proxy-Authorization、Cookie、X-API-Key、API-Key、X-Auth-Toke
 
 ## 分发与验证
 
-密文保存在每位用户的本地目录，打包脚本编译应用定义并复制插件资源，不携带制作机凭据。客户需要在运行应用的同一 Windows 用户上下文下录入凭据。应用目录移动或 EXE 改名不改变 credentialStore；修改库名或换 Windows 用户后需要另行录入。
+密文保存在每位用户的本地目录，原生打包命令仅内置应用定义和插件资源，不携带制作机凭据。客户需要在运行应用的同一 Windows 用户上下文下录入凭据。应用目录移动或 EXE 改名不改变 credentialStore；修改库名或换 Windows 用户后需要另行录入。
 
 凭据实现位于 `src/services/credentials.rs`。实际交付时通过 `--check-credentials` 验证当前用户可解密性，再按目标接口验证认证；配置校验不代替网络认证，也不提供跨用户迁移验证。

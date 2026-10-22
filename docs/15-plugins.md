@@ -4,16 +4,15 @@
 
 ## 安装和运行
 
-制作端需自行准备应用描述旁的 `plugins/<包名>`，复制 manifest、worker 和生产依赖，并准备 `plugins/runtime/node.exe` 及对应许可证。仓库中的 `plugins/echarts/` 提供适配器源码与锁定依赖。插件的 node_modules 连同包内许可证一起分发；打包脚本复制已经准备好的资源。
+制作端在引擎旁安装 `plugins/<包名>`，包含 manifest、worker、生产依赖和许可证，并准备 `plugins/runtime/node.exe` 及对应许可证。仓库中的 `plugins/echarts/` 提供适配器源码与锁定依赖。原生打包命令自动将所需插件和运行库嵌入 EXE；Cargo 开发运行可使用仓库插件目录。使用 `--app` 开发加载时，插件仍放在应用描述旁。
 
 开发时使用 `desktop-app-engine.exe --app <应用描述路径> --check-plugins` 检查实际 RPC 和 SVG。客户端使用包内 Node 时无需另外安装 Rust、npm 或 Node。
 
-目录结构：
+制作端插件目录结构：
 
 ```text
 PluginChartApp/
-  PluginChartApp.exe
-  README.txt
+  desktop-app-engine.exe
   plugins/
     runtime/node.exe
     runtime/NODE-LICENSE.txt
@@ -24,7 +23,9 @@ PluginChartApp/
     echarts/node_modules/...
 ```
 
-`plugins` 在应用 JSON 顶层列出启用包名。开发加载器通过 `compiler::compile_at` 按输入描述目录发现插件，打包应用使用 EXE 目录。`protocol::v02::parse` 只解析输入，程序化宿主应在编译时明确传入资源目录。插件入口必须在包内；包名仅接受字母、数字、下划线、连字符。manifest 错误、缺失包、重复组件注册都使加载失败。Node 优先使用 `plugins/runtime/node.exe`，开发时可回退 PATH 中的 node。
+客户只收到一个应用 EXE。应用自动将内置资源释放到 `%LOCALAPPDATA%\DesktopAppEngine\resources\<资源内容标识>\`，再从该缓存加载插件。
+
+`plugins` 在应用 JSON 顶层列出启用包名。开发加载器通过 `compiler::compile_at` 按输入描述目录发现插件，打包应用使用内置资源缓存。`protocol::v02::parse` 只解析输入，程序化宿主应在编译时明确传入资源目录。插件入口必须在包内；包名仅接受字母、数字、下划线、连字符。manifest 错误、缺失包、重复组件注册都使加载失败。Node 优先使用 `plugins/runtime/node.exe`，开发时可回退 PATH 中的 node，正式导出必须内置 Node。
 
 `--check` 校验配置和 manifest，不执行 JavaScript；`--check-plugins` 额外逐个启动已引用组件，在 800×400 下 mount、栅格化返回 SVG、unmount；成功退出 0，失败退出 2。这个模式会执行插件代码。插件与应用具有相同本机权限，API 1 不提供沙箱。
 
@@ -119,4 +120,4 @@ target 是全树唯一组件 ID，method 必须已注册；args 支持 literal/s
 
 ## 验证入口
 
-`--check` 校验结构、manifest 和组件契约；`--check-plugins` 执行已引用插件的挂载、SVG 栅格化和卸载。插件包和 Node 由应用提供，需要在实际交付目录检查。
+`--check` 校验结构、manifest 和组件契约；`--check-plugins` 执行已引用插件的挂载、SVG 栅格化和卸载。原生打包命令自动执行后者；验证交付物时可将单个 EXE 移到空目录运行，确认内置插件及 Node 均能加载。

@@ -8,7 +8,7 @@ use std::path::Path;
 
 #[derive(Debug)]
 pub enum Document {
-    V01(v01::Description),
+    V01(Box<v01::Description>),
     V02(Box<CompiledDescription>),
 }
 impl Document {
@@ -35,7 +35,7 @@ pub fn parse_document_at(source: &str, base: &Path) -> Result<Document, String> 
             .map_err(|e| format!("描述字段 {}: {}", e.path(), e.inner()))?;
         deserializer.end().map_err(|e| format!("JSON 尾部: {e}"))?;
         validation::validate(&description)?;
-        Ok(Document::V01(description))
+        Ok(Document::V01(Box::new(description)))
     }
 }
 
@@ -43,7 +43,10 @@ pub fn load_document(path: Option<&Path>) -> Result<Document, String> {
     let exe = std::env::current_exe().map_err(|e| format!("无法定位运行时程序: {e}"))?;
     let base = exe.parent().ok_or("无法确定运行时所在目录")?;
     if let Some(value) = crate::application::packaged_definition(path)? {
-        return parse_document_at(&value.to_string(), base);
+        return parse_document_at(
+            &value.to_string(),
+            &crate::application::resource_base(base)?,
+        );
     }
     let path = path
         .map(Path::to_owned)

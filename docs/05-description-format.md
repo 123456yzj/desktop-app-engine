@@ -9,7 +9,7 @@
 | 字段 | 类型 | 要求 |
 | --- | --- | --- |
 | schemaVersion | 字符串 | 固定 `"0.1"` |
-| app | 对象 | `name` 字符串；`window` 包含数值 `width`、`height`（160..8192，逻辑像素） |
+| app | 对象 | `name` 字符串；可选 `host` 指定已安装原生宿主；`window` 包含数值 `width`、`height`（160..8192，逻辑像素） |
 | state | 对象 | 键为状态名，值为初始字符串 |
 | root | 组件 | 嵌套组件树 |
 | actions | 对象 | 键为动作 ID，值包含非空 `steps` 数组 |
@@ -68,6 +68,8 @@ row 支持换行，column 纵向排列；内容使用垂直滚动，文本自动
 结构 schema：[description-0.2.schema.json](description-0.2.schema.json)，Draft 2020-12。编译器还进行状态类型、唯一 ID、引用、数据列、行键和坐标等语义校验。schema 不代替完整编译校验；运行应用的 `--check` 验证描述和引用资源。
 
 顶层 schemaVersion、app、state、root、actions 均必填，可选 plugins 数组声明启用包名，dataSources 对象声明 HTTP JSON 接口；schemaVersion 固定 `"0.2"`。app/window 沿用 0.1。所有结构对象拒绝未知字段；组件只接受该类型的专属字段。表格行对象和用户业务状态对象的字段由数据声明消费，不采用任意表达式。
+
+`app.host` 可省略，默认使用通用引擎；指定时必须是 1..64 位字母、数字、下划线或连字符，对应制作端引擎旁的 `<host>.exe` 宿主模板。例如构建工作台声明 `"host":"vben-package"`，统一打包命令据此保留其原生业务控制器。缺少宿主时导出失败，不按应用名称推断宿主。宿主对协议及业务字段的额外要求由最终 EXE 校验。
 
 ### 状态、绑定与格式
 

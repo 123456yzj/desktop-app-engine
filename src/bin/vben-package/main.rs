@@ -132,11 +132,31 @@ fn parse_template(text: &str, base: &std::path::Path) -> Result<(v02::Descriptio
 fn run() -> Result<(), String> {
     let mut path = None;
     let mut check = false;
+    let mut check_plugins = false;
     let mut inspect = false;
     let mut theme = egui::ThemePreference::Light;
     let mut args = std::env::args_os().skip(1);
     while let Some(arg) = args.next() {
-        match arg.to_str(){Some("--app") if path.is_none()=>path=Some(PathBuf::from(args.next().ok_or("--app 缺少路径")?)),Some("--check")=>check=true,Some("--inspect")=>inspect=true,Some("--theme")=>{theme=match args.next().as_deref().and_then(std::ffi::OsStr::to_str){Some("light")=>egui::ThemePreference::Light,Some("dark")=>egui::ThemePreference::Dark,Some("system")=>egui::ThemePreference::System,_=>return Err("--theme 需要 light、dark 或 system".into())}},_=>return Err("用法：vben-package.exe [--app FILE] [--check|--inspect] [--theme light|dark|system]".into())}
+        match arg.to_str() {
+            Some("--app") if path.is_none() => {
+                path = Some(PathBuf::from(args.next().ok_or("--app 缺少路径")?));
+            }
+            Some("--check") => check = true,
+            Some("--check-plugins") => {
+                check = true;
+                check_plugins = true;
+            }
+            Some("--inspect") => inspect = true,
+            Some("--theme") => {
+                theme = match args.next().as_deref().and_then(std::ffi::OsStr::to_str) {
+                    Some("light") => egui::ThemePreference::Light,
+                    Some("dark") => egui::ThemePreference::Dark,
+                    Some("system") => egui::ThemePreference::System,
+                    _ => return Err("--theme 需要 light、dark 或 system".into()),
+                };
+            }
+            _ => return Err("用法：vben-package.exe [--app FILE] [--check|--check-plugins|--inspect] [--theme light|dark|system]".into()),
+        }
     }
     if check && inspect {
         return Err("--check 与 --inspect 不能同时使用".into());
@@ -144,6 +164,7 @@ fn run() -> Result<(), String> {
     let exe = std::env::current_exe().map_err(|e| e.to_string())?;
     let base = exe.parent().ok_or("无法定位程序目录")?.to_owned();
     let compiled = desktop_app_engine::application::packaged_definition(path.as_deref())?;
+    let packaged = compiled.is_some();
     let path = path.or_else(|| {
         if compiled.is_some() {
             return None;
@@ -161,11 +182,14 @@ fn run() -> Result<(), String> {
     let text = std::str::from_utf8(&bytes)
         .map_err(|e| e.to_string())?
         .trim_start_matches('\u{feff}');
-    let resource_base = path
-        .as_deref()
-        .and_then(std::path::Path::parent)
-        .unwrap_or(&base)
-        .to_owned();
+    let resource_base = if packaged {
+        desktop_app_engine::application::resource_base(&base)?
+    } else {
+        path.as_deref()
+            .and_then(std::path::Path::parent)
+            .unwrap_or(&base)
+            .to_owned()
+    };
     let (description, template) = parse_template(text, &resource_base)?;
     let mut connection = Connection {
         host: description
@@ -194,8 +218,17 @@ fn run() -> Result<(), String> {
         prefix_args: vec![],
     };
     let mut model = Controller::new(connection, backend, Some(settings_path));
-    desktop_app_engine::compiler::compile_at(view::document(&template, &model)?, &resource_base)?;
+    let compiled = desktop_app_engine::compiler::compile_at(
+        view::document(&template, &model)?,
+        &resource_base,
+    )?;
     if check {
+        if check_plugins {
+            let runtime = desktop_app_engine::runtime::Runtime::from_compiled(compiled)?;
+            for id in runtime.check_plugins()? {
+                println!("插件执行与渲染校验通过: {id}");
+            }
+        }
         println!("多仓库打包应用校验通过");
         return Ok(());
     }
