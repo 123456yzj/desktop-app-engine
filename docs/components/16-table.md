@@ -39,6 +39,23 @@
 
 预期效果：负载显示为百分比，在线显示 true/false；点击列标题切换排序，点击行高亮选择并更新提示；拖动表头列边缘改变宽度。行获得焦点后可用上下方向键移动选择。
 
+## 代码演示：受控分页
+
+每页两行，翻页先写回 page，再执行 pageChange 动作；下方指标读取当前页。排序作用于全体数据，再截取当前页。
+
+```json
+{
+  "schemaVersion": "0.2",
+  "app": {"name": "表格分页", "window": {"width": 640, "height": 400}},
+  "state": {"page": 1},
+  "root": {"type": "column", "id": "page", "layout": {"padding": 24, "gap": 16}, "children": [
+    {"type": "table", "id": "users", "rows": {"kind": "literal", "value": [{"id": "a", "name": "Ada"}, {"id": "b", "name": "Alan"}, {"id": "c", "name": "Grace"}]}, "rowKey": "id", "columns": [{"id": "name", "field": "name", "title": "姓名", "width": {"fr": 1}}], "pageSize": 2, "current": {"kind": "state", "key": "page"}, "bordered": true, "emptyText": "暂无用户", "layout": {"height": {"fixed": 200}}},
+    {"type": "metric", "id": "current", "label": {"kind": "literal", "value": "当前页"}, "value": {"kind": "state", "key": "page"}}
+  ]},
+  "actions": {}
+}
+```
+
 ## API
 
 | 属性 | 类型 | 默认值 | 说明 |
@@ -48,8 +65,14 @@
 | `rowKey` | 字符串 | 必填 | 行对象中的唯一字符串字段 |
 | `columns` | 列对象数组，1..64 项 | 必填 | 见下表 |
 | `rowHeight` | 16..512 | 32 | 固定行高 |
+| `pageSize` | 整数 1..10000 或绑定 | 未设置 | 声明后启用分页；未声明时保留全量虚拟滚动 |
+| `current` | 整数 1..1000000000 或绑定 | 1 | 当前页，从 1 开始；state 绑定时翻页写回 |
+| `loading` | 布尔或绑定 | false | 显示加载指示，暂不显示表格内容 |
+| `emptyText` | 字符串或绑定 | 暂无数据 | 数据为空时显示 |
+| `bordered` | 布尔或绑定 | false | 绘制表格外边框 |
 | `events.rowSelect` | 动作 ID 或绑定 | 无 | 选中行变化时触发 |
 | `events.sortChange` | 动作 ID 或绑定 | 无 | 排序变化时触发 |
+| `events.pageChange` | 动作 ID 或绑定 | 无 | 载荷为新页码数字；先写回 current，再执行动作 |
 
 表格自然高度 280，建议设置 fixed 高度或在 Column 中使用 height.fr。表格自带双轴滚动，不能给叶节点配置 layout.overflow。
 
@@ -67,13 +90,15 @@
 
 ## 事件说明
 
-原生宿主收到的 rowSelect payload 为行键字符串，sortChange 为 field/descending 对象。当前普通 JSON 控件事件动作不能通过 event 绑定读取这些原始载荷，选择与排序保存在表格本地状态，也没有 selectedRowKey 之类的双向字段。示例只演示通知动作；需要按选中行执行业务时需由原生宿主处理。
+rowSelect payload 为行键字符串，sortChange 为 field/descending 对象。JSON 动作可用 event Binding 读取载荷，使用时必须声明 eventPayload 样本。选择与排序保存在表格本地状态；分页可绑定 current，通过 pageChange 先写状态再调用动作。
+
+选中行键跨页保留。current 超出最后一页时显示最后一页，状态本身不自动改写；未绑定 state 的页码保存在表格本地。pageSize 仅做本地数据分页，不自动请求远程页面。
 
 再次点击同一行不重复触发 rowSelect。用户拖动后的列宽优先于自动计算。空数组显示“暂无数据”。
 
 ## 常见问题
 
-- **支持操作列、自定义单元格、分页吗？** 当前没有单元格组件、分页、合并单元格或可变行高。
+- **支持操作列、自定义单元格、分页吗？** pageSize 启用排序后分页，current 可绑定状态；尚无筛选、展开行、单元格组件、合并单元格或可变行高。
 - **能用 layout.columns 吗？** 不可以；数据列是组件顶层 columns，与 Grid 轨道不同。
 - **排序会改写 rows 状态吗？** 不会，排序顺序是表格本地状态。
 

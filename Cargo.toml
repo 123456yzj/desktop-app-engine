@@ -13,6 +13,12 @@ resvg = "0.48.1"
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
 windows-sys = { version = "0.59", features = ["Win32_UI_WindowsAndMessaging", "Win32_Security_Cryptography", "Win32_Storage_FileSystem"] }
 zeroize = "1.9"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+egui_extras = { version = "=0.31.1", default-features = false, features = ["file", "http", "image", "svg"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg", "gif", "webp"] }
+qrcode = { version = "0.14", default-features = false }
+rfd = "0.15"
+regex = "1"
 
 [profile.release]
 strip = true

@@ -5,6 +5,13 @@ use serde_json::Value;
 pub fn parse(source: &str) -> Result<Description, String> {
     let mut raw: Value = serde_json::from_str(source.trim_start_matches('\u{feff}'))
         .map_err(|e| format!("JSON: {e}"))?;
+    if raw.get("schemaVersion").and_then(Value::as_str) != Some("0.2") {
+        let version = raw
+            .get("schemaVersion")
+            .map(Value::to_string)
+            .unwrap_or_else(|| "缺失".into());
+        return Err(format!("schemaVersion: 仅支持 \"0.2\"，实际为 {version}"));
+    }
     fn structural(v: &Value, path: &str) -> Result<(), String> {
         match v {
             Value::Object(o) => {
@@ -50,6 +57,7 @@ pub fn parse(source: &str) -> Result<Description, String> {
 pub(super) fn parse_node(mut value: Value) -> Result<Node, String> {
     let kind: Kind = serde_json::from_value(value.get("type").cloned().ok_or("缺少 type")?)
         .map_err(|e| e.to_string())?;
+    widgets::normalize(&mut value, kind)?;
     let specific: &[&str] = match kind {
         Kind::Plugin => &["component", "props"],
         Kind::Module => &["children", "state", "actions", "props", "emits", "on"],
@@ -80,18 +88,42 @@ pub(super) fn parse_node(mut value: Value) -> Result<Node, String> {
         Kind::Text => &["text"],
         Kind::Badge => &["text", "tone"],
         Kind::Input => &["value", "placeholder"],
+        Kind::Checkbox => &["value", "text", "indeterminate"],
+        Kind::Switch => &["value", "text"],
+        Kind::Radio => &["value", "options", "vertical"],
+        Kind::InputNumber => &["value", "min", "max", "step", "precision"],
+        Kind::Slider => &["value", "min", "max", "step", "vertical"],
+        Kind::Form => &["children", "state", "actions", "title"],
+        Kind::FormItem => &["children", "label", "rules"],
         Kind::Select => &["value", "placeholder", "options", "optionsFormat"],
-        Kind::Button => &["text"],
+        Kind::Button => &["text", "htmlType"],
         Kind::Metric => &["label", "value", "format"],
         Kind::Progress => &["value", "text"],
         Kind::Table => &["rows", "rowKey", "rowHeight", "columns"],
         Kind::LineChart | Kind::BarChart => {
             &["series", "xAxis", "yAxis", "legend", "title", "zoom", "pan"]
         }
+        _ => &[
+            "children",
+            "state",
+            "actions",
+            "text",
+            "title",
+            "label",
+            "value",
+            "placeholder",
+            "options",
+        ],
     };
     for key in value.as_object().ok_or("组件必须是对象")?.keys() {
+        if widgets::is_widget(kind)
+            && !kind.is_container()
+            && ["children", "state", "actions"].contains(&key.as_str())
+        {
+            return Err(format!("{kind:?} 为叶子组件，不接受 {key}"));
+        }
         if ![
-            "type", "id", "layout", "style", "visible", "enabled", "events",
+            "type", "id", "layout", "style", "visible", "enabled", "events", "api",
         ]
         .contains(&key.as_str())
             && !specific.contains(&key.as_str())
@@ -133,7 +165,13 @@ pub(super) fn parse_node(mut value: Value) -> Result<Node, String> {
     // Apply semantic defaults once so measurement and rendering share the same values.
     if matches!(
         kind,
-        Kind::Space | Kind::Layout | Kind::Header | Kind::Sider | Kind::Content | Kind::Footer
+        Kind::Space
+            | Kind::Form
+            | Kind::Layout
+            | Kind::Header
+            | Kind::Sider
+            | Kind::Content
+            | Kind::Footer
     ) {
         let layout = value
             .as_object_mut()
@@ -141,9 +179,13 @@ pub(super) fn parse_node(mut value: Value) -> Result<Node, String> {
             .entry("layout")
             .or_insert_with(|| serde_json::json!({}));
         let layout = layout.as_object_mut().ok_or("layout 必须是对象")?;
-        if kind == Kind::Space {
-            layout.entry("gap").or_insert(serde_json::json!(8));
-            layout.entry("align").or_insert(serde_json::json!("center"));
+        if matches!(kind, Kind::Space | Kind::Form) {
+            layout
+                .entry("gap")
+                .or_insert(serde_json::json!(if kind == Kind::Form { 12 } else { 8 }));
+            if kind == Kind::Space {
+                layout.entry("align").or_insert(serde_json::json!("center"));
+            }
         } else {
             let width = if kind == Kind::Sider {
                 serde_json::json!({"fixed":200})

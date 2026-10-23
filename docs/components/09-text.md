@@ -26,12 +26,39 @@
 
 预期效果：大号粗体标题、动态预览和两行等宽日志。文字颜色不会从父容器继承。
 
+## 代码演示：编辑、复制与文字样式
+
+编辑区和预览读取同一字符串；编辑时先写回 message，再执行 change 动作。复制按钮将文字写入剪贴板，并把 copy 载荷交给动作。
+
+```json
+{
+  "schemaVersion": "0.2",
+  "app": {"name": "文本编辑与复制", "window": {"width": 680, "height": 420}},
+  "state": {"message": "可编辑并复制", "copied": "尚未复制"},
+  "root": {"type": "column", "id": "page", "layout": {"padding": 24, "gap": 16}, "children": [
+    {"type": "text", "id": "editor", "text": {"kind": "state", "key": "message"}, "editable": true, "copyable": true, "events": {"copy": "copied"}},
+    {"type": "text", "id": "preview", "text": {"kind": "state", "key": "message"}, "strong": true, "underline": true, "ellipsis": true, "layout": {"width": {"fixed": 220}}},
+    {"type": "text", "id": "code", "text": {"kind": "literal", "value": "cargo build"}, "code": true},
+    {"type": "text", "id": "old", "text": {"kind": "literal", "value": "已过期的说明"}, "italic": true, "delete": true},
+    {"type": "text", "id": "copied", "text": {"kind": "state", "key": "copied"}}
+  ]},
+  "actions": {"copied": {"eventPayload": "可编辑并复制", "steps": [{"type": "set", "target": "copied", "value": {"kind": "event"}}]}}
+}
+```
+
 ## API
 
 | 属性 | 类型 | 默认值 | 说明 |
 | --- | --- | --- | --- |
 | `type` | 字符串 | 必填 `"text"` | 文本组件 |
 | `text` | 字符串绑定 | 必填 | literal/state/模块 prop |
+| `copyable` | 布尔或绑定 | false | 显示复制按钮，将当前文字写入剪贴板 |
+| `editable` | 布尔或绑定 | false | 使用多行编辑器；需要业务动作读取结果时将 text 绑定到顶层 state |
+| `ellipsis` | 布尔或绑定 | false | 在可用宽度内截断文字 |
+| `code` | 布尔或绑定 | false | 代码文字外观 |
+| `italic` / `underline` / `delete` / `strong` | 布尔或绑定 | false | 斜体、下划线、删除线、粗体；用于非编辑视图 |
+| `events.change` | 动作 ID 或绑定 | 无 | 载荷为新字符串；先写 text 的 state 绑定，再执行动作 |
+| `events.copy` | 动作 ID 或绑定 | 无 | 载荷为复制的字符串；动作使用 event 时须声明 eventPayload 样本 |
 | `style.fontSize` | 非负数 | 16 | 字号 |
 | `style.fontFamily` | proportional / monospace | proportional | 字体族 |
 | `style.fontWeight` | normal / bold | normal | 等宽字体优先于字重 |
@@ -39,7 +66,7 @@
 | `style.textAlign` | start / center / end | start | center 同时垂直居中 |
 | `style.textOverflowTooltip` | 布尔 | `true` | 截断时悬停显示完整内容 |
 
-其余见 [公共属性](02-common.md)。没有业务事件或子组件。
+editable 的 literal 文本修改保存在控件本地；state 绑定会写回状态。文字装饰、编辑和复制使用原生控件，不支持自定义渲染回调或任意图标子树。其余见 [公共属性](02-common.md)。没有子组件。
 
 ## 常见问题
 

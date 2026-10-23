@@ -2,7 +2,7 @@
 
 本教程面向使用 JSON 描述构建桌面应用的开发者，适用于协议 **0.2**。按“何时使用 → 代码演示 → API → 常见问题”组织，每个组件单独查阅。
 
-教程使用 `01`～`26` 两位编号，文件名、页面标题和下方目录保持一致。`21`～`26` 是补充的布局组件教程；当前共有 27 种 type（含 Layout 的四种区域节点）。与参考站点的覆盖情况见 [组件对照](../21-component-coverage.md)。
+教程使用 `01`～`37` 两位编号。`21`～`26` 为布局组件，`27`～`32` 为基础表单组件，`33`～`37` 按类别介绍新增的 50 种组件；每个组件的属性、事件、示例和限制直接在对应教程中说明。当前共有 **84 种 type**（含 Layout 区域节点和 FormItem）。与 Ant Design 官方目录的对应关系、属性缺口和桌面差异见 [组件对照](../21-component-coverage.md)。
 
 ## 开始使用
 
@@ -34,15 +34,21 @@
 
 | 编号 | 组件 | type | 何时使用 |
 | --- | --- | --- | --- |
-| 09 | [Text 文本](09-text.md) | `text` | 标题、说明、动态文字、等宽日志 |
-| 10 | [Button 按钮](10-button.md) | `button` | 触发状态更新或业务动作 |
+| 09 | [Text 文本](09-text.md) | `text` | 标题、动态文字、编辑、复制和文字装饰 |
+| 10 | [Button 按钮](10-button.md) | `button` | 业务动作、图标、加载状态和链接 |
 
 ## 数据录入
 
 | 编号 | 组件 | type | 何时使用 |
 | --- | --- | --- | --- |
-| 11 | [Input 输入框](11-input.md) | `input` | 编辑单行字符串、输入后联动或提交 |
-| 12 | [Select 下拉选择](12-select.md) | `select` | 单选字符串值、动态选项、禁用部分选项 |
+| 11 | [Input 输入框](11-input.md) | `input` | 单行、多行、密码、清除和字符计数 |
+| 12 | [Select 下拉选择](12-select.md) | `select` | 单选、多选、标签、搜索和动态选项 |
+| 27 | [Checkbox 多选框](27-checkbox.md) | `checkbox` | 布尔选择、同意条款和数组选项组 |
+| 28 | [Radio 单选框](28-radio.md) | `radio` | 展开显示的一组选项，支持禁用选项与方向键 |
+| 29 | [Switch 开关](29-switch.md) | `switch` | 即时启用或关闭设置 |
+| 30 | [InputNumber 数字输入框](30-input-number.md) | `inputNumber` | 数字编辑、上下限、步长与小数精度 |
+| 31 | [Slider 滑动输入条](31-slider.md) | `slider` | 单值、双滑块范围、刻度和反向显示 |
+| 32 | [Form 表单](32-form.md) | `form`、`formItem` | 字段标签、校验、提交和恢复初始值 |
 
 ## 数据展示与反馈
 
@@ -51,11 +57,21 @@
 | 13 | [Metric 指标](13-metric.md) | `metric` | 显示数量、数值、百分比 |
 | 14 | [Badge 状态标签](14-badge.md) | `badge` | 显示状态文字与语义颜色 |
 | 15 | [Progress 进度条](15-progress.md) | `progress` | 显示 0 到 1 的完成进度 |
-| 16 | [Table 表格](16-table.md) | `table` | 对象数组、排序、行选择与列宽调整 |
+| 16 | [Table 表格](16-table.md) | `table` | 对象数组、排序、分页、行选择与列宽调整 |
 | 17 | [LineChart 折线图](17-line-chart.md) | `lineChart` | 展示数值趋势、断点、多系列与缩放 |
 | 18 | [BarChart 柱状图](18-bar-chart.md) | `barChart` | 比较数值分组、多个系列 |
 
 ## 扩展
+
+新增组件按下表查阅，每页含完整可运行 JSON、值类型、主要属性、事件和当前限制。
+
+| 编号 | 教程 | 组件 |
+| --- | --- | --- |
+| 33 | [导航、分页与内容切换](33-navigation.md) | Anchor、Breadcrumb、Dropdown、Menu、Pagination、Steps、Tabs、Segmented、Collapse、Carousel |
+| 34 | [扩展数据录入与树](34-native-inputs.md) | AutoComplete、Cascader、ColorPicker、DatePicker、Mentions、Rate、TimePicker、Transfer、TreeSelect、Upload、Calendar、Tree |
+| 35 | [图片、列表与展示](35-native-display.md) | FloatButton、Icon、Avatar、BadgeCount、Descriptions、Empty、Image、List、Listy、QRCode、Timeline |
+| 36 | [弹窗、提示与反馈](36-native-feedback.md) | Modal、Drawer、Popover、Tooltip、Popconfirm、Message、Notification、Tour、Alert、Result、Skeleton、Spin |
+| 37 | [配置、装饰与桌面工具](37-native-context.md) | ConfigProvider、App、Affix、Watermark、BorderBeam；Util 桌面检查接口 |
 
 | 编号 | 组件 | type | 何时使用 |
 | --- | --- | --- | --- |
@@ -78,6 +94,7 @@
 | 页头、侧栏、主体与页脚 | Layout 及其区域节点 |
 | 用户拖动调整分栏尺寸 | Splitter；多区域可嵌套 |
 | 不同高度卡片紧凑排布 | Masonry |
+| 一组输入需要统一校验和提交 | Form；每个受管理的输入放入 FormItem |
 
 ## 进一步阅读
 

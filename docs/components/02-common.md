@@ -14,7 +14,9 @@
 | `style` | 样式对象 | `{}` | 颜色、字体、边框与组件适用的状态样式 |
 | `visible` | 布尔绑定 | `true` | 隐藏后不占布局空间，也不响应输入 |
 | `enabled` | 布尔绑定 | `true` | 禁用后保留布局，停止业务交互 |
-| `events` | 事件名到动作的映射 | `{}` | 仅接受组件声明的事件；容器没有业务 `events` |
+| `disabled` | 布尔或绑定 | `false` | 禁用组件及其后代；enabled=false 或 disabled=true 均会禁用 |
+| `size` | small / medium / large 或绑定 | medium | 影响支持尺寸的控件自然尺寸及默认字号；显式 layout/style 优先，配置容器可提供默认值 |
+| `events` | 事件名到动作的映射 | `{}` | 仅接受组件声明的事件；容器中 Splitter 支持 change，Form 支持 submit/invalid/reset |
 
 父容器隐藏或禁用时，后代也受影响。可选结构字段应省略，不能填 `null`。未知字段会被拒绝。
 
@@ -25,11 +27,11 @@
 | `literal` | 固定 JSON 值 | `{"kind":"literal","value":"说明"}` |
 | `state` | 当前作用域状态 | `{"kind":"state","key":"stats","path":"/cpu"}` |
 | `prop` | 模块内部读取父级传入值 | `{"kind":"prop","key":"message"}` |
-| `event` | 模块或插件事件处理动作读取载荷 | `{"kind":"event","path":"/message"}` |
+| `event` | 控件、模块或插件事件处理动作读取载荷 | `{"kind":"event","path":"/message"}` |
 
 `path` 缺省为空，遵循 JSON Pointer：`/cpu` 读取对象字段，`/0/name` 读取数组第一项字段，`~0` 表示 `~`，`~1` 表示 `/`。缺少字段会报错。`event` 绑定只用于事件处理动作步骤，不能作为界面属性。
 
-文字属性需要字符串绑定，数字不能直接绑定 `text`；显示数字可用 [Metric](13-metric.md)，或在表格中配置格式。`Input`、`Select` 的可写 `value` 需要字符串状态且 `path` 为空。`prop` 只读。
+原有文字属性需要字符串绑定，数字不能直接绑定 `text`；显示数字可用 [Metric](13-metric.md)，或在表格中配置格式。Input/Radio 的 value 为字符串，Select 单选为字符串、多选为字符串数组；Checkbox 单项/Switch 为 boolean，Checkbox 组为字符串数组；InputNumber/Slider 为 number，范围 Slider 为二元数字数组。新增组件的文字和值可直接使用字面量或 Binding，属性表中标注“或绑定”的字段也支持两种形式。可写 state 绑定的 path 必须为空，prop 只读；FormItem 管理的控件必须绑定 state。各组件的完整 API 和示例见 [组件总览](README.md) 中的对应教程。
 
 状态类型由初始值确定，更新时必须保持类型；对象字段结构保持一致，数组元素保持同类结构。单独初始化为 `null` 的顶层状态只接受 `null`。局部状态与父子传值见 [Module](08-module.md)。
 
@@ -73,16 +75,18 @@ Flex/Space 通过 `vertical` 切换主轴；Space 默认 gap=8、align=center。
 | 属性 | 类型 / 默认值 | 适用说明 |
 | --- | --- | --- |
 | `background` / `color` / `borderColor` | 主题 Token 或十六进制颜色 / 按组件与主题 | 背景、前景、边框色 |
-| `borderWidth` | 非负数 / 0 | 显式边框宽度；控件有自身边框反馈 |
+| `borderWidth` | 非负数 / 0 | 显式边框宽度；控件有自身边框反馈。Panel/Card 的边框同时受 `bordered` 控制 |
 | `radius` | 非负数 / 0 | Panel/Card 默认至少 6，Button 默认至少 4 |
 | `fontSize` | 非负数 / 通常 16 | 表格及图表内容绘制默认 14；Metric 数值按字号放大 |
 | `fontFamily` | `proportional` / `monospace` | 比例字体或等宽字体 |
 | `fontWeight` | `normal` / `bold` | 等宽字体优先于字重 |
 | `textWrap` | 布尔 / `true` | Text 与 Button 的文字换行；Badge 强制单行 |
-| `textAlign` | `start` / `center` / `end` | Text 与 Button 文字对齐；center 同时垂直居中 |
+| `textAlign` | `start` / `center` / `end` | Text 与 Button 文字对齐；center 同时垂直居中。Text 带 strong/italic/underline/delete/code 或 ellipsis 时同样生效 |
 | `textOverflowTooltip` | 布尔 / `true` | 使用文字绘制辅助函数的截断提示，日志可关闭 |
-| `paddingX` / `paddingY` | 非负数 / 控件相关 | Button 默认 10/6；Input、Select 用于控件样式 |
-| `hover` / `pressed` / `disabled` | 状态样式对象 | Button、Input、Select 使用；含 background/color/borderColor |
+| `paddingX` / `paddingY` | 非负数 / 控件相关 | Button 默认 10/6；Input 作为编辑框内边距，Select 作为文字左边距 |
+| `hover` / `pressed` / `disabled` | 状态样式对象 | Button、Input、Select 使用；含 background/color/borderColor。Input 的编辑框背景与边框按状态切换 |
+
+公共样式由组件各自绘制：Panel/Card 只画一层背景和边框，`bordered:false` 时不画边框；Input/Select 的 `background`、`borderColor`、`borderWidth`、`radius` 作用于控件外框。
 
 可用 Token：`surface`、`surfaceRaised`、`textPrimary`、`textMuted`、`border`、`accent`、`success`、`warning`、`danger`、`focus`、`primary`、`onPrimary`。Token 随主题变化；`#RRGGBB` 与 `#RRGGBBAA` 保持精确颜色。
 
@@ -115,7 +119,7 @@ Flex/Space 通过 `vertical` 切换主轴；Space 默认 gap=8、align=center。
 
 `events` 中填写动作 ID，例如 `{"click":"save"}`；对应动作必须在当前或祖先作用域中存在。也支持将动作 ID 绑定到字符串状态，见 [动态事件](../11-dynamic-event-binding.md)。
 
-Input、Select 先把新值写回绑定状态，再触发 change 动作。普通控件事件动作读取状态；当前不能在这些动作中通过 `kind: "event"` 直接取得按钮、输入或表格的原始事件载荷。需要模块接口时用 [emit/on](08-module.md)，插件事件则遵守其 manifest。
+输入控件先把新值写回绑定状态，再触发 change 动作。[Form](32-form.md) 在提交时校验字段，通过后执行 submit 动作。控件事件动作可读取已更新状态；有字符串、数字、布尔、数组或对象载荷的事件，也可声明匹配类型的 eventPayload 样本后通过 `kind: "event"` 读取。载荷形状见各组件教程，按钮 click 等事件载荷为 null，不提供鼠标坐标或 DOM 事件。模块接口使用 [emit/on](08-module.md)，插件事件遵守其 manifest。
 
 动作的步骤按顺序执行，但每次动作读取开始时的状态快照：前一步写入不会改变后续步骤的读取快照。失败停止后续步骤，保留之前成功写入。命令、HTTP 和插件调用的异步规则见各自专题。
 
@@ -124,6 +128,7 @@ Input、Select 先把新值写回绑定状态，再触发 change 动作。普通
 - **能写 CSS、百分比宽度或表达式吗？** 当前使用本页的有限 JSON 字段；没有 CSS、`100%`、模板表达式、computed 或 watch。
 - **设置标题为什么报错？** `title` 仅用于支持它的组件，例如 Panel、Card 和图表；Row、Column、Grid 不接受。
 - **为什么改父级文字颜色不影响孩子？** 样式不继承，需要配置子组件。
+- **Panel/Card 的边框为什么不按 borderWidth 显示？** 先确认 `bordered` 不是 false；启用时 `borderWidth` 大于 0 使用该宽度，否则使用 1 像素主题边框。
 - **为什么容器没有出现滚动条？** 检查是否设置 `overflow: "scroll"`、区域是否有有限高度，以及内容是否确实超过该区域。
 
 下一步：[Row](03-row.md) · [Column](04-column.md) · [Grid](05-grid.md) · [布局组合](20-recipes.md)。

@@ -22,14 +22,27 @@ pub struct Resolved {
     pub title: String,
     pub placeholder: String,
     pub value: Option<serde_json::Value>,
+    pub options: Vec<crate::v02::SelectOption>,
+    pub api: std::collections::BTreeMap<String, serde_json::Value>,
 }
 impl Tree {
+    pub fn ancestor(&self, id: NodeId, kind: Kind) -> Option<NodeId> {
+        let mut parent = self.nodes[id].parent;
+        while let Some(id) = parent {
+            if self.nodes[id].spec.kind == kind {
+                return Some(id);
+            }
+            parent = self.nodes[id].parent;
+        }
+        None
+    }
     pub fn horizontal(&self, id: NodeId) -> bool {
         let node = &self.nodes[id];
-        match node.spec.kind {
-            Kind::Row => true,
-            Kind::Flex | Kind::Space | Kind::Splitter => !node.spec.vertical,
-            Kind::Layout => node
+        use super::catalogue::LayoutKind;
+        match super::catalogue::definition(node.spec.kind).layout {
+            LayoutKind::Row => true,
+            LayoutKind::Directional | LayoutKind::Splitter => !node.spec.vertical,
+            LayoutKind::Page => node
                 .children
                 .iter()
                 .any(|&id| self.nodes[id].spec.kind == Kind::Sider),
@@ -70,6 +83,14 @@ impl Tree {
                 let parent: &Resolved = &result[p];
                 r.visible &= parent.visible;
                 r.enabled &= parent.enabled;
+                if matches!(self.nodes[p].spec.kind, Kind::App | Kind::ConfigProvider) {
+                    r.enabled &= !crate::v02::widgets::flag(
+                        &self.nodes[p].spec,
+                        state,
+                        "componentDisabled",
+                        false,
+                    );
+                }
             }
             result.push(r);
         }
@@ -96,6 +117,7 @@ impl Tree {
         .flatten()
         .chain(n.series.iter().flatten().map(|s| &s.data))
         .chain(n.props.values())
+        .chain(n.api.values())
         .filter_map(|b| match b {
             crate::binding::Binding::State { key, .. } => versions.get(key).copied(),
             _ => None,
@@ -118,6 +140,14 @@ impl Tree {
                 if let Some(p) = n.parent {
                     r.visible &= resolved[p].visible;
                     r.enabled &= resolved[p].enabled;
+                    if matches!(self.nodes[p].spec.kind, Kind::App | Kind::ConfigProvider) {
+                        r.enabled &= !crate::v02::widgets::flag(
+                            &self.nodes[p].spec,
+                            state,
+                            "componentDisabled",
+                            false,
+                        );
+                    }
                 }
                 resolved[id] = r;
                 changed[id] = true;
@@ -137,12 +167,16 @@ fn resolve_node(n: &ComponentNode, state: &State) -> Result<Resolved, String> {
             .to_owned())
     };
     let mut value = match n.spec.kind {
-        Kind::Metric | Kind::Progress | Kind::Input | Kind::Select | Kind::Splitter => n
-            .spec
-            .value
-            .as_ref()
-            .map(|b| b.resolve(state).cloned())
-            .transpose()?,
+        kind if kind.is_input()
+            || crate::v02::widgets::is_widget(kind)
+            || matches!(kind, Kind::Metric | Kind::Progress | Kind::Splitter) =>
+        {
+            n.spec
+                .value
+                .as_ref()
+                .map(|b| b.resolve(state).cloned())
+                .transpose()?
+        }
         _ => None,
     };
     let mut rendered = text(&n.spec.text)?;
@@ -153,8 +187,17 @@ fn resolve_node(n: &ComponentNode, state: &State) -> Result<Resolved, String> {
             .clone()
             .unwrap_or_default()
             .apply(value.as_ref().unwrap())?;
+        rendered = format!(
+            "{}{}{}",
+            crate::v02::widgets::string(&n.spec, state, "prefix", ""),
+            rendered,
+            crate::v02::widgets::string(&n.spec, state, "suffix", "")
+        );
         value = None;
     }
+    let inherited_disabled = crate::v02::widgets::flag(&n.spec, state, "disabled", false)
+        || matches!(n.spec.kind, Kind::Button | Kind::Switch)
+            && crate::v02::widgets::flag(&n.spec, state, "loading", false);
     Ok(Resolved {
         visible: n
             .spec
@@ -171,11 +214,23 @@ fn resolve_node(n: &ComponentNode, state: &State) -> Result<Resolved, String> {
             .map(|b| b.resolve(state))
             .transpose()?
             .and_then(|v| v.as_bool())
-            .unwrap_or(true),
+            .unwrap_or(true)
+            && !inherited_disabled,
         text: rendered,
         label: text(&n.spec.label)?,
         title: text(&n.spec.title)?,
         placeholder: text(&n.spec.placeholder)?,
         value,
+        options: if n.spec.kind == Kind::Radio {
+            crate::v02::select_options(&n.spec, state)?
+        } else {
+            vec![]
+        },
+        api: n
+            .spec
+            .api
+            .iter()
+            .map(|(key, b)| Ok((key.clone(), b.resolve(state)?.clone())))
+            .collect::<Result<_, String>>()?,
     })
 }

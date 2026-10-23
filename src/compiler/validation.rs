@@ -28,6 +28,7 @@ pub(crate) fn validate_flat(d: &Description, metadata: &Metadata) -> Result<(), 
         ValueType::of(v).map_err(|e| format!("state.{key}: {e}"))?;
     }
     validate_node(&d.root, d, metadata, &mut HashSet::new(), 0)?;
+    validate_forms(&d.root)?;
     if d.data_sources.len() > 64 {
         return Err("dataSources 最多 64 个".into());
     }
@@ -233,6 +234,7 @@ fn validate_node(
             return Err("ID 为空、重复组件 ID 或深度超过 64".into());
         }
         let compiled = &metadata.nodes[&n.id];
+        widgets::validate(n, &d.state)?;
         for b in [&n.visible, &n.enabled].into_iter().flatten() {
             if !b.resolve(&d.state)?.is_boolean() {
                 return Err("visible/enabled 必须为布尔值".into());
@@ -282,14 +284,7 @@ fn validate_node(
             return Err("layout.wrap 仅用于 row 或横向 flex/space".into());
         }
         for (event, action) in &n.events {
-            let allowed: &[&str] = match n.kind {
-                Kind::Button => &["click"],
-                Kind::Input => &["change", "submit"],
-                Kind::Select => &["change", "open"],
-                Kind::Splitter => &["change"],
-                Kind::Table => &["rowSelect", "sortChange"],
-                _ => &[],
-            };
+            let allowed = widgets::events(n.kind);
             if !allowed.contains(&event.as_str())
                 && !(n.kind == Kind::Plugin
                     && compiled
@@ -327,9 +322,9 @@ fn validate_node(
                         .ok_or("插件事件动作必须声明 eventPayload")?,
                 )?;
             } else if action_uses_event(&d.actions[action])
-                || d.actions[action].event_payload.is_some()
+                && d.actions[action].event_payload.is_none()
             {
-                return Err("event 处理动作不可直接绑定控件事件，请通过 emit 调用".into());
+                return Err("控件事件处理动作使用 event 时必须声明 eventPayload".into());
             }
         }
         for b in [&n.text, &n.label, &n.placeholder, &n.title]
@@ -341,6 +336,16 @@ fn validate_node(
             }
         }
         match n.kind {
+            Kind::Checkbox | Kind::Switch | Kind::Radio | Kind::InputNumber | Kind::Slider => {
+                let binding = required(&n.value, "value")?;
+                if matches!(binding, Binding::State { path, .. } if !path.is_empty()) {
+                    return Err("输入控件 value 仅支持顶层状态（path 为空）".into());
+                }
+                if matches!(n.kind, Kind::InputNumber | Kind::Slider) {
+                    validate_numeric(n)?;
+                }
+                validate_input_value(n, &d.state, binding.resolve(&d.state)?)?;
+            }
             Kind::Splitter => {
                 if n.children.len() != 2 {
                     return Err("splitter.children 必须恰好包含两个面板（可嵌套 splitter）".into());
@@ -390,7 +395,15 @@ fn validate_node(
             }
             Kind::Input | Kind::Select => {
                 let b = required(&n.value, "value")?;
-                if !b.resolve(&d.state)?.is_string() {
+                if n.kind == Kind::Select && widgets::multiple(n, &d.state) {
+                    if !b
+                        .resolve(&d.state)?
+                        .as_array()
+                        .is_some_and(|a| a.iter().all(serde_json::Value::is_string))
+                    {
+                        return Err("多选 select.value 必须为字符串数组".into());
+                    }
+                } else if !b.resolve(&d.state)?.is_string() {
                     return Err("input.value 必须为字符串".into());
                 }
                 if matches!(b,Binding::State {path,..} if !path.is_empty()) {

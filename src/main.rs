@@ -1,7 +1,7 @@
 use desktop_app_engine::{
     loader, renderer as gui,
     renderer::DashboardApp,
-    runtime::{Engine, Runtime},
+    runtime::Runtime,
     services::{credentials, logging},
 };
 use eframe::egui;
@@ -107,9 +107,7 @@ fn run() -> Result<(), String> {
         let namespace = if let Some(namespace) = &options.credential_store {
             namespace.clone()
         } else {
-            let loader::Document::V02(d) = loader::load_document(options.path.as_deref())? else {
-                return Err("凭据管理需要 --credential-store 或 0.2 app.json".into());
-            };
+            let d = loader::load_document(options.path.as_deref())?;
             d.credential_namespace()
                 .ok_or("app.json 未配置 credentialStore")?
                 .to_owned()
@@ -171,10 +169,8 @@ fn run() -> Result<(), String> {
         })
         .transpose()?;
     if options.check {
-        if (options.check_credentials || options.check_plugins)
-            && let loader::Document::V02(d) = &description
-        {
-            let runtime = Runtime::from_compiled((**d).clone())?;
+        if options.check_credentials || options.check_plugins {
+            let runtime = Runtime::from_compiled(description.clone())?;
             if options.check_credentials {
                 for name in runtime.check_credentials()? {
                     println!("凭据可解密: {name}");
@@ -213,16 +209,11 @@ fn run() -> Result<(), String> {
             // One render pass per frame: event effects never run in a discarded layout pass.
             cc.egui_ctx
                 .options_mut(|o| o.max_passes = std::num::NonZeroUsize::new(1).unwrap());
-            match description {
-                loader::Document::V01(d) => Ok(Box::new(gui::DesktopApp::new(Engine::new(*d)?))),
-                loader::Document::V02(d) => {
-                    let mut app = DashboardApp::from_compiled(*d)?;
-                    if let Some(base) = command_base {
-                        app.set_command_base(base);
-                    }
-                    Ok(Box::new(app))
-                }
+            let mut app = DashboardApp::from_compiled(description)?;
+            if let Some(base) = command_base {
+                app.set_command_base(base);
             }
+            Ok(Box::new(app))
         }),
     )
     .map_err(|e| format!("GUI 启动失败: {e}"))

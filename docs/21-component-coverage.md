@@ -1,54 +1,66 @@
-# 与 Antdv Next 的组件覆盖对照
+# 与 Ant Design 官方组件目录的覆盖对照
 
-对照来源：[Flex 页面及其组件目录](https://www.antdv-next.cn/components/flex-cn)，页面版本 v1.7.0，核对日期 2026-10-22。参考目录共 71 项。本引擎使用原生桌面绘制和 JSON 协议，下面按用户用途对照；“基础支持”不表示具有参考库的全部属性、交互与样式。
+对照来源：[Ant Design 组件总览](https://ant-design.antgroup.com/components/overview)，核对日期 2026-10-22，页面版本 6.6.5。目录按 **73 项**统计，包含已弃用的 List 以及工具条目 Util。本引擎以 Rust/egui 原生桌面行为适配，ReactNode 对应组件树，回调对应事件动作，受控值对应 state Binding。
 
-本次按“布局组件优先”补齐六类组件，并提供 Layout 的四个区域节点。协议 0.2 从 17 种 type 增至 27 种，教程从 20 篇增至 26 篇。其他类别按下方缺口继续扩展。
+协议 0.2 由原 34 种 type 扩充到 **84 种**，新增 50 种组件；官网原有 22 类对应能力和新增 50 类均有独立或等效入口。Util 提供 Rust 检查函数，不计入 JSON type。名称覆盖不代表官网全部属性、样式、回调和方法都已经实现；下表及教程的“当前限制”是验收范围的一部分。
 
-## 布局组件
+## 新增组件对应
 
-| 参考组件 | 对应实现与教程 | 已支持 | 后续差异 |
-| --- | --- | --- | --- |
-| Divider | [divider](components/23-divider.md) | 横纵线、标题位置、实线/虚线/点线、主题颜色 | 没有 size 预设、DOM 样式接口 |
-| Flex | [flex](components/21-flex.md)，兼容 row/column | 横纵方向、六种 justify、四种 align、数值 gap、独立行列间距、横向换行、轨道伸缩、嵌套 | 没有 CSS 单位、baseline、反向换行、纵向换列；DOM component 不适用 |
-| Grid | [grid](components/05-grid.md) | fixed/fr 列轨道、独立行列间距、按内容测量行高、剩余高度分配 | 没有 24 栅格 span/offset/order 和响应断点对象 |
-| Layout | [layout/header/sider/content/footer](components/24-layout.md) | 页头、侧栏、内容、页脚、自动识别侧栏方向、区域嵌套 | 没有侧栏折叠按钮和 breakpoint；可用 visible 绑定隐藏 |
-| Masonry | [masonry](components/26-masonry.md) | 最短列排布、内容高度测量、列数上限、最小列宽响应、动态重排、滚动 | 没有指定 item 所属列、列跨度、itemRender、layoutChange 事件 |
-| Space | [space](components/22-space.md) | 默认 8 point 间距、横纵方向、对齐、横向换行、独立行列间距 | 没有自动 separator 和 size 预设；可显式插入 Divider |
-| Splitter | [splitter](components/25-splitter.md) | 双面板、横纵方向、拖动、键盘、双击复位、受控比例、min/max、禁用、嵌套多区 | 没有直接多面板数组、折叠按钮、销毁隐藏内容、resizeStart/resizeEnd |
-
-这些组件通过严格协议解析、编译校验、布局测量、原生绘制和事件提交接入。通用尺寸、颜色、visible/enabled 和局部 state/actions 见 [公共属性](components/02-common.md)。
-
-## 其他已有对应能力
-
-| 参考组件 | 本项目对应 | 覆盖范围 |
+| 分类 | 官网组件 → JSON type | 教程 |
 | --- | --- | --- |
-| Button | button | 基础按钮、状态外观、点击动作 |
-| Typography | text | 文本、字号、字重、换行与对齐；未提供整套标题/段落/编辑/复制功能 |
-| Input | input | 单行字符串编辑与 change/submit |
-| Select | select | 单选、动态选项、禁用选项、open/change |
-| Card | card/panel | 标题、内容、背景、布局与滚动 |
-| Statistic | metric | 指标值、数值/百分比格式 |
-| Table | table | 表格、排序、行选择、列宽调整与可见行绘制 |
-| Tag | badge | 语义颜色状态标签；当前 badge 名称对应标签用途 |
-| Progress | progress | 0..1 进度与说明文字 |
+| 通用 | FloatButton→floatButton，Icon→icon | [展示](components/35-native-display.md) |
+| 导航 | Anchor→anchor，Breadcrumb→breadcrumb，Dropdown→dropdown，Menu→menu，Pagination→pagination，Steps→steps，Tabs→tabs | [导航](components/33-navigation.md) |
+| 数据录入 | AutoComplete→autoComplete，Cascader→cascader，ColorPicker→colorPicker，DatePicker→datePicker，Mentions→mentions，Rate→rate，TimePicker→timePicker，Transfer→transfer，TreeSelect→treeSelect，Upload→upload | [录入与树](components/34-native-inputs.md) |
+| 数据展示 | Avatar→avatar，Badge→badgeCount，Calendar→calendar，Carousel→carousel，Collapse→collapse，Descriptions→descriptions，Empty→empty，Image→image，List→list，Listy→listy，Popover→popover，QRCode→qrCode，Segmented→segmented，Timeline→timeline，Tooltip→tooltip，Tour→tour，Tree→tree | [展示](components/35-native-display.md)、[导航](components/33-navigation.md)、[录入](components/34-native-inputs.md)、[反馈](components/36-native-feedback.md) |
+| 反馈 | Alert→alert，Drawer→drawer，Message→message，Modal→modal，Notification→notification，Popconfirm→popconfirm，Result→result，Skeleton→skeleton，Spin→spin，Watermark→watermark | [反馈](components/36-native-feedback.md)、[配置与装饰](components/37-native-context.md) |
+| 其他 | Affix→affix，App→app，BorderBeam→borderBeam，ConfigProvider→configProvider | [配置与装饰](components/37-native-context.md) |
+| 工具 | Util→`v02::util::component_api(Kind)`，无 JSON 节点 | [桌面工具](components/37-native-context.md) |
 
-参考站点的 **Badge 徽标数**（数字、圆点、角标）与本项目的 badge 状态标签用途不同，仍列为缺失。原生 Text 仅部分对应 Typography。LineChart、BarChart、Module 和 Plugin 是本项目额外提供的能力。
+`badge` 为既有状态标签，对应 **Tag**；`badgeCount` 对应官网 **Badge 徽标数**。`text` 对应 Typography，`metric` 对应 Statistic。顶层应用元信息 `app` 与 `type: "app"` 配置容器是不同字段。
 
-## 尚未补齐的参考组件
+## 已有能力与本轮扩展
 
-以下 55 项尚无独立对应实现，保留为后续组件任务，不在本次布局优先范围内：
+| 官网组件 | 对应实现 | 本轮新增或保留的实际行为 |
+| --- | --- | --- |
+| Button | button | loading、图标、外形、variant、danger、block、href |
+| Typography | text | 编辑、复制、截断、代码/粗体/斜体/删除线等 |
+| Input | input | 清除、密码、多行、长度、只读、前后缀、计数、状态、焦点事件 |
+| Select | select | 单选/多选/tags、搜索、清除、loading、maxCount |
+| Checkbox | checkbox | 单项 boolean 或 options 组的字符串数组 |
+| Radio | radio | 普通/按钮组选项、键盘方向选择 |
+| Switch | switch | loading、开启/关闭文字 |
+| InputNumber | inputNumber | 数字约束、精度、只读、隐藏按钮、前后缀 |
+| Slider | slider | 单值/双滑块、反向、marks、鼠标与键盘步进 |
+| Form | form/formItem | 统一提交/重置、数组必填、Rust regex pattern、新输入控件 |
+| Card | card/panel | loading、边框、悬停、extra 字符串 |
+| Statistic | metric | 前后缀、loading、数值/百分比格式 |
+| Table | table | 全数据稳定排序、分页、虚拟绘制、行选择、列宽调整 |
+| Tag | badge | 可关闭、可勾选、受控 checked、图标 |
+| Progress | progress | 百分比、line/circle/dashboard、状态、线宽与文字 |
+| Divider、Flex、Grid、Layout、Masonry、Space、Splitter | 同名 type；Layout 含 header/sider/content/footer | 原有几何、约束、滚动、分栏交互；Space 新增 separator |
 
-| 类别 | 缺失组件 |
+完整演示、字段说明和组件限制直接维护在 [组件总览](components/README.md) 对应的各组件教程中。LineChart、BarChart、Module、Plugin、Row、Column 是引擎的额外能力。
+
+## 尚未完成的 API 与桌面差异
+
+| 范围 | 当前限制 |
 | --- | --- |
-| 通用 | FloatButton 悬浮按钮、Icon 图标 |
-| 导航 | Anchor 锚点、Breadcrumb 面包屑、Dropdown 下拉菜单、Menu 导航菜单、Pagination 分页、Steps 步骤条、Tabs 标签页 |
-| 数据录入 | AutoComplete 自动完成、Cascader 级联选择、Checkbox 多选框、ColorPicker 颜色选择器、DatePicker 日期选择器、Form 表单、InputNumber 数字输入框、Mentions 提及、Radio 单选框、Rate 评分、Slider 滑动输入条、Switch 开关、TimePicker 时间选择器、Transfer 穿梭框、TreeSelect 树选择、Upload 上传 |
-| 数据展示 | Avatar 头像、Badge 徽标数、Calendar 日历、Carousel 走马灯、Collapse 折叠面板、Descriptions 描述列表、Empty 空状态、Image 图片、Listy 虚拟列表、Popover 气泡卡片、QRCode 二维码、Segmented 分段控制器、Timeline 时间轴、Tooltip 文字提示、Tour 漫游导览、Tree 树形控件 |
-| 反馈 | Alert 警告提示、Drawer 抽屉、Message 全局提示、Modal 对话框、Notification 通知提醒框、Popconfirm 气泡确认框、Result 结果、Skeleton 骨架屏、Spin 加载中、Watermark 水印 |
-| 其他 | Affix 固钉、App 应用配置、BorderBeam 边框流光、ConfigProvider 全局化配置 |
+| 共通接口 | 没有 React ref、hooks、DOM portal、CSS classNames/styles 或任意 JS render/callback；使用组件树、布局 Token、事件动作和状态绑定 |
+| 导航 | Anchor 尚未自动滚动；Menu 为内嵌子菜单；Steps 的状态/百分比/进度点、Tabs 部分样式/居中/滚动事件、Pagination align、Segmented block 尚未完整实现 |
+| 内容切换 | Collapse 头部集中排列，bordered/ghost 未完整实现；Carousel 尚无滑动动画或触摸手势 |
+| 自动完成与树 | 补全键盘/backfill、默认激活、树选择全展开与 showLine、异步加载、字段名映射、完整父子禁用语义仍有缺口 |
+| 日期时间 | 尚无 RangePicker、时区和禁用日期回调；部分 showNow/fullscreen 选项未生效，时间 step 目前控制拖动速度 |
+| Upload | 仅系统选择器、文件记录和移除/预览/拒绝事件；无实际上传、上传进度、取消、拖放，accept 暂按后缀 |
+| Image/Icon | cover 当前与 contain 等效；预览无组/旋转/下载；图标为内置符号集，未覆盖全部官网图标 |
+| 列表与描述 | 固定行高虚拟列表，无任意行子树/可变行高；Descriptions 边框使用行底纹，无单元格合并 |
+| 提示与导览 | 无消息队列、静态 Promise API 或 useApp；同位置消息可重叠；Tour 未高亮目标；气泡触发子树交互尚需完善 |
+| 配置与装饰 | 国际化只覆盖部分文案，RTL 基础支持；Affix 尚非完整滚动监听与 change；App 暂为配置作用域 |
+| 原有组件 | Grid 无 24 栅格 span/断点；Splitter 直接双面板；Button dashed 使用普通边框；Form 无异步 validator/Form.List；Table 无筛选、合并和展开行 |
 
-这里的 App/ConfigProvider 指参考库的组件接口，本引擎已有的顶层 app、主题和模块状态不算实现这两个组件。基础能力仍需按对应教程中的 API 判断，完整性不以名称相同作为标准。
+属性被解析和校验只表示存在协议契约；未生效项在对应教程标注，不能据此视为官网 API 兼容完成。Rust 宿主可通过 `component_api` 查询扩展属性的准确枚举和范围；Schema 负责结构形状，绑定解析、成员关系和跨字段约束仍以引擎校验为准。
 
 ## 验证
 
-运行 `cargo test --lib --locked --offline` 验证布局几何、内容重排、比例约束、状态更新顺序和 egui 鼠标/键盘输入。构建后运行 `python scripts/check-component-docs.py`，检查所有教程完整 JSON 示例及本地链接。安装 Python jsonschema 后可加 `--schema` 同时校验 [description-0.2.schema.json](description-0.2.schema.json)；实际运行仍需通过引擎 `--check`。
+`cargo test --lib --locked --offline` 覆盖几何、状态原子更新、数组与日期校验、主次受控属性、事件顺序、模态背景拦截、键盘与鼠标交互。50 个新增组件另有亮/暗主题、三组视口与缩放比例的无输入绘制检查；通过绘制检查不代表全部交互和 API 已验收。
+
+构建后运行 `python scripts/check-component-docs.py --schema` 检查所有教程完整 JSON、Schema 和本地链接。真实 Windows 窗口、系统文件对话框、图片网络加载与视觉效果仍需人工验收。

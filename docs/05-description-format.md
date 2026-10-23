@@ -1,81 +1,24 @@
-# 描述协议 0.1 与 0.2
+# 描述协议 0.2
 
 需要按组件学习用法时，请从 [组件使用教程](components/README.md) 开始；其中提供完整示例、属性表和容器组合教程。本篇保留协议字段与校验规则参考。
 
-运行时按 `schemaVersion` 显式分派。0.1 使用原独立解析器、校验器、执行器和 GUI 路径；0.2 使用以下独立契约，不自动迁移。下面先保留 0.1 规则，0.2 规则见后文。
+运行时、开发加载器和打包入口统一只接受 `schemaVersion: "0.2"`。旧协议及其独立执行、绘制路径已移除；旧描述需更新为本篇格式，按钮动作使用 `events.click`。
 
 所有字段严格校验；未知字段、组件类型或动作步骤均拒绝。解析错误包含 JSON 字段路径和行列；语义错误包含组件 ID 或动作步骤位置。
 
 ## 顶层
 
-| 字段 | 类型 | 要求 |
-| --- | --- | --- |
-| schemaVersion | 字符串 | 固定 `"0.1"` |
-| app | 对象 | `name` 字符串；可选 `host` 指定已安装原生宿主；`window` 包含数值 `width`、`height`（160..8192，逻辑像素） |
-| state | 对象 | 键为状态名，值为初始字符串 |
-| root | 组件 | 嵌套组件树 |
-| actions | 对象 | 键为动作 ID，值包含非空 `steps` 数组 |
-
-## 属性
-
-固定值：`{"kind":"literal","value":"中文文本"}`。
-绑定值：`{"kind":"state","key":"name"}`。
-
-所有文本、按钮文字、输入值和占位文字均使用同一类型。
-绑定输入框更新共享状态；固定值输入框可以编辑，修改只保存在该组件的本地缓冲中。
-状态更新后，下次绘制所有相关属性读取最新值。
-
-## 组件
-
-每个组件必须有非空且全树唯一的 `id`。ID 用于保持输入焦点和控件身份。
-
-| type | 必填字段（除 id） | 可选字段 |
-| --- | --- | --- |
-| row | children 组件数组 | 无 |
-| column | children 组件数组 | 无 |
-| text | text 属性 | 无 |
-| input | value 属性 | placeholder 属性 |
-| button | text 属性、onClick 动作 ID | 无 |
-
-row 支持换行，column 纵向排列；内容使用垂直滚动，文本自动换行。
-窗口默认随系统亮暗主题。开发时 `--theme light` 或 `--theme dark` 可覆盖。
-
-## 动作
-
-状态赋值：
-
-```json
-{"type":"set","target":"result","value":{"kind":"state","key":"name"}}
-```
-
-字符串拼接：
-
-```json
-{"type":"concat","target":"result","parts":[{"kind":"literal","value":"你好，"},{"kind":"state","key":"name"}]}
-```
-
-点击触发时保存所有字符串状态的快照。步骤中的状态引用始终读取该快照；前一步赋值不会改变本次输入快照。步骤按数组顺序写入共享状态，后写覆盖前写。
-步骤失败后停止该动作后续步骤，保留已成功的赋值；页面显示动作 ID、步骤索引及原因。再次成功触发后清除该动作错误。
-事件进入队列并只消费一次。GUI 每帧只做一个布局通道；没有点击事件的重绘不会执行动作。
-
-## 边界
-
-单个状态或固定字符串最大 65,536 UTF-8 字节；拼接结果超过此限制会失败。
-输入控件最多接收 16,384 Unicode 字符，以保证四字节字符也在状态大小限制内。
-组件树语义深度上限 64；JSON 解析器同时保留自身递归限制。
-协议版本不会静默迁移。不支持 SSH、脚本、导航、菜单或插件。
-
-## 协议 0.2
-
 结构 schema：[description-0.2.schema.json](description-0.2.schema.json)，Draft 2020-12。编译器还进行状态类型、唯一 ID、引用、数据列、行键和坐标等语义校验。schema 不代替完整编译校验；运行应用的 `--check` 验证描述和引用资源。
 
-顶层 schemaVersion、app、state、root、actions 均必填，可选 plugins 数组声明启用包名，dataSources 对象声明 HTTP JSON 接口；schemaVersion 固定 `"0.2"`。app/window 沿用 0.1。所有结构对象拒绝未知字段；组件只接受该类型的专属字段。表格行对象和用户业务状态对象的字段由数据声明消费，不采用任意表达式。
+顶层 schemaVersion、app、state、root、actions 均必填，可选 plugins 数组声明启用包名，dataSources 对象声明 HTTP JSON 接口；schemaVersion 固定 `"0.2"`。app 包含非空 name、可选 host 和 window；window 的 width、height 为 160..8192 的有限数值，单位为逻辑像素。所有结构对象拒绝未知字段；组件只接受该类型的专属字段。表格行对象和用户业务状态对象的字段由数据声明消费，不采用任意表达式。
 
 `app.host` 可省略，默认使用通用引擎；指定时必须是 1..64 位字母、数字、下划线或连字符，对应制作端引擎旁的 `<host>.exe` 宿主模板。例如构建工作台声明 `"host":"vben-package"`，统一打包命令据此保留其原生业务控制器。缺少宿主时导出失败，不按应用名称推断宿主。宿主对协议及业务字段的额外要求由最终 EXE 校验。
 
 ### 状态、绑定与格式
 
 state 是直接 JSON 初始值对象，支持 string、number、boolean、null、array、object。加载时递归记录类型，数组元素须同类型（对象须同字段结构），字段出现 null 时推导可空类型。空数组延后由组件消费校验；之后赋值也必须通过完整组件校验。单独以 null 初始化的顶层状态只接受 null；需要可空表格字段时，在数组中提供至少一个非 null 的同字段值。缺字段不等于 null。
+
+单个状态或固定字符串最大 65,536 UTF-8 字节；拼接结果也受此限制。输入控件最多接收 16,384 Unicode 字符，以保证四字节字符也在状态大小限制内。
 
 literal：`{"kind":"literal","value":42}`；state：`{"kind":"state","key":"stats","path":"/cpu"}`。path 缺省空字符串；遵循 RFC 6901，`~0` 是 `~`，`~1` 是 `/`。缺键、缺路径、非法转义和绑定类型不匹配均报错。数字字符串不转为数字。输入框只接受字符串，初期可写绑定仅支持顶层状态（空 path）；literal 输入保存在组件本地。
 
@@ -113,11 +56,11 @@ layout 所有尺寸为逻辑 point，有限非负且 <=1,000,000，min <= max。
 
 gap/rowGap/columnGap/align/justify/wrap/overflow 只用于容器，叶节点声明会被拒绝。splitter 不接受 gap/rowGap/columnGap/align/justify/wrap，其间距由 barSize 控制。表格自身提供双轴滚动，图表的滚轮由 zoom 单独控制。width/height、约束和 padding 可用于所有组件。坐标按边界对齐像素，避免累加四舍五入误差。
 
-style：background/color/borderColor 可使用 surface、surfaceRaised、textPrimary、textMuted、border、accent、success、warning、danger、focus、primary、onPrimary Token，或 `#RRGGBB` / `#RRGGBBAA` 精确颜色。Token 随主题变化，精确颜色保持不变。fontSize 缺省 16，borderWidth/radius 缺省 0。card/panel 缺省 raised surface 与至少 6 point 圆角，badge/button 有自身最小圆角。样式无继承，每节点单独指定。
+style：background/color/borderColor 可使用 surface、surfaceRaised、textPrimary、textMuted、border、accent、success、warning、danger、focus、primary、onPrimary Token，或 `#RRGGBB` / `#RRGGBBAA` 精确颜色。Token 随主题变化，精确颜色保持不变。fontSize 缺省 16，borderWidth/radius 缺省 0。card/panel 缺省 raised surface 与至少 6 point 圆角，badge/button 有自身最小圆角。样式无继承，每节点单独指定。同一组件的背景和边框只绘制一次：panel/card 的边框由 `bordered` 控制，禁用时不再绘制；输入和下拉的边框、圆角与背景归控件外框所有。
 
 文本支持 `fontFamily: proportional|monospace`、`fontWeight: normal|bold`、`textWrap: true|false` 和 `textAlign: start|center|end`；center 同时在可用文本框内垂直居中。默认正常比例字体、换行、起始对齐。Bold 使用 Windows 系统粗体字体；自定义嵌入宿主未安装粗体字族时回退普通比例字体。等宽字体优先于字重。截断的文本默认悬停显示完整内容，可设置 `textOverflowTooltip: false` 关闭，适用于可滚动的日志正文。
 
-按钮支持 `paddingX` / `paddingY`（默认 10 / 6 point），并可通过 `hover`、`pressed`、`disabled` 分别声明 background/color/borderColor。输入和下拉框也应用颜色、边框、圆角、字体与状态配置，保留 egui 的编辑、焦点和弹层行为。未指定状态字段时沿用默认反馈或基础样式。原有描述可继续使用。
+按钮支持 `paddingX` / `paddingY`（默认 10 / 6 point），并可通过 `hover`、`pressed`、`disabled` 分别声明 background/color/borderColor。输入框把 `paddingX` / `paddingY` 用作编辑区内边距，下拉框把它用作标签横向起点；两者均应用颜色、边框、圆角、字体与状态配置，保留 egui 的编辑、焦点和弹层行为。未指定状态字段时沿用默认反馈或基础样式。原有描述可继续使用。
 
 Grid 中声明 `height: {"fr": n}` 的子项使对应行按权重分配剩余高度；未声明 fr 的行使用内容高度。有限高度下 fr 子项填满分配的行；无界测量仍采用内容尺寸。
 
@@ -137,13 +80,32 @@ Grid 中声明 `height: {"fr": n}` 的子项使对应行按权重分配剩余高
 | panel/card | 无 | children=[]、title 字符串绑定 |
 | text | text 字符串绑定 | 无 |
 | input | value 字符串绑定 | placeholder 字符串绑定 |
-| select | value 字符串绑定、options 绑定 | placeholder；optionsFormat=array/lines；change/open 事件；详见 [Select](18-select.md) |
-| button | text 字符串绑定 | events.click |
+| select | value 字符串或多选数组绑定、options 绑定 | placeholder；optionsFormat=array/lines；mode、showSearch、allowClear、loading、maxCount、notFoundContent；属性与完整示例见 [Select 组件教程](components/12-select.md)，动态选项另见 [Select 数据加载](18-select.md) |
+| checkbox | value 布尔绑定；options 组时为字符串数组 | text 字符串绑定、indeterminate=false；[教程](components/27-checkbox.md) |
+| radio | value 字符串绑定、options 数组绑定 | vertical=false；最多 256 项，空字符串表示未选择；[教程](components/28-radio.md) |
+| switch | value 布尔绑定 | text 字符串绑定；[教程](components/29-switch.md) |
+| inputNumber | value 数字绑定 | min=-1e12、max=1e12、step=1、precision 可选 0..12；[教程](components/30-input-number.md) |
+| slider | value 数字绑定；range 时为升序二元数字数组 | min=0、max=100、step=1、vertical=false、range/reverse/marks；[教程](components/31-slider.md) |
+| form | 无 | children=[]、state={}、actions={}、title 字符串绑定；默认 gap=12；events.submit/invalid/reset；[教程](components/32-form.md) |
+| formItem | children 恰好一个输入控件 | label 字符串绑定、rules=[]；须位于 form 内；[教程](components/32-form.md) |
+| button | text 字符串绑定 | events.click、htmlType=button/submit/reset；submit/reset 按钮须位于 form 内 |
 | metric | label 字符串绑定、value 数字绑定 | format，默认 text |
 | badge | text 字符串绑定 | tone=accent，可选 success/warning/danger/muted |
 | progress | value 数字绑定，范围 [0,1] | text 字符串绑定 |
-| table | rows 数组对象绑定、rowKey、columns | rowHeight=32，16..512；events.rowSelect/sortChange |
+| table | rows 数组对象绑定、rowKey、columns | rowHeight=32，16..512；pageSize/current、loading/emptyText/bordered；events.rowSelect/sortChange/pageChange |
 | lineChart/barChart | series 数组、layout.height.fixed >=120 | title、xAxis/yAxis、legend=true、zoom=false、pan=false |
+
+协议另提供 50 个原生组件，当前共 84 种 type。新增组件的 text/title/label/placeholder/value/options 支持直接字面量或 Binding；扩展属性均支持两种形式。disabled、size 为公共扩展字段；内部 api 字段不接受用户声明。字段精确枚举和范围可通过 Rust `v02::util::component_api(Kind)` 查询，所有跨字段和绑定约束由引擎验证。
+
+| 类别 | 新增 type | 字段、事件、完整示例 |
+| --- | --- | --- |
+| 导航与切换 | anchor、breadcrumb、dropdown、menu、pagination、steps、tabs、segmented、collapse、carousel | [导航教程](components/33-navigation.md) |
+| 输入与树 | autoComplete、cascader、colorPicker、datePicker、mentions、rate、timePicker、transfer、treeSelect、upload、calendar、tree | [输入教程](components/34-native-inputs.md) |
+| 展示 | floatButton、icon、avatar、badgeCount、descriptions、empty、image、list、listy、qrCode、timeline | [展示教程](components/35-native-display.md) |
+| 反馈 | modal、drawer、popover、tooltip、popconfirm、message、notification、tour、alert、result、skeleton、spin | [反馈教程](components/36-native-feedback.md) |
+| 配置与装饰 | configProvider、app、watermark、affix、borderBeam | [配置教程](components/37-native-context.md) |
+
+主值别名为 Tabs/Collapse 的 activeKey，Pagination/Steps/Carousel/Tour 的 current，Menu/Tree 的 selectedKeys；不能同时声明 value 与主值别名。默认主值可本地交互，state Binding 则受外部状态控制。Tabs/Collapse 子组件 id 必须对应 items.key。官网 API 尚未完整实现，实际限制见 [覆盖对照](21-component-coverage.md)。
 
 表格 columns 为 1..64 个 `{id,field,title,width,format?}`；field 是对象直接属性名，rowKey 是唯一字符串字段。width 支持 fixed/fr/auto；最小宽度 48 point，auto 最多抽样前 200 行，数据变化重算，用户拖拽宽度优先。表头/表体共用列宽和水平偏移。固定表头 32 point；表体按固定行高计算可见区间，预取 2 行，仅对裁剪内实际可见行格式化和绘制。单元格支持同列数值、字符串或布尔；排序稳定，null 始终在末尾，选中保存 rowKey。点击同一行不重复 rowSelect；方向键切换选择，Enter 采用宿主激活路径。空表显示“暂无数据”。
 
@@ -155,7 +117,13 @@ Grid 中声明 `height: {"fr": n}` 的子项使对应行按权重分配剩余高
 
 events 是该组件支持的事件名到动作 ID 或动作绑定的对象。固定写法 `{"click":"advance"}` 保持兼容，也支持 `{"click":{"kind":"state","key":"wizard","path":"/action"}}` 和字符串 literal 绑定。绑定必须解析为非空字符串，并引用 actions 中已定义的动作；加载与每次状态更新均校验，非法更新不改变状态。每个事件提交时读取当时状态中的动作 ID，前一个事件的成功状态更新会影响后一个事件的动作选择；一次动作开始后不因后续状态变化而切换其步骤。
 
-除 splitter 外的容器、divider、指标、badge、progress、图表不接受业务 events。输入和 splitter 的 change 先写状态，再解析事件动作并触发；splitter.change payload 必须为 [0,1] 数字，value 的 state 绑定仅接受空 path，禁用或 resizable=false 时不允许用户调整。submit 由 Enter 提交；button 支持 click；table 支持 rowSelect、sortChange。内部事件包含 componentId、targetKey、kind、payload、sequence、generation；按输入序号提交，只消费一次，隐藏/禁用/过期 generation 的事件丢弃。表格 rowSelect payload 是行键字符串，sortChange payload 为 `{field,descending}`；控件原始 payload 尚不作为 event 绑定上下文。event 绑定由模块 emit/on 提供，见下节。
+事件名按组件契约校验。输入控件和 splitter 的 change 先写状态，再解析事件动作并触发；Text change 写 text，Badge change 写 checked，Table pageChange 写 current。可写 state 绑定仅接受空 path，prop 为只读。Checkbox 单项/Switch 载荷为布尔值，Checkbox 组/Select 多选为字符串数组，Radio 为可用选项字符串，InputNumber/Slider 为范围内数字，range Slider 为升序数字对；数字字符串不自动转换。splitter.change payload 必须为 [0,1] 数字，禁用或 resizable=false 时不允许调整。input/inputNumber 的 submit 由 Enter 提交；button 支持 click；Table 的 rowSelect 为行键字符串，sortChange 为 `{field,descending}`，pageChange 为正整数。
+
+内部事件包含 componentId、targetKey、kind、payload、sequence、generation；序号递增并仅消费一次，隐藏/禁用/过期 generation 的事件丢弃。同一输入产生主值与业务事件时，先提交 change，再提交 click/select 等事件。openChange 等二级属性事件使用固定映射写入 open、pageSize、openKeys、checkedKeys、expandedKeys，载荷类型和成员关系先校验，动作随后读取最新值。原生控件动作可读取 `{"kind":"event"}`；使用 event 的动作必须声明匹配形状的 eventPayload 样本。完整事件列表和载荷见对应教程。
+
+数字控件要求 `-1e12 <= min < max <= 1e12`，step 在 `1e-12..1e12`；value 必须处于范围内。交互时 InputNumber 按 precision 舍入并限制范围，Slider 以 min 为起点按 step 吸附（max 端点始终可达）。程序赋值遵守类型和范围，不自动吸附或舍入。
+
+Form 不可嵌套。FormItem 直属子节点恰好一个基础或新增输入控件，必须绑定可写顶层 state；同一表单不能重复绑定同一字段。rules 最多 32 条，支持 required、minLength/maxLength（Unicode 字符数）、min/max（数字）、pattern（Rust regex）、message；规则须有效且匹配字段类型，字段初始不满足业务规则仍可加载。required 拒绝空白字符串、空数组和 false。点击 htmlType=submit 按钮或在输入框按 Enter，先提交控件事件，再校验当前可见且启用字段；通过调用 form.events.submit，失败显示行内错误并调用 invalid。首次提交后，字段和可见/禁用状态更新会刷新错误。htmlType=reset 原子恢复所有 FormItem 字段的文档初始值（含隐藏和禁用字段），清除校验状态，再调用 reset；若当前约束与初始值冲突则拒绝更新。按钮若同时声明 click，会先执行 click 动作。Form 动作通过 state 读取字段值。
 
 actions.steps 非空。set 的 value 可为任意已匹配类型的绑定；concat.parts 仅为字符串绑定。每次动作读取触发时快照，顺序写入，失败停止后续步骤、保留成功写入、显示步骤诊断。measure/arrange/paint 不执行动作；输入事件统一交给 commit。
 
@@ -201,6 +169,6 @@ button 的 `events.click` 指向包含 `command` 步骤的动作：
 
 ### 运行与任务日志
 
-0.1/0.2 桌面宿主均提供底部“日志与任务”和“打开日志目录”。命令 stdout/stderr 按原始字节持续写文件，窗口独立显示每条流最近 32 KiB，不影响命令结果状态。0.2 可使用 `{"type":"openLogs"}` 动作步骤打开同一窗口，无参数，不读取或修改业务状态。运行日志按 EXE 名和启动会话保存，完整位置、文件和错误边界见 [运行与任务日志](19-runtime-logs.md)。
+桌面宿主提供底部“日志与任务”和“打开日志目录”。命令 stdout/stderr 按原始字节持续写文件，窗口独立显示每条流最近 32 KiB，不影响命令结果状态。可使用 `{"type":"openLogs"}` 动作步骤打开同一窗口，无参数，不读取或修改业务状态。运行日志按 EXE 名和启动会话保存，完整位置、文件和错误边界见 [运行与任务日志](19-runtime-logs.md)。
 
 组件实现与当前验证范围见 [组件实现](09-component-implementation.md)。

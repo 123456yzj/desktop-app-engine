@@ -7,6 +7,11 @@ use serde::{Deserialize, Deserializer};
 use std::collections::BTreeMap;
 
 mod parse;
+pub mod util;
+pub(crate) use crate::components::contracts as widgets;
+pub(crate) use crate::components::input_validation::{
+    field_error, validate_forms, validate_input_value, validate_numeric,
+};
 pub use parse::parse;
 
 #[derive(Debug, Clone, Deserialize)]
@@ -47,6 +52,13 @@ pub enum Kind {
     Text,
     Input,
     Select,
+    Checkbox,
+    Radio,
+    Switch,
+    InputNumber,
+    Slider,
+    Form,
+    FormItem,
     Button,
     Metric,
     Badge,
@@ -54,6 +66,56 @@ pub enum Kind {
     Table,
     LineChart,
     BarChart,
+    FloatButton,
+    Icon,
+    Anchor,
+    Breadcrumb,
+    Dropdown,
+    Menu,
+    Pagination,
+    Steps,
+    Tabs,
+    AutoComplete,
+    Cascader,
+    ColorPicker,
+    DatePicker,
+    Mentions,
+    Rate,
+    TimePicker,
+    Transfer,
+    TreeSelect,
+    Upload,
+    Avatar,
+    BadgeCount,
+    Calendar,
+    Carousel,
+    Collapse,
+    Descriptions,
+    Empty,
+    Image,
+    List,
+    Listy,
+    Popover,
+    QrCode,
+    Segmented,
+    Timeline,
+    Tooltip,
+    Tour,
+    Tree,
+    Alert,
+    Drawer,
+    Message,
+    Modal,
+    Notification,
+    Popconfirm,
+    Result,
+    Skeleton,
+    Spin,
+    Watermark,
+    Affix,
+    App,
+    BorderBeam,
+    ConfigProvider,
 }
 
 impl Kind {
@@ -75,6 +137,46 @@ impl Kind {
                 | Self::Footer
                 | Self::Splitter
                 | Self::Masonry
+                | Self::Form
+                | Self::FormItem
+                | Self::Tabs
+                | Self::Carousel
+                | Self::Collapse
+                | Self::Drawer
+                | Self::Modal
+                | Self::Popover
+                | Self::Tooltip
+                | Self::Popconfirm
+                | Self::Spin
+                | Self::Watermark
+                | Self::Affix
+                | Self::App
+                | Self::BorderBeam
+                | Self::ConfigProvider
+        )
+    }
+    pub fn is_input(self) -> bool {
+        matches!(
+            self,
+            Self::Input
+                | Self::Select
+                | Self::Checkbox
+                | Self::Radio
+                | Self::Switch
+                | Self::InputNumber
+                | Self::Slider
+                | Self::AutoComplete
+                | Self::Cascader
+                | Self::ColorPicker
+                | Self::DatePicker
+                | Self::Mentions
+                | Self::Rate
+                | Self::TimePicker
+                | Self::Transfer
+                | Self::TreeSelect
+                | Self::Upload
+                | Self::Segmented
+                | Self::Calendar
         )
     }
 }
@@ -136,6 +238,75 @@ pub struct Node {
     pub min_column_width: Option<f32>,
     pub bar_size: Option<f32>,
     pub resizable: Option<bool>,
+    #[serde(default)]
+    pub indeterminate: bool,
+    pub min: Option<f64>,
+    pub max: Option<f64>,
+    pub step: Option<f64>,
+    pub precision: Option<usize>,
+    #[serde(default)]
+    pub html_type: ButtonType,
+    #[serde(default)]
+    pub rules: Vec<FormRule>,
+    /// Authored top-level widget properties, normalized by the strict parser.
+    #[serde(default)]
+    pub api: BTreeMap<String, Binding>,
+}
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum ButtonType {
+    #[default]
+    Button,
+    Submit,
+    Reset,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct FormRule {
+    #[serde(default)]
+    pub required: bool,
+    pub min_length: Option<usize>,
+    pub max_length: Option<usize>,
+    pub min: Option<f64>,
+    pub max: Option<f64>,
+    pub message: Option<String>,
+    pub pattern: Option<String>,
+}
+
+impl Node {
+    pub fn number_range(&self) -> (f64, f64) {
+        (
+            self.min.unwrap_or(if self.kind == Kind::Slider {
+                0.0
+            } else {
+                -1e12
+            }),
+            self.max.unwrap_or(if self.kind == Kind::Slider {
+                100.0
+            } else {
+                1e12
+            }),
+        )
+    }
+    /// A single normalization path for pointer, keyboard and text numeric edits.
+    pub fn normalize_number(&self, value: f64) -> f64 {
+        let (min, max) = self.number_range();
+        let mut value = value.clamp(min, max);
+        if self.kind == Kind::Slider {
+            if value <= min || value >= max {
+                return value;
+            }
+            let step = self.step.unwrap_or(1.0);
+            value = (min + ((value - min) / step).round() * step).clamp(min, max);
+        }
+        if let Some(precision) = self.precision {
+            let factor = 10_f64.powi(precision as i32);
+            value = ((value * factor).round() / factor).clamp(min, max);
+        }
+        value
+    }
 }
 
 #[derive(Debug, Clone, Copy, Default, Deserialize)]

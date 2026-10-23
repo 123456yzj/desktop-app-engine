@@ -25,12 +25,51 @@ impl Runtime {
             while let Some(id) = parent {
                 let n = &self.tree.nodes[id];
                 ancestors_active &= active(&n.spec.visible) && active(&n.spec.enabled);
+                ancestors_active &=
+                    !crate::v02::widgets::flag(&n.spec, &self.state, "disabled", false)
+                        && (!matches!(
+                            n.spec.kind,
+                            crate::v02::Kind::ConfigProvider | crate::v02::Kind::App
+                        ) || !crate::v02::widgets::flag(
+                            &n.spec,
+                            &self.state,
+                            "componentDisabled",
+                            false,
+                        ));
                 parent = n.parent;
             }
             if !ancestors_active || !active(&node.spec.visible) || !active(&node.spec.enabled) {
                 continue;
             }
-            let action = node.spec.events.get(&e.kind).cloned();
+            if crate::v02::widgets::flag(&node.spec, &self.state, "disabled", false) {
+                continue;
+            }
+            if matches!(
+                node.spec.kind,
+                crate::v02::Kind::Button | crate::v02::Kind::Switch
+            ) && crate::v02::widgets::flag(&node.spec, &self.state, "loading", false)
+            {
+                continue;
+            }
+            if e.kind == "change"
+                && matches!(
+                    node.spec.kind,
+                    crate::v02::Kind::Input | crate::v02::Kind::InputNumber
+                )
+                && crate::v02::widgets::flag(&node.spec, &self.state, "readOnly", false)
+            {
+                continue;
+            }
+            if let Err(error) = crate::v02::widgets::validate_secondary(
+                &node.spec,
+                &self.state,
+                &e.kind,
+                &e.payload,
+            ) {
+                self.error = Some(error);
+                continue;
+            }
+            let mut action = node.spec.events.get(&e.kind).cloned();
             let plugin_contract = node
                 .metadata
                 .registration
@@ -47,6 +86,23 @@ impl Runtime {
                 }
             }
             let action_names = node.metadata.action_names.clone();
+            let is_form = node.spec.kind == crate::v02::Kind::Form;
+            if crate::v02::widgets::is_widget(node.spec.kind)
+                && e.kind == "change"
+                && let Err(error) =
+                    crate::v02::widgets::validate_value(&node.spec, &self.state, &e.payload)
+            {
+                self.error = Some(error);
+                continue;
+            }
+            if node.spec.kind.is_input()
+                && e.kind == "change"
+                && let Err(error) =
+                    crate::v02::validate_input_value(&node.spec, &self.state, &e.payload)
+            {
+                self.error = Some(error);
+                continue;
+            }
             if node.spec.kind == crate::v02::Kind::Splitter && e.kind == "change" {
                 if node.spec.resizable == Some(false) {
                     continue;
@@ -60,9 +116,16 @@ impl Runtime {
                     continue;
                 }
             }
-            if node.spec.kind == crate::v02::Kind::Select && e.kind == "change" {
-                let allowed =
-                    crate::v02::select_options(&node.spec, &self.state).is_ok_and(|options| {
+            if matches!(
+                node.spec.kind,
+                crate::v02::Kind::Select | crate::v02::Kind::Radio
+            ) && e.kind == "change"
+                && !crate::v02::widgets::multiple(&node.spec, &self.state)
+            {
+                let allowed = e.payload.as_str() == Some("")
+                    && node.spec.kind == crate::v02::Kind::Select
+                    && crate::v02::widgets::flag(&node.spec, &self.state, "allowClear", false)
+                    || crate::v02::select_options(&node.spec, &self.state).is_ok_and(|options| {
                         options
                             .iter()
                             .any(|o| !o.disabled && e.payload.as_str() == Some(o.value.as_str()))
@@ -72,12 +135,38 @@ impl Runtime {
                     continue;
                 }
             }
-            let binding = if e.kind == "change" {
-                node.spec.value.clone()
+            let binding = if let Some(property) =
+                crate::v02::widgets::event_property(node.spec.kind, &e.kind)
+            {
+                node.spec.api.get(property).cloned()
+            } else if e.kind == "change" {
+                if node.spec.kind == crate::v02::Kind::Text {
+                    node.spec.text.clone()
+                } else {
+                    node.spec.value.clone()
+                }
             } else {
                 None
             };
             self.error = None;
+            if is_form && matches!(e.kind.as_str(), "submit" | "reset") {
+                match self.form_event(&e.component_id, e.kind == "reset") {
+                    Ok(valid) => {
+                        let kind = if valid { e.kind.as_str() } else { "invalid" };
+                        action = self
+                            .tree
+                            .nodes
+                            .iter()
+                            .find(|n| n.spec.id == e.component_id)
+                            .and_then(|n| n.spec.events.get(kind))
+                            .cloned();
+                    }
+                    Err(error) => {
+                        self.error = Some(error);
+                        continue;
+                    }
+                }
+            }
             if let Some(Binding::State { key, .. }) = binding
                 && let Err(err) = self.set(&key, e.payload.clone())
             {
@@ -94,13 +183,7 @@ impl Runtime {
                             .cloned()
                             .ok_or_else(|| format!("当前作用域未定义动作 {id:?}")),
                     })
-                    .and_then(|id| {
-                        if plugin_contract.is_some() {
-                            self.invoke_event(&id, Some(e.payload.clone()), 0)
-                        } else {
-                            self.invoke(&id)
-                        }
-                    });
+                    .and_then(|id| self.invoke_event(&id, Some(e.payload.clone()), 0));
                 if let Err(err) = result {
                     self.error = Some(format!(
                         "组件 {:?} events.{}: {err}",

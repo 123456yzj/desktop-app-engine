@@ -163,6 +163,7 @@ pub struct TableState {
     pub overrides: Vec<Option<f32>>,
     pub version: u64,
     pub painted_rows: usize,
+    pub page: Option<u64>,
 }
 impl TableState {
     pub fn select(&mut self, key: String) -> bool {

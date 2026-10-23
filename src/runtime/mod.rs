@@ -2,16 +2,19 @@
 
 mod checks;
 mod events;
+mod forms;
 mod http;
-mod legacy;
+#[cfg(test)]
+mod input_tests;
 mod plugins;
+#[cfg(test)]
+mod widget_tests;
 use crate::{
     binding::{Binding, State, ValueType},
     compiler::{self, CompiledDescription, Metadata},
     component::Tree,
     v02::{Description, Step},
 };
-pub use legacy::Engine;
 use serde_json::Value;
 use std::collections::BTreeMap;
 use std::path::PathBuf;
@@ -48,6 +51,8 @@ pub struct Runtime {
     pub(crate) error: Option<String>,
     types: BTreeMap<String, ValueType>,
     last_sequence: Option<u64>,
+    form_errors: BTreeMap<String, String>,
+    submitted_forms: std::collections::BTreeSet<String>,
     command_base: PathBuf,
     jobs: BTreeMap<String, Arc<AtomicBool>>,
     command_callbacks: BTreeMap<String, String>,
@@ -94,6 +99,8 @@ impl Runtime {
             generation: 1,
             error: None,
             last_sequence: None,
+            form_errors: BTreeMap::new(),
+            submitted_forms: Default::default(),
             command_base: std::env::current_exe()
                 .map_err(|e| e.to_string())?
                 .parent()
@@ -162,6 +169,7 @@ impl Runtime {
                 self.key_versions.insert(key, self.version);
             }
         }
+        self.refresh_form_errors()?;
         Ok(())
     }
     /// Host updates use the same lexical scope as bindings authored on this component.

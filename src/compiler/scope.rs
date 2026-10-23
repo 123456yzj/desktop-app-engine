@@ -255,7 +255,7 @@ pub(super) fn compile(
         let node_metadata = metadata.nodes.get_mut(&n.id).unwrap();
         node_metadata.action_names = names.actions.clone();
         node_metadata.state_names = names.state.clone();
-        if matches!(n.kind, Kind::Input | Kind::Select | Kind::Splitter)
+        if (n.kind.is_input() || n.kind == Kind::Splitter)
             && matches!(n.value, Some(Binding::Prop { .. }))
         {
             return Err("prop 为只读，可写 value 请绑定局部 state 并通过 emit 通知父级".into());
@@ -278,6 +278,9 @@ pub(super) fn compile(
         }
         for series in n.series.iter_mut().flatten() {
             binding(&mut series.data, &names, false)?;
+        }
+        for b in n.api.values_mut() {
+            binding(b, &names, false)?;
         }
         for e in n.events.values_mut() {
             event(e, &names, state)?;

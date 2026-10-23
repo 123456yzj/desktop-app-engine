@@ -75,7 +75,7 @@
 | 子项 minHeight/maxHeight | 非负数 | 上下分割的尺寸限制 |
 | `events.change` | 动作 ID / 动作绑定 | 比例先写入 state，再调用动作 |
 
-value 支持 literal、本地缺省或可写 state；state 仅接受空 path，prop 只读不允许。事件动作沿用普通控件规则，不直接接收 event 绑定，可在动作中读取绑定的比例状态。禁止 gap/rowGap/columnGap/wrap/align/justify，面板填满交叉轴，分割条间距由 barSize 控制。
+value 支持 literal、本地缺省或可写 state；state 仅接受空 path，prop 只读不允许。change 载荷为新的数字比例，先写绑定状态再执行动作；动作可读取该状态，或声明数字 eventPayload 样本后使用 event Binding。禁止 gap/rowGap/columnGap/wrap/align/justify，面板填满交叉轴，分割条间距由 barSize 控制。
 
 ## 常见问题
 

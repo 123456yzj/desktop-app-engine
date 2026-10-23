@@ -1,6 +1,6 @@
 # 桌面应用描述引擎
 
-对外提供一个原生打包入口：输入 JSON 内容，输出应用专属的 Windows EXE。支持协议 0.1 和 0.2；0.2 提供组件树、布局、类型化状态、模块作用域、表格、图表、命令、HTTP 数据源和 JavaScript 插件。
+对外提供一个原生打包入口：输入 JSON 内容，输出应用专属的 Windows EXE。统一使用协议 0.2，提供组件树、布局、类型化状态、模块作用域、表格、图表、命令、HTTP 数据源和 JavaScript 插件。
 
 ```cmd
 desktop-app-engine.exe package --output MyApp.exe < app.json
@@ -36,6 +36,8 @@ cargo run --bin vben-package --locked --offline
 
 工作台启动后的扫描和构建会使用用户配置的 SSH 连接，操作规则见 [构建工作台](docs/20-turbo-build.md)。
 
+[全部组件展示](examples/all-components.json) 是完整的协议 0.2 应用，覆盖全部 84 种组件，按布局、录入、导航、展示、数据和反馈分为六个可切换分区。示例包含表单校验、模块通信、表格分页、图表与弹窗交互；Image 使用无来源占位，Upload 只记录本地选择。Plugin 使用仓库中的 ECharts 适配器，开发加载需在描述文件旁准备 `plugins/`，打包需按 [插件安装说明](docs/15-plugins.md#安装和运行) 准备生产依赖和 Node 运行库。
+
 工作台 JSON 通过 `app.host: "vben-package"` 声明所需原生宿主。先构建一次宿主模板，随后仍由统一命令导出完整应用：
 
 ```powershell
@@ -55,13 +57,15 @@ target\release\desktop-app-engine.exe package --output exports\vben-package.exe 
 | `src/protocol/` | 原始描述、绑定和严格结构解析；公共 app/window 类型 |
 | `src/compiler/` | 插件发现、作用域解析、语义校验和私有编译元数据 |
 | `src/runtime/` | 受校验的状态提交、有序事件、动作及异步任务调度 |
-| `src/components/`、`src/layout/` | 内部组件树、表格/图表纯算法、布局 |
+| `src/components/` | 全部组件实现、组件契约、输入校验、组件树、数据算法、布局与原生绘制 |
 | `src/services/` | 子进程、HTTP、插件 RPC、凭据和日志 |
 | `src/packaging.rs`、`src/application.rs` | 单 EXE 导出、内置定义读取和插件资源缓存 |
-| `src/renderer/` | egui 宿主、主题、文本测量、绘制和日志界面 |
+| `src/renderer/` | 组件宿主的公开导出入口和日志界面 |
 | `src/bin/vben-package/` | 业务控制器、远端操作、设置和界面生成 |
 
-0.2 数据流为 `protocol::v02::parse` → `compiler::compile_at` → `CompiledDescription` → `Runtime::from_compiled`。`loader` 负责版本分派和输入目录。原始描述可重复编译；内部名称、插件注册和事件样例不属于 JSON 协议。运行时通过只读访问器提供状态，写入走 `set`、`set_many` 或 `set_from`，统一维护校验与版本。详情见 [架构](docs/02-architecture.md)。
+数据流为 `protocol::v02::parse` → `compiler::compile_at` → `CompiledDescription` → `Runtime::from_compiled`。`loader` 负责输入选择和资源基准目录，直接返回编译结果；`schemaVersion` 必须为 `"0.2"`。原始描述可重复编译；内部名称、插件注册和事件样例不属于 JSON 协议。运行时通过只读访问器提供状态，写入走 `set`、`set_many` 或 `set_from`，统一维护校验与版本。详情见 [架构](docs/02-architecture.md)。
+
+所有组件源码统一位于 [src/components/](src/components/README.md)。84 种组件各自封装在 `egui/widgets/` 的独立文件，声明扩展属性、事件和受控映射，实现专属绘制、交互或布局策略；数据、布局算法和重复的绘制机制共享。目录说明提供完整文件对应表。
 
 ## 应用打包
 
@@ -87,7 +91,7 @@ cargo run --bin desktop-app-engine --locked --offline -- --app .\examples\vben-p
 cargo run --bin vben-package --locked --offline -- --check
 ```
 
-布局组件包含自动化几何、状态及 egui 输入测试，教程示例可通过 `python scripts/check-component-docs.py` 批量校验。当前提供 Flex、Space、Divider、Layout、Splitter 和 Masonry 等布局组件，详见 [布局教程](docs/components/21-flex.md) 与 [参考组件覆盖对照](docs/21-component-coverage.md)。远端 SSH 操作与客户环境需单独验证。
+协议 0.2 当前提供 84 种组件 type，包含新增的导航、日期/树输入、图片/二维码、弹窗提示和配置装饰组件。教程示例可通过 `python scripts/check-component-docs.py --schema` 批量校验（需 Python jsonschema）；自动化测试覆盖布局、表单、受控状态、事件顺序和 egui 输入。完整目录见 [组件教程](docs/components/README.md)，新增组件见 [导航](docs/components/33-navigation.md)、[录入与树](docs/components/34-native-inputs.md)、[展示](docs/components/35-native-display.md)、[反馈](docs/components/36-native-feedback.md)、[配置与装饰](docs/components/37-native-context.md)。[覆盖对照](docs/21-component-coverage.md) 逐项记录尚未实现的属性和桌面差异，名称覆盖不代表官网完整 API 兼容。远端 SSH 操作与客户环境需单独验证。
 
 - [描述格式](docs/05-description-format.md) 与 [0.2 JSON Schema](docs/description-0.2.schema.json)
 - [命令](docs/10-command-binding.md)、[动态事件](docs/11-dynamic-event-binding.md)、[作用域](docs/12-scoped-state.md)
