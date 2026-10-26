@@ -1,7 +1,7 @@
 //! Retained arena: external IDs are strings, internal IDs are indices, never hashes.
 use crate::{
     binding::State,
-    v02::{Kind, Node},
+    protocol::{Kind, Node},
 };
 pub type NodeId = usize;
 pub struct ComponentNode {
@@ -22,7 +22,7 @@ pub struct Resolved {
     pub title: String,
     pub placeholder: String,
     pub value: Option<serde_json::Value>,
-    pub options: Vec<crate::v02::SelectOption>,
+    pub options: Vec<crate::protocol::SelectOption>,
     pub api: std::collections::BTreeMap<String, serde_json::Value>,
 }
 impl Tree {
@@ -84,7 +84,7 @@ impl Tree {
                 r.visible &= parent.visible;
                 r.enabled &= parent.enabled;
                 if matches!(self.nodes[p].spec.kind, Kind::App | Kind::ConfigProvider) {
-                    r.enabled &= !crate::v02::widgets::flag(
+                    r.enabled &= !crate::protocol::widgets::flag(
                         &self.nodes[p].spec,
                         state,
                         "componentDisabled",
@@ -141,7 +141,7 @@ impl Tree {
                     r.visible &= resolved[p].visible;
                     r.enabled &= resolved[p].enabled;
                     if matches!(self.nodes[p].spec.kind, Kind::App | Kind::ConfigProvider) {
-                        r.enabled &= !crate::v02::widgets::flag(
+                        r.enabled &= !crate::protocol::widgets::flag(
                             &self.nodes[p].spec,
                             state,
                             "componentDisabled",
@@ -168,7 +168,7 @@ fn resolve_node(n: &ComponentNode, state: &State) -> Result<Resolved, String> {
     };
     let mut value = match n.spec.kind {
         kind if kind.is_input()
-            || crate::v02::widgets::is_widget(kind)
+            || crate::protocol::widgets::is_widget(kind)
             || matches!(kind, Kind::Metric | Kind::Progress | Kind::Splitter) =>
         {
             n.spec
@@ -189,15 +189,15 @@ fn resolve_node(n: &ComponentNode, state: &State) -> Result<Resolved, String> {
             .apply(value.as_ref().unwrap())?;
         rendered = format!(
             "{}{}{}",
-            crate::v02::widgets::string(&n.spec, state, "prefix", ""),
+            crate::protocol::widgets::string(&n.spec, state, "prefix", ""),
             rendered,
-            crate::v02::widgets::string(&n.spec, state, "suffix", "")
+            crate::protocol::widgets::string(&n.spec, state, "suffix", "")
         );
         value = None;
     }
-    let inherited_disabled = crate::v02::widgets::flag(&n.spec, state, "disabled", false)
+    let inherited_disabled = crate::protocol::widgets::flag(&n.spec, state, "disabled", false)
         || matches!(n.spec.kind, Kind::Button | Kind::Switch)
-            && crate::v02::widgets::flag(&n.spec, state, "loading", false);
+            && crate::protocol::widgets::flag(&n.spec, state, "loading", false);
     Ok(Resolved {
         visible: n
             .spec
@@ -222,7 +222,7 @@ fn resolve_node(n: &ComponentNode, state: &State) -> Result<Resolved, String> {
         placeholder: text(&n.spec.placeholder)?,
         value,
         options: if n.spec.kind == Kind::Radio {
-            crate::v02::select_options(&n.spec, state)?
+            crate::protocol::select_options(&n.spec, state)?
         } else {
             vec![]
         },

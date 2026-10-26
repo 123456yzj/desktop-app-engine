@@ -16,7 +16,7 @@ loader：选择输入，确定资源基准目录
   → components/egui：输入采集、字体、主题和绘制
 ```
 
-`protocol::v02::parse` 只解析输入，首先要求 `schemaVersion` 为 `"0.2"`，不发现插件、不改写作用域名称。`compiler::compile_at` 接收描述及资源目录，产生 `CompiledDescription`；只有编译器能构造该类型。加载器直接返回编译结果。节点名称映射、插件注册、动作所在模块和事件类型样例保存在独立元数据中，不进入 JSON 契约。
+`protocol::parse` 只解析输入，首先要求 `schemaVersion` 为 `"0.2"`，不发现插件、不改写作用域名称。`compiler::compile_at` 接收描述及资源目录，产生 `CompiledDescription`；只有编译器能构造该类型。加载器直接返回编译结果。节点名称映射、插件注册、动作所在模块和事件类型样例保存在独立元数据中，不进入 JSON 契约。
 
 `Runtime::new` 为程序化调用提供解析后编译入口；加载器和渲染器也可直接接收编译结果。原始描述可重复使用，内部编译结果无需再次解析词法作用域。
 

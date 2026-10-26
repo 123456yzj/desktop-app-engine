@@ -2,7 +2,7 @@ use super::*;
 component!(&[("separator", Text)], &[], LayoutKind::Directional);
 pub(in crate::components::egui) fn paint(
     ui: &egui::Ui,
-    n: &v02::Node,
+    n: &protocol::Node,
     r: &Resolved,
     children: &[usize],
     resolved: &[Resolved],

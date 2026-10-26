@@ -39,9 +39,9 @@ src/components/
         └── shared/          # 菜单、弹层、对话框、图片、日期等共用机制
 ```
 
-`widgets.rs::definition` 对全部 `Kind` 穷尽分派；新增组件时必须添加独立文件并注册。组件通过 `component!` 声明契约，`contracts.rs` 读取这些声明进行规范化和事件属性查询。公共协议字段仍由 `protocol/v02` 定义，专属值校验和跨字段规则由共享校验模块处理。
+`widgets.rs::definition` 对全部 `Kind` 穷尽分派；新增组件时必须添加独立文件并注册。组件通过 `component!` 声明契约，`contracts.rs` 读取这些声明进行规范化和事件属性查询。公共协议字段仍由 `protocol` 定义，专属值校验和跨字段规则由共享校验模块处理。
 
-`protocol/v02/classes.rs` 使用 `hypen-tailwind-parse` 将静态 JSON `class` 严格映射到原生 style/layout，在应用默认值前合并显式字段；未知类与不支持属性报错。测量、排列与绘制消费相同的最终节点。支持范围见 [公共属性教程](../../docs/components/02-common.md#json-class-工具类)，可运行 [utility-classes.json](../../examples/utility-classes.json)。
+`protocol/classes.rs` 使用 `hypen-tailwind-parse` 将静态 JSON `class` 严格映射到原生 style/layout，在应用默认值前合并显式字段；未知类与不支持属性报错。测量、排列与绘制消费相同的最终节点。支持范围见 [公共属性教程](../../docs/components/02-common.md#json-class-工具类)，可运行 [utility-classes.json](../../examples/utility-classes.json)。
 
 布局组件在各自文件选择 `LayoutKind`，共同使用 `layout/` 的测量和排列算法。LineChart、BarChart 分别实现系列绘制，共用坐标轴、图例和交互框架。相近控件也共用机制，例如 Modal/Drawer 的对话框、List/Listy 的虚拟列表、Image/Avatar 的图片加载；组件文件保留各自配置和差异行为。
 
@@ -63,7 +63,7 @@ src/components/
 
 ## 与引擎其他模块的衔接
 
-- `protocol/v02` 定义应用描述与协议节点，引用本目录的组件契约和输入校验规则。
+- `protocol` 定义应用描述与协议节点，引用本目录的组件契约和输入校验规则。
 - `compiler` 处理作用域、引用、插件注册与完整语义校验。
 - `runtime` 负责通用状态提交、有序事件、动作与表单提交调度。
 - `renderer` 导出组件宿主接口，并提供运行日志界面；公共 `layout` 入口导出本目录的布局实现。

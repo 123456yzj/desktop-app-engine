@@ -2,7 +2,7 @@
 use super::{Metadata, action_uses_event, listener, module_node};
 use crate::{
     binding::{Binding, ValueType},
-    v02::*,
+    protocol::*,
 };
 use std::collections::{BTreeMap, HashSet};
 

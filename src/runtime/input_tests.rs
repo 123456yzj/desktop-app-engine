@@ -1,12 +1,12 @@
 use super::*;
-use crate::v02;
+use crate::protocol;
 use serde_json::json;
 
 fn document(root: Value, state: Value) -> Value {
     json!({"schemaVersion":"0.2","app":{"name":"Inputs","window":{"width":600,"height":500}},"root":root,"state":state,"actions":{}})
 }
 fn runtime(document: Value) -> Runtime {
-    Runtime::new(v02::parse(&document.to_string()).unwrap()).unwrap()
+    Runtime::new(protocol::parse(&document.to_string()).unwrap()).unwrap()
 }
 fn event(id: &str, kind: &str, payload: Value, sequence: u64) -> UiEvent {
     UiEvent {
@@ -170,14 +170,14 @@ fn malformed_controls_and_forms_are_rejected() {
     ];
     for root in cases {
         let d = document(root.clone(), json!({"nested":{"n":1},"n":1}));
-        let result = v02::parse(&d.to_string()).and_then(Runtime::new);
+        let result = protocol::parse(&d.to_string()).and_then(Runtime::new);
         assert!(result.is_err(), "unexpectedly accepted {root}");
     }
     let mut duplicate = form();
     duplicate["root"]["children"][1]["children"][0] =
         json!({"type":"input","id":"duplicate","value":{"kind":"state","key":"name"}});
     assert!(
-        v02::parse(&duplicate.to_string())
+        protocol::parse(&duplicate.to_string())
             .and_then(Runtime::new)
             .is_err()
     );

@@ -6,7 +6,7 @@ use super::{
 };
 use crate::{
     component::{NodeId, Resolved, Tree},
-    v02::{Align, Justify, Kind, Overflow},
+    protocol::{Align, Justify, Kind, Overflow},
 };
 
 pub fn arrange(

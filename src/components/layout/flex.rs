@@ -1,5 +1,5 @@
 use super::Limit;
-use crate::v02::{ColumnSpec, Layout, Node, Track};
+use crate::protocol::{ColumnSpec, Layout, Node, Track};
 
 #[derive(Clone, Copy, Debug)]
 pub struct FlexItem {

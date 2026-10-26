@@ -1,5 +1,5 @@
 use super::{Active, Controller, LogView, Repo, Status};
-use desktop_app_engine::protocol::v02;
+use desktop_app_engine::protocol;
 use serde_json::{Value, json};
 
 fn literal(value: impl Into<Value>) -> Value {
@@ -104,8 +104,8 @@ fn apply_styles(node: &mut Value, dark: bool) {
     }
 }
 
-pub fn document(template: &Value, model: &Controller) -> Result<v02::Description, String> {
-    v02::parse(&document_json(template, model)?.to_string())
+pub fn document(template: &Value, model: &Controller) -> Result<protocol::Description, String> {
+    protocol::parse(&document_json(template, model)?.to_string())
 }
 pub fn document_json(template: &Value, model: &Controller) -> Result<Value, String> {
     let mut doc = template.clone();
@@ -450,7 +450,7 @@ pub fn document_json(template: &Value, model: &Controller) -> Result<Value, Stri
     Ok(doc)
 }
 
-pub fn modal(template: &Value, model: &Controller) -> Result<v02::Description, String> {
+pub fn modal(template: &Value, model: &Controller) -> Result<protocol::Description, String> {
     let mut doc = document_json(template, model)?;
     let children = if model.settings_open {
         vec![
@@ -492,5 +492,5 @@ pub fn modal(template: &Value, model: &Controller) -> Result<v02::Description, S
     };
     doc["root"] = json!({"type":"column","id":"dialog","layout":{"width":{"fr":1},"height":{"fr":1},"padding":12,"gap":12,"overflow":"scroll"},"children":children});
     apply_styles(&mut doc["root"], false);
-    v02::parse(&doc.to_string())
+    protocol::parse(&doc.to_string())
 }

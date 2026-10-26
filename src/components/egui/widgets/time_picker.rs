@@ -5,6 +5,7 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
     let WidgetContext {
         ui,
         n,
+        rect,
         state,
         value,
         collector,
@@ -21,22 +22,28 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
     if twelve {
         h = if h % 12 == 0 { 12 } else { h % 12 };
     }
+    let mut now = false;
+    let mut clear = false;
     ui.horizontal(|ui| {
+        ui.spacing_mut().interact_size.y = rect.height().min(40.);
         ui.add(
             egui::DragValue::new(&mut h)
                 .range(if twelve { 1..=12 } else { 0..=23 })
+                .custom_formatter(|n, _| format!("{:02}", n as u32))
                 .speed(contract::number(n, state, "hourStep", 1.)),
         );
         ui.label(":");
         ui.add(
             egui::DragValue::new(&mut m)
                 .range(0..=59)
+                .custom_formatter(|n, _| format!("{:02}", n as u32))
                 .speed(contract::number(n, state, "minuteStep", 1.)),
         );
         ui.label(":");
         ui.add(
             egui::DragValue::new(&mut s)
                 .range(0..=59)
+                .custom_formatter(|n, _| format!("{:02}", n as u32))
                 .speed(contract::number(n, state, "secondStep", 1.)),
         );
         if twelve {
@@ -47,6 +54,10 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
                     ui.selectable_value(&mut pm, true, "PM");
                 });
         }
+        now = contract::flag(n, state, "showNow", true) && ui.button("此刻").clicked();
+        clear = contract::flag(n, state, "allowClear", true)
+            && value != ""
+            && ui.button(contract::tr(n, state, "清除", "Clear")).clicked();
     });
     if twelve {
         h = h % 12 + if pm { 12 } else { 0 };
@@ -54,15 +65,10 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
     if old != (h, m, s) {
         *value = json!(format!("{h:02}:{m:02}:{s:02}"));
     }
-    if contract::flag(n, state, "showNow", true) && ui.small_button("此刻").clicked() {
+    if now {
         *value = json!(chrono::Local::now().format("%H:%M:%S").to_string());
     }
-    if contract::flag(n, state, "allowClear", true)
-        && value != ""
-        && ui
-            .small_button(contract::tr(n, state, "清除", "Clear"))
-            .clicked()
-    {
+    if clear {
         *value = json!("");
         collector.push(ui, "clear", None, Value::Null);
     }

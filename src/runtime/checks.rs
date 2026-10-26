@@ -1,7 +1,7 @@
 use super::Runtime;
 use crate::{
     http::{CredentialHeader, HeaderArgument},
-    plugin, v02,
+    plugin, protocol,
 };
 use std::collections::BTreeSet;
 
@@ -36,7 +36,7 @@ impl Runtime {
                 let mut rpc = plugin::Rpc::start(registration)?;
                 let response = rpc.request(
                     &serde_json::json!({"op":"mount","component":registration.component,
-                    "props":v02::plugin_props(&node.spec,&self.state)?,"width":800,"height":400}),
+                    "props":protocol::plugin_props(&node.spec,&self.state)?,"width":800,"height":400}),
                 )?;
                 if let Some(svg) = response.get("svg").and_then(serde_json::Value::as_str) {
                     plugin::rasterize(svg)?;

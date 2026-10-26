@@ -1,7 +1,7 @@
 //! Common normalization and value validation. Component files own their API declarations.
 pub(crate) use super::catalogue::PropertyType;
 use crate::binding::{Binding, State};
-use crate::v02::*;
+use crate::protocol::*;
 use PropertyType::*;
 use serde_json::{Value, json};
 pub(crate) const SIZE: PropertyType = Enum(&["small", "medium", "large"]);

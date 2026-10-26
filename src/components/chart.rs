@@ -1,7 +1,7 @@
 //! f64 linear plots, finite ticks, original-data hit testing and spike preserving sampling.
 use crate::{
     binding::State,
-    v02::{Axis, Kind, Node, required},
+    protocol::{Axis, Kind, Node, required},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -94,7 +94,7 @@ pub fn tick_text(n: f64) -> String {
     }
 }
 pub fn series_points(
-    series: &crate::v02::Series,
+    series: &crate::protocol::Series,
     state: &State,
 ) -> Result<Vec<Option<Point>>, String> {
     series
@@ -207,6 +207,35 @@ pub fn pan_range(range: Range, delta: f64) -> Range {
         range
     }
 }
+/// Minimum distinct X spacing, independent of the input ordering.
+pub fn bar_spacing(points: &[Option<Point>]) -> f64 {
+    let mut xs: Vec<_> = points.iter().flatten().map(|p| p.x).collect();
+    xs.sort_by(f64::total_cmp);
+    xs.windows(2)
+        .map(|w| w[1] - w[0])
+        .filter(|d| *d > 0.)
+        .fold(f64::INFINITY, f64::min)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn bar_spacing_handles_unordered_duplicate_and_missing_points() {
+        let points = [
+            Some(Point { x: 5., y: 1. }),
+            None,
+            Some(Point { x: 0., y: 1. }),
+            Some(Point { x: 2., y: 1. }),
+            Some(Point { x: 2., y: 3. }),
+        ];
+        assert_eq!(bar_spacing(&points), 2.);
+        assert!(bar_spacing(&[]).is_infinite());
+        assert!(bar_spacing(&points[..1]).is_infinite());
+    }
+}
+
 pub fn axis_range(
     points: impl Iterator<Item = f64>,
     axis: Option<&Axis>,

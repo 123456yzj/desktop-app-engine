@@ -204,11 +204,23 @@
                         {"type": "slider", "id": "sliderDemo", "value": {"kind": "state", "key": "slider"}, "min": 0, "max": 100, "step": 5},
                         {"type": "select", "id": "selectDemo", "class": "h-10 max-w-[840px] text-sm bg-white text-slate-800 border border-slate-300 rounded-lg hover:border-blue-500", "value": {"kind": "state", "key": "selectValue"}, "options": {"kind": "literal", "value": [{"value": "rust", "label": "Rust"}, {"value": "typescript", "label": "TypeScript"}, {"value": "python", "label": "Python"}]}, "showSearch": true, "allowClear": true, "placeholder": {"kind": "literal", "value": "请选择语言"}},
                         {"type": "text", "id": "extendedInputsTitle", "text": {"kind": "literal", "value": "进阶录入 / 搜索、级联、颜色与日期"}, "class": "text-lg font-bold text-slate-800"},
-                        {"type": "autoComplete", "id": "autoCompleteDemo", "value": {"kind": "state", "key": "query"}, "options": ["Ada", "Alan", "Grace"], "placeholder": "AutoComplete 输入姓名", "allowClear": true},
-                        {"type": "cascader", "id": "cascaderDemo", "value": {"kind": "state", "key": "region"}, "options": [{"value": "asia", "label": "亚洲", "children": [{"value": "china", "label": "中国"}, {"value": "japan", "label": "日本"}]}], "showSearch": true, "allowClear": true},
-                        {"type": "colorPicker", "id": "colorPickerDemo", "value": {"kind": "state", "key": "color"}, "showText": true, "presets": ["#1677ff", "#52c41a", "#faad14", "#f5222d"]},
-                        {"type": "datePicker", "id": "datePickerDemo", "value": {"kind": "state", "key": "date"}, "minDate": "2026-01-01", "maxDate": "2026-12-31", "allowClear": true},
-                        {"type": "timePicker", "id": "timePickerDemo", "value": {"kind": "state", "key": "time"}, "showNow": true, "allowClear": true},
+                         {"type": "form", "id": "extendedForm", "class": "max-w-[840px]", "children": [
+                         {"type": "grid", "id": "extendedFields", "class": "gap-5", "columns": [{"fr": 1}, {"fr": 1}], "children": [
+                           {"type": "formItem", "id": "autoCompleteItem", "label": {"kind": "literal", "value": "姓名联想"}, "class": "text-sm text-slate-700", "children": [
+                             {"type": "autoComplete", "id": "autoCompleteDemo", "class": "h-10 text-sm", "value": {"kind": "state", "key": "query"}, "options": ["Ada", "Alan", "Grace"], "placeholder": "输入姓名", "allowClear": true}
+                           ]},
+                           {"type": "formItem", "id": "cascaderItem", "label": {"kind": "literal", "value": "地区"}, "class": "text-sm text-slate-700", "children": [
+                             {"type": "cascader", "id": "cascaderDemo", "class": "h-10 text-sm", "value": {"kind": "state", "key": "region"}, "options": [{"value": "asia", "label": "亚洲", "children": [{"value": "china", "label": "中国"}, {"value": "japan", "label": "日本"}]}], "showSearch": true, "allowClear": true}
+                           ]},
+                           {"type": "formItem", "id": "dateItem", "label": {"kind": "literal", "value": "日期"}, "class": "text-sm text-slate-700", "children": [
+                             {"type": "datePicker", "id": "datePickerDemo", "class": "h-10 text-sm", "value": {"kind": "state", "key": "date"}, "minDate": "2026-01-01", "maxDate": "2026-12-31", "allowClear": true}
+                           ]},
+                           {"type": "formItem", "id": "timeItem", "label": {"kind": "literal", "value": "时间"}, "class": "text-sm text-slate-700", "children": [
+                             {"type": "timePicker", "id": "timePickerDemo", "class": "h-10 text-sm", "value": {"kind": "state", "key": "time"}, "showNow": true, "allowClear": true}
+                           ]}
+                         ]}
+                         ]},
+                         {"type": "colorPicker", "id": "colorPickerDemo", "value": {"kind": "state", "key": "color"}, "showText": true, "presets": ["#1677ff", "#52c41a", "#faad14", "#f5222d"]},
                         {"type": "mentions", "id": "mentionsDemo", "value": {"kind": "state", "key": "mention"}, "options": ["Ada", "Alan", "Grace"], "prefix": "@", "rows": 3},
                         {"type": "rate", "id": "rateDemo", "value": {"kind": "state", "key": "rating"}, "allowHalf": true, "tooltips": ["很差", "较差", "一般", "很好", "优秀"]},
                         {"type": "text", "id": "treeInputsTitle", "text": {"kind": "literal", "value": "结构化输入 / 穿梭、树、文件与日历"}, "class": "text-lg font-bold text-slate-800"},
@@ -250,7 +262,7 @@
                           {"type": "badgeCount", "id": "unreadBadge", "count": 120, "overflowCount": 99, "text": "未读消息"},
                           {"type": "badge", "id": "checkableTag", "text": {"kind": "literal", "value": "可选 Tag"}, "checkable": true, "checked": {"kind": "state", "key": "tagChecked"}, "closable": true}
                         ]},
-                        {"type": "descriptions", "id": "descriptionsDemo", "class": "h-[130px]", "column": 2, "bordered": true, "items": [{"label": "名称", "content": "全部组件展示"}, {"label": "协议", "content": "0.2"}, {"label": "运行方式", "content": "原生 Windows EXE"}, {"label": "组件数量", "content": "84"}]},
+                         {"type": "descriptions", "id": "descriptionsDemo", "column": 2, "bordered": true, "items": [{"label": "名称", "content": "全部组件展示"}, {"label": "协议", "content": "0.2"}, {"label": "运行方式", "content": "原生 Windows EXE"}, {"label": "组件数量", "content": "84"}]},
                         {"type": "row", "id": "imageRow", "class": "p-4 gap-5 h-[220px] bg-slate-50 border border-slate-200 rounded-xl", "children": [
                           {"type": "image", "id": "imageDemo", "class": "w-[330px] h-[180px]", "alt": "Image 图片占位 · 可在 JSON 中配置 src", "preview": true},
                           {"type": "qrCode", "id": "qrCodeDemo", "class": "w-[180px] h-[180px]", "value": "desktop-app-engine:all-components:0.2", "errorLevel": "M"}
@@ -272,7 +284,7 @@
                           {"id": "load", "field": "load", "title": "负载", "width": {"fixed": 160}, "format": {"type": "percent", "precision": 1}},
                           {"id": "online", "field": "online", "title": "在线", "width": {"fixed": 100}}
                         ], "events": {"rowSelect": "rowSelected", "sortChange": "tableSorted"}},
-                        {"type": "lineChart", "id": "lineChartDemo", "title": {"kind": "literal", "value": "LineChart 折线趋势"}, "class": "h-[280px]", "series": [{"id": "line", "name": "请求量", "data": {"kind": "state", "key": "trend"}, "xField": "x", "yField": "y", "monotonicX": true}], "legend": true, "zoom": true, "pan": true, "yAxis": {"min": 0, "max": 100}},
+                         {"type": "lineChart", "id": "lineChartDemo", "title": {"kind": "literal", "value": "LineChart 折线趋势 · Alt + 滚轮缩放"}, "class": "h-[280px]", "series": [{"id": "line", "name": "请求量", "data": {"kind": "state", "key": "trend"}, "xField": "x", "yField": "y", "monotonicX": true}], "legend": true, "zoom": true, "pan": true, "yAxis": {"min": 0, "max": 100}},
                         {"type": "barChart", "id": "barChartDemo", "title": {"kind": "literal", "value": "BarChart 柱状分布"}, "class": "h-[280px]", "series": [{"id": "bar", "name": "任务量", "data": {"kind": "state", "key": "trend"}, "xField": "x", "yField": "y"}], "legend": true, "yAxis": {"min": 0, "max": 100}},
                         {"type": "text", "id": "pluginTitle", "text": {"kind": "literal", "value": "Plugin / ECharts · 点击柱子更新状态栏"}, "class": "text-lg font-bold text-slate-800"},
                         {"type": "plugin", "id": "pluginDemo", "component": "echarts.chart", "class": "h-80", "props": {"option": {"kind": "literal", "value": {
@@ -321,7 +333,7 @@
           ]}
         ]
       },
-      {"type": "modal", "id": "modalDemo", "open": {"kind": "state", "key": "modalOpen"}, "title": "Modal 编辑资料", "width": 520, "events": {"ok": "saveModal"}, "children": [
+       {"type": "modal", "id": "modalDemo", "class": "gap-3", "open": {"kind": "state", "key": "modalOpen"}, "title": "Modal 编辑资料", "width": 520, "events": {"ok": "saveModal"}, "children": [
         {"type": "text", "id": "modalHint", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "此输入与表单姓名共用状态。确定后关闭并显示成功消息。"}},
         {"type": "input", "id": "modalName", "class": "px-3 py-2 bg-white text-slate-800 border border-slate-300 rounded-lg hover:border-blue-500", "value": {"kind": "state", "key": "formName"}}
       ]},

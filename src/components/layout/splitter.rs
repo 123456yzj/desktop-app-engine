@@ -1,5 +1,5 @@
 use super::{FlexItem, flex};
-use crate::v02::{Layout, Node};
+use crate::protocol::{Layout, Node};
 
 pub(crate) fn limits(layout: &Layout, horizontal: bool) -> (f32, f32) {
     if horizontal {

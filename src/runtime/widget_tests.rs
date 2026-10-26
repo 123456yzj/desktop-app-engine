@@ -1,12 +1,12 @@
 use super::*;
-use crate::v02;
+use crate::protocol;
 use serde_json::json;
 
 fn document(root: Value, state: Value) -> Value {
     json!({"schemaVersion":"0.2","app":{"name":"Widget contracts","window":{"width":640,"height":480}},"root":root,"state":state,"actions":{}})
 }
 fn runtime(value: Value) -> Runtime {
-    Runtime::new(v02::parse(&value.to_string()).unwrap()).unwrap()
+    Runtime::new(protocol::parse(&value.to_string()).unwrap()).unwrap()
 }
 fn event(component: &str, kind: &str, payload: Value, sequence: u64) -> UiEvent {
     UiEvent {
@@ -176,7 +176,9 @@ fn widget_contracts_reject_malformed_items_bindings_dates_and_properties() {
     ] {
         let d = document(root.clone(), json!({"nested":{"open":false}}));
         assert!(
-            v02::parse(&d.to_string()).and_then(Runtime::new).is_err(),
+            protocol::parse(&d.to_string())
+                .and_then(Runtime::new)
+                .is_err(),
             "accepted {root}"
         );
     }
@@ -219,8 +221,8 @@ fn schema_and_native_contracts_have_matching_extension_fields_and_event_names() 
         .as_array()
         .unwrap()
     {
-        let kind: v02::Kind = serde_json::from_value(name.clone()).unwrap();
-        let api = v02::util::component_api(kind);
+        let kind: protocol::Kind = serde_json::from_value(name.clone()).unwrap();
+        let api = protocol::util::component_api(kind);
         for property in api["properties"]
             .as_object()
             .unwrap()

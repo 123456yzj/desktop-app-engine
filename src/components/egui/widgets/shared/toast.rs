@@ -51,18 +51,19 @@ pub(in crate::components::egui::widgets) fn paint(
     }
     let mut close = duration > 0. && now - start >= duration;
     if !close {
-        let anchor = match contract::string(n, state, "placement", placement) {
-            "topLeft" => egui::Align2::LEFT_TOP,
-            "bottomLeft" => egui::Align2::LEFT_BOTTOM,
-            "bottomRight" => egui::Align2::RIGHT_BOTTOM,
-            "bottom" => egui::Align2::CENTER_BOTTOM,
-            "top" => egui::Align2::CENTER_TOP,
-            _ => egui::Align2::RIGHT_TOP,
+        // Keep bottom notifications above the application's status/footer area.
+        let (anchor, offset) = match contract::string(n, state, "placement", placement) {
+            "topLeft" => (egui::Align2::LEFT_TOP, Vec2::new(16., 16.)),
+            "bottomLeft" => (egui::Align2::LEFT_BOTTOM, Vec2::new(16., -88.)),
+            "bottomRight" => (egui::Align2::RIGHT_BOTTOM, Vec2::new(-16., -88.)),
+            "bottom" => (egui::Align2::CENTER_BOTTOM, Vec2::new(0., -88.)),
+            "top" => (egui::Align2::CENTER_TOP, Vec2::new(0., 16.)),
+            _ => (egui::Align2::RIGHT_TOP, Vec2::new(-16., 16.)),
         };
         let style = ui.style().clone();
         egui::Area::new(egui::Id::new((&n.id, "toast")))
             .order(egui::Order::Foreground)
-            .anchor(anchor, Vec2::new(16., 16.))
+            .anchor(anchor, offset)
             .show(ui.ctx(), |ui| {
                 ui.set_style(style);
                 egui::Frame::popup(ui.style())
@@ -76,7 +77,11 @@ pub(in crate::components::egui::widgets) fn paint(
                                         n, state, "status", "info",
                                     )),
                                 ),
-                                &r.text,
+                                if r.title.is_empty() {
+                                    &r.text
+                                } else {
+                                    &r.title
+                                },
                             );
                             if contract::flag(n, state, "closable", closable)
                                 && ui.small_button("×").clicked()
@@ -84,8 +89,8 @@ pub(in crate::components::egui::widgets) fn paint(
                                 close = true;
                             }
                         });
-                        if !r.title.is_empty() {
-                            ui.strong(&r.title);
+                        if !r.title.is_empty() && !r.text.is_empty() {
+                            ui.label(&r.text);
                         }
                         let description = contract::string(n, state, "description", "");
                         if !description.is_empty() {

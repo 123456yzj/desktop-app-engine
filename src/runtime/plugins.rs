@@ -11,7 +11,7 @@ impl Runtime {
                     .registration
                     .as_ref()
                     .ok_or("缺少插件注册")?,
-                crate::v02::plugin_props(n, &self.state)?,
+                crate::protocol::plugin_props(n, &self.state)?,
                 *width,
                 *height,
             )?;
@@ -74,7 +74,7 @@ impl Runtime {
                         if let Some(action) = n.events.get(name) {
                             let id = action.resolve(&self.state)?;
                             let id = match action {
-                                crate::v02::EventAction::Fixed(_) => id.to_owned(),
+                                crate::protocol::EventAction::Fixed(_) => id.to_owned(),
                                 _ => self.metadata.nodes[&n.id]
                                     .action_names
                                     .get(id)

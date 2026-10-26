@@ -13,7 +13,7 @@ use crate::{
     binding::{Binding, State, ValueType},
     compiler::{self, CompiledDescription, Metadata},
     component::Tree,
-    v02::{Description, Step},
+    protocol::{Description, Step},
 };
 use serde_json::Value;
 use std::collections::BTreeMap;

@@ -1,5 +1,5 @@
 use super::Rect;
-use crate::v02::Node;
+use crate::protocol::Node;
 
 pub(super) fn columns(node: &Node, available: f32) -> (usize, f32) {
     let maximum = node.column_count.unwrap_or(3);

@@ -1,5 +1,5 @@
 use super::{Binding, Runtime};
-use crate::v02::{self, Kind};
+use crate::protocol::{self, Kind};
 use std::collections::BTreeMap;
 
 impl Runtime {
@@ -42,7 +42,7 @@ impl Runtime {
                     .as_ref()
                     .unwrap()
                     .resolve(&self.state)?;
-                if let Some(error) = v02::field_error(&item.spec, value) {
+                if let Some(error) = protocol::field_error(&item.spec, value) {
                     self.form_errors.insert(item.spec.id.clone(), error);
                 }
             }

@@ -1,6 +1,6 @@
 //! Component input values and form field validation.
 use crate::binding::{Binding, State};
-use crate::v02::*;
+use crate::protocol::*;
 use serde_json::Value;
 use std::collections::BTreeSet;
 

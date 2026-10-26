@@ -2,7 +2,7 @@
 mod turbo_build;
 
 use desktop_app_engine::{
-    protocol::v02,
+    protocol,
     renderer::{self as gui, DashboardApp},
     services::logging,
 };
@@ -122,8 +122,11 @@ impl eframe::App for App {
         }
     }
 }
-fn parse_template(text: &str, base: &std::path::Path) -> Result<(v02::Description, Value), String> {
-    let description = v02::parse(text)?;
+fn parse_template(
+    text: &str,
+    base: &std::path::Path,
+) -> Result<(protocol::Description, Value), String> {
+    let description = protocol::parse(text)?;
     desktop_app_engine::compiler::compile_at(description.clone(), base)?;
     let template = serde_json::from_str(text).map_err(|e| e.to_string())?;
     Ok((description, template))

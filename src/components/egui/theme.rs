@@ -1,5 +1,5 @@
 //! Translate protocol color and control styles into egui visuals.
-use super::{Color32, Stroke, Token, Vec2, egui, text::style_font, v02};
+use super::{Color32, Stroke, Token, Vec2, egui, protocol, text::style_font};
 
 pub(super) fn token(ui: &egui::Ui, t: Token) -> Color32 {
     let v = ui.visuals();
@@ -85,7 +85,7 @@ pub(super) fn component_visuals(ui: &mut egui::Ui) {
         widget.expansion = 0.;
     }
 }
-pub(super) fn control_theme(ui: &mut egui::Ui, style: &v02::Style, height: f32) {
+pub(super) fn control_theme(ui: &mut egui::Ui, style: &protocol::Style, height: f32) {
     let bg = style.background.map(|c| token(ui, c));
     let fg = style.color.map(|c| token(ui, c));
     let border = style.border_color.map(|c| token(ui, c));

@@ -36,8 +36,17 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, draw
     let screen = ui.ctx().screen_rect();
     let mut width =
         (contract::number(n, state, "width", 520.) as f32).min((screen.width() - 32.).max(40.));
-    let mut height =
-        (contract::number(n, state, "height", 320.) as f32).min((screen.height() - 32.).max(40.));
+    let mut height = (contract::number(
+        n,
+        state,
+        "height",
+        if drawer {
+            320.
+        } else {
+            (memory.body_height + 104.) as f64
+        },
+    ) as f32)
+        .min((screen.height() - 32.).max(40.));
     let placement = contract::string(n, state, "placement", "right");
     if drawer {
         if matches!(placement, "left" | "right") {
@@ -76,7 +85,14 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, draw
         .show(ui.ctx(), |ui| {
             ui.set_style(style);
             ui.set_width((width - 24.).max(16.));
-            ui.heading(&r.title);
+            ui.horizontal(|ui| {
+                ui.heading(&r.title);
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if contract::flag(n, state, "closable", true) && ui.button("×").clicked() {
+                        close = true;
+                    }
+                });
+            });
             if !r.text.is_empty() {
                 ui.label(&r.text);
             }
@@ -87,25 +103,32 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, draw
             memory.body = Some(body);
             memory.layer = Some(ui.layer_id());
             ui.allocate_space(body.size());
-            ui.horizontal(|ui| {
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if contract::flag(n, state, "footer", !drawer) {
+                    if ui
+                        .add_enabled(
+                            !contract::flag(n, state, "confirmLoading", false),
+                            egui::Button::new(
+                                egui::RichText::new(contract::string(n, state, "okText", "确定"))
+                                    .color(Color32::WHITE),
+                            )
+                            .fill(token(ui, Token::Accent)),
+                        )
+                        .clicked()
+                    {
+                        ok = true;
+                    }
                     if ui
                         .button(contract::string(n, state, "cancelText", "取消"))
                         .clicked()
                     {
                         close = true;
                     }
-                    if ui
-                        .add_enabled(
-                            !contract::flag(n, state, "confirmLoading", false),
-                            egui::Button::new(contract::string(n, state, "okText", "确定")),
-                        )
-                        .clicked()
-                    {
-                        ok = true;
-                    }
                 }
-                if contract::flag(n, state, "closable", true) && ui.button("关闭").clicked() {
+                if drawer
+                    && contract::flag(n, state, "closable", true)
+                    && ui.button("关闭").clicked()
+                {
                     close = true;
                 }
             });

@@ -4,10 +4,10 @@ component!(&[], &["change"], LayoutKind::Splitter);
 pub(in crate::components::egui) fn paint(
     ui: &mut egui::Ui,
     painter: &egui::Painter,
-    node: &v02::Node,
+    node: &protocol::Node,
     content: egui::Rect,
     first_rect: egui::Rect,
-    panels: [&v02::Layout; 2],
+    panels: [&protocol::Layout; 2],
     enabled: bool,
 ) -> Option<f32> {
     let horizontal = !node.vertical;

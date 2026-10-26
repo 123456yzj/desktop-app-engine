@@ -8,7 +8,7 @@ pub(crate) use validation::validate_flat;
 
 use crate::{
     plugin,
-    protocol::v02::{Description, Kind, Node, required},
+    protocol::{Description, Kind, Node, required},
 };
 use std::path::Path;
 

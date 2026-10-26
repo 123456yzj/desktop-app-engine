@@ -37,6 +37,8 @@ struct Step {
     #[serde(default)]
     wheel: Option<[f32; 2]>,
     #[serde(default)]
+    alt: bool,
+    #[serde(default)]
     wait_ms: u64,
 }
 
@@ -145,6 +147,11 @@ pub fn run(path: &Path) -> Result<(), String> {
     let mut position = egui::pos2(-100., -100.);
     let mut captures = Vec::new();
     for step in &scenario.steps {
+        let modifiers = egui::Modifiers {
+            alt: step.alt,
+            ..Default::default()
+        };
+        harness.input_mut().modifiers = modifiers;
         let pointer = if let Some(target) = &step.target {
             let bounds = targets
                 .borrow()
@@ -178,14 +185,14 @@ pub fn run(path: &Path) -> Result<(), String> {
                 pos: position,
                 button: egui::PointerButton::Primary,
                 pressed,
-                modifiers: egui::Modifiers::NONE,
+                modifiers,
             });
         }
         if let Some([x, y]) = step.wheel {
             harness.input_mut().events.push(egui::Event::MouseWheel {
                 unit: egui::MouseWheelUnit::Point,
                 delta: egui::vec2(x, y),
-                modifiers: egui::Modifiers::NONE,
+                modifiers,
             });
         }
         harness.step();

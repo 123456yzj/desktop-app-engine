@@ -17,7 +17,7 @@ component!(
 );
 pub(in crate::components::egui) fn paint(
     ui: &mut egui::Ui,
-    n: &v02::Node,
+    n: &protocol::Node,
     r: &Resolved,
     rect: egui::Rect,
     content: egui::Rect,

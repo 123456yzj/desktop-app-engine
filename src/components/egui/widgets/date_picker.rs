@@ -6,6 +6,7 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
         ui,
         n,
         r,
+        rect,
         state,
         memory,
         value,
@@ -34,7 +35,15 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
             ),
         )
     };
-    let response = ui.button(format!("{display} ▾"));
+    let clear_width = if contract::flag(n, state, "allowClear", true) && !source.is_empty() {
+        64.
+    } else {
+        0.
+    };
+    let response = ui.add_sized(
+        [rect.width() - clear_width, rect.height()],
+        egui::Button::new(format!("{display} ▾")),
+    );
     let id = egui::Id::new((&n.id, "datePopup"));
     if response.clicked() {
         ui.memory_mut(|m| m.toggle_popup(id));
@@ -89,7 +98,15 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
     }
     if contract::flag(n, state, "allowClear", true)
         && value != ""
-        && ui.small_button("清除").clicked()
+        && ui
+            .put(
+                egui::Rect::from_min_size(
+                    rect.right_top() - Vec2::new(60., 0.),
+                    Vec2::new(60., rect.height()),
+                ),
+                egui::Button::new("清除"),
+            )
+            .clicked()
     {
         *value = json!("");
         collector.push(ui, "clear", None, Value::Null);

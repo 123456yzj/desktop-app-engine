@@ -1,7 +1,7 @@
 use crate::{
     binding::State,
     plugin::Registration,
-    v02::{Action, Description, EventAction, Node},
+    protocol::{Action, Description, EventAction, Node},
 };
 use std::collections::BTreeMap;
 
@@ -42,7 +42,7 @@ impl CompiledDescription {
 }
 
 pub(crate) fn action_uses_event(action: &Action) -> bool {
-    use crate::{binding::Binding, v02::Step};
+    use crate::{binding::Binding, protocol::Step};
     let is_event = |b: &Binding| matches!(b, Binding::Event { .. });
     action.steps.iter().any(|step| match step {
         Step::Request { .. } | Step::OpenLogs => false,

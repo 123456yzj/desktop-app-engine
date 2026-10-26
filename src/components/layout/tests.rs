@@ -1,7 +1,7 @@
 use super::*;
 use crate::{
+    protocol,
     runtime::{Runtime, UiEvent},
-    v02,
 };
 use serde_json::{Value, json};
 
@@ -20,7 +20,7 @@ fn document(root: Value) -> Value {
         "state":{"ratio":0.25,"captured":0.0},"actions":{},"root":root})
 }
 fn runtime(root: Value) -> Runtime {
-    Runtime::new(v02::parse(&document(root).to_string()).unwrap()).unwrap()
+    Runtime::new(protocol::parse(&document(root).to_string()).unwrap()).unwrap()
 }
 fn leaf(id: &str, height: f32) -> Value {
     json!({"type":"text","id":id,"text":{"kind":"literal","value":id},"layout":{"width":{"fixed":40},"height":{"fixed":height}}})
@@ -43,6 +43,17 @@ fn boxes(runtime: &Runtime, w: f32, h: f32) -> LayoutResult {
 }
 fn near(actual: f32, expected: f32) {
     assert!((actual - expected).abs() < 0.01, "{actual} != {expected}");
+}
+
+#[test]
+fn closable_badge_reserves_close_control_in_natural_width() {
+    let r = runtime(json!({"type":"space","id":"root","children":[
+        {"type":"badge","id":"plain","text":{"kind":"literal","value":"Tag"}},
+        {"type":"badge","id":"closable","text":{"kind":"literal","value":"Tag"},"closable":true}
+    ]}));
+    let b = boxes(&r, 600., 100.);
+    near(b.boxes[2].rect.w - b.boxes[1].rect.w, 20.);
+    near(b.boxes[2].rect.h, b.boxes[1].rect.h);
 }
 
 #[test]
@@ -262,7 +273,7 @@ fn masonry_remeasures_bound_text_and_ignores_hidden_children() {
         ]}),
     );
     doc["state"]["message"] = json!("short");
-    let mut r = Runtime::new(v02::parse(&doc.to_string()).unwrap()).unwrap();
+    let mut r = Runtime::new(protocol::parse(&doc.to_string()).unwrap()).unwrap();
     near(boxes(&r, 210.0, 200.0).boxes[4].rect.x, 0.0);
     r.set("message", json!("abcdefghijklmnopqrstuvwxyz"))
         .unwrap();
@@ -299,7 +310,7 @@ fn splitter_change_updates_state_before_action_and_rejects_invalid_ratio() {
         "events":{"change":"capture"},"children":[{"type":"column","id":"a"},{"type":"column","id":"b"}]}),
     );
     doc["actions"]["capture"] = json!({"steps":[{"type":"set","target":"captured","value":{"kind":"state","key":"ratio"}}]});
-    let mut r = Runtime::new(v02::parse(&doc.to_string()).unwrap()).unwrap();
+    let mut r = Runtime::new(protocol::parse(&doc.to_string()).unwrap()).unwrap();
     for (sequence, payload) in [(0, json!(0.75)), (1, json!(2)), (2, json!("0.4"))] {
         r.commit(vec![UiEvent {
             component_id: "root".into(),
@@ -332,7 +343,7 @@ fn invalid_layout_component_contracts_are_rejected() {
     ] {
         let source = document(root.clone()).to_string();
         assert!(
-            v02::parse(&source)
+            protocol::parse(&source)
                 .and_then(crate::compiler::compile)
                 .is_err(),
             "accepted {root}"

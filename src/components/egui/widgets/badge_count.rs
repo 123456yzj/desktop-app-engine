@@ -40,7 +40,7 @@ fn indicator_width(text: &str, measured: f32) -> f32 {
 }
 pub(in crate::components) fn measure(
     r: &Resolved,
-    style: &v02::Style,
+    style: &protocol::Style,
     inner: f32,
     text: &impl crate::layout::TextMeasure,
 ) -> Size {
@@ -93,7 +93,7 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
     if !r.text.is_empty() {
         let label = egui::Rect::from_min_max(rect.min + Vec2::new(leading, 0.), rect.max);
         let mut style = n.style.clone();
-        style.text_align = Some(v02::TextAlign::Start);
+        style.text_align = Some(protocol::TextAlign::Start);
         styled_label(
             ui,
             &ui.painter().clone(),

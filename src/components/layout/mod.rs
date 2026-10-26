@@ -17,8 +17,8 @@ pub use measure::{TextMeasure, measure};
 use crate::component::{NodeId, Resolved, Tree};
 
 /// These components render titles inside their own result, popup or preview.
-pub(crate) fn has_layout_title(kind: crate::v02::Kind) -> bool {
-    use crate::v02::Kind;
+pub(crate) fn has_layout_title(kind: crate::protocol::Kind) -> bool {
+    use crate::protocol::Kind;
     !matches!(
         kind,
         Kind::Modal

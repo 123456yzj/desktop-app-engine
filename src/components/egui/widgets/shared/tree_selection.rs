@@ -33,7 +33,12 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, casc
     } else if cascader || multiple {
         strings(value)
     } else {
-        vec![value.as_str().unwrap_or("").to_owned()]
+        value
+            .as_str()
+            .filter(|s| !s.is_empty())
+            .map(str::to_owned)
+            .into_iter()
+            .collect()
     };
     let display = if selected.is_empty() {
         r.placeholder.clone()
@@ -41,40 +46,65 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, casc
         selected.join(" / ")
     };
     let style = ui.style().clone();
-    let response = egui::ComboBox::from_id_salt("treeSelect")
-        .width((rect.width() - 8.).max(1.))
-        .selected_text(display)
-        // Expanding a branch or editing search must keep the popup open.
-        // Single selection explicitly closes it after choosing a leaf below.
-        .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
-        .show_ui(ui, |ui| {
+    let clear = contract::flag(n, state, "allowClear", true) && !selected.is_empty();
+    ui.spacing_mut().interact_size.y = rect.height().min(40.);
+    let response = ui.add_sized(
+        [
+            (rect.width() - if clear { 64. } else { 0. }).max(1.),
+            rect.height(),
+        ],
+        egui::Button::new(format!("{display} ▾")),
+    );
+    let id = egui::Id::new((&n.id, "tree-select-popup"));
+    if response.clicked() {
+        ui.memory_mut(|m| m.toggle_popup(id));
+    }
+    egui::popup::popup_above_or_below_widget(
+        ui,
+        id,
+        &response,
+        egui::AboveOrBelow::Below,
+        egui::PopupCloseBehavior::CloseOnClickOutside,
+        |ui| {
             ui.set_style(style);
-            // Reserve room for expanded branches instead of retaining the
-            // collapsed popup's short scroll viewport.
-            ui.set_min_height(180.);
-            if contract::flag(n, state, "showSearch", false) {
-                ui.text_edit_singleline(&mut memory.search);
-            }
-            tree_options(
-                ui,
-                options,
-                n,
-                state,
-                &memory.search,
-                &mut selected,
-                &mut vec![],
-                multiple,
-                0,
-            );
-        });
-    let open = response.inner.is_some();
+            // Reserve a growing viewport, not a minimum content height: the
+            // collapsed popup stays compact while expanded branches remain visible.
+            egui::ScrollArea::vertical()
+                .min_scrolled_height(240.)
+                .max_height(240.)
+                .show(ui, |ui| {
+                    if contract::flag(n, state, "showSearch", false) {
+                        ui.text_edit_singleline(&mut memory.search);
+                    }
+                    tree_options(
+                        ui,
+                        options,
+                        n,
+                        state,
+                        &memory.search,
+                        &mut selected,
+                        &mut vec![],
+                        multiple,
+                        0,
+                    );
+                });
+        },
+    );
+    let open = ui.memory(|m| m.is_popup_open(id));
     if open != memory.was_open {
         emit(ui, n, memory, collector, "openChange", json!(open));
         memory.was_open = open;
     }
-    if contract::flag(n, state, "allowClear", true)
-        && !selected.is_empty()
-        && ui.small_button("清除").clicked()
+    if clear
+        && ui
+            .put(
+                egui::Rect::from_min_size(
+                    rect.right_top() - Vec2::new(60., 0.),
+                    Vec2::new(60., rect.height().min(40.)),
+                ),
+                egui::Button::new("清除"),
+            )
+            .clicked()
     {
         selected.clear();
         collector.push(ui, "clear", None, Value::Null);
@@ -96,7 +126,7 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, casc
 fn tree_options(
     ui: &mut egui::Ui,
     options: &[Value],
-    n: &v02::Node,
+    n: &protocol::Node,
     state: &crate::binding::State,
     search: &str,
     selected: &mut Vec<String>,

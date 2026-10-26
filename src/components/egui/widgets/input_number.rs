@@ -13,7 +13,7 @@ pub(in crate::components::egui) struct NumberEdit {
     pub(in crate::components::egui) text: String,
     value: Option<f64>,
 }
-fn display_number(node: &v02::Node, value: f64) -> String {
+fn display_number(node: &protocol::Node, value: f64) -> String {
     if let Some(precision) = node.precision {
         format!("{value:.precision$}")
     } else {
@@ -22,7 +22,7 @@ fn display_number(node: &v02::Node, value: f64) -> String {
 }
 pub(in crate::components::egui) fn control(
     ui: &mut egui::Ui,
-    node: &v02::Node,
+    node: &protocol::Node,
     resolved: &Resolved,
     rect: egui::Rect,
     value: &mut Value,

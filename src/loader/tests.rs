@@ -65,7 +65,7 @@ fn unsupported_and_missing_versions_are_rejected_before_component_parsing() {
         .to_string();
         for error in [
             parse_document(&source).unwrap_err(),
-            v02::parse(&source).unwrap_err(),
+            protocol::parse(&source).unwrap_err(),
         ] {
             assert!(error.starts_with("schemaVersion:"), "{error}");
             assert!(error.contains("仅支持 \"0.2\""), "{error}");

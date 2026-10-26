@@ -3,7 +3,7 @@ use super::metadata::ActionMetadata;
 use super::{CompiledDescription, Metadata};
 use crate::{
     binding::{Binding, State},
-    v02::{Action, Description, EventAction, Kind, Node, Step},
+    protocol::{Action, Description, EventAction, Kind, Node, Step},
 };
 use std::collections::{BTreeMap, HashSet};
 

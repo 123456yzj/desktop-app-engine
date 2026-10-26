@@ -1,7 +1,7 @@
 //! Shared native component context and catalogue dispatch.
 use super::*;
 use crate::components::contracts::{PropertyType, PropertyType::*};
-use crate::v02::widgets as contract;
+use crate::protocol::widgets as contract;
 use serde_json::{Value, json};
 
 use crate::components::catalogue::{Definition, LayoutKind};
@@ -202,7 +202,7 @@ pub(in crate::components) fn definition(kind: Kind) -> Definition {
 
 struct WidgetContext<'a, 'events> {
     ui: &'a mut egui::Ui,
-    n: &'a v02::Node,
+    n: &'a protocol::Node,
     r: &'a Resolved,
     rect: egui::Rect,
     state: &'a crate::binding::State,
@@ -221,11 +221,12 @@ pub(super) struct Memory {
     pub dismissed: bool,
     pub was_open: bool,
     pub body: Option<egui::Rect>,
+    pub body_height: f32,
     pub layer: Option<egui::LayerId>,
 }
 
 pub(super) fn local(
-    n: &v02::Node,
+    n: &protocol::Node,
     state: &crate::binding::State,
     memory: &Memory,
     key: &str,
@@ -245,7 +246,7 @@ pub(super) fn local(
 }
 fn emit(
     ui: &egui::Ui,
-    n: &v02::Node,
+    n: &protocol::Node,
     memory: &mut Memory,
     collector: &mut Collector<'_>,
     event: &str,
@@ -262,7 +263,7 @@ fn item_key(item: &Value) -> &str {
         .and_then(Value::as_str)
         .unwrap_or("")
 }
-fn options<'a>(n: &'a v02::Node, state: &'a crate::binding::State) -> &'a [Value] {
+fn options<'a>(n: &'a protocol::Node, state: &'a crate::binding::State) -> &'a [Value] {
     n.options
         .as_ref()
         .and_then(|b| b.resolve(state).ok())
@@ -422,7 +423,7 @@ pub(super) fn prepare(
 #[allow(clippy::too_many_arguments)]
 pub(super) fn paint(
     ui: &mut egui::Ui,
-    n: &v02::Node,
+    n: &protocol::Node,
     r: &Resolved,
     rect: egui::Rect,
     state: &crate::binding::State,
@@ -523,7 +524,7 @@ pub(super) fn paint(
 }
 
 pub(super) fn header_rect(
-    n: &v02::Node,
+    n: &protocol::Node,
     r: &Resolved,
     rect: egui::Rect,
     content: egui::Rect,

@@ -65,6 +65,8 @@ Release 产物用 `cargo build --release --bin desktop-app-engine --features vis
 
 离屏步骤支持可选 `keys` 数组（ArrowDown、ArrowUp、Enter、Escape、Tab、Space、Backspace，每步最多 20 个）及 `wheel: [x, y]` 点单位滚轮输入。键盘、滚轮只注入离屏上下文，交互结果实际渲染为 PNG。
 
+步骤可设置 `alt: true`，用于验证原生图表的 Alt + 滚轮缩放；默认无 Alt，普通滚轮滚动页面。
+
 可选 `wait_ms`（0..5000）在截图前继续轮询和绘制应用，等待真实插件进程等异步任务；默认不等待。它不向桌面发送输入。
 
 ### 组件文档展示应用

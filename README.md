@@ -65,7 +65,7 @@ target\release\desktop-app-engine.exe package --output exports\vben-package.exe 
 | `src/renderer/` | 组件宿主的公开导出入口和日志界面 |
 | `src/bin/vben-package/` | 业务控制器、远端操作、设置和界面生成 |
 
-数据流为 `protocol::v02::parse` → `compiler::compile_at` → `CompiledDescription` → `Runtime::from_compiled`。`loader` 负责输入选择和资源基准目录，直接返回编译结果；`schemaVersion` 必须为 `"0.2"`。原始描述可重复编译；内部名称、插件注册和事件样例不属于 JSON 协议。运行时通过只读访问器提供状态，写入走 `set`、`set_many` 或 `set_from`，统一维护校验与版本。详情见 [架构](docs/02-architecture.md)。
+数据流为 `protocol::parse` → `compiler::compile_at` → `CompiledDescription` → `Runtime::from_compiled`。`loader` 负责输入选择和资源基准目录，直接返回编译结果；`schemaVersion` 必须为 `"0.2"`。原始描述可重复编译；内部名称、插件注册和事件样例不属于 JSON 协议。运行时通过只读访问器提供状态，写入走 `set`、`set_many` 或 `set_from`，统一维护校验与版本。详情见 [架构](docs/02-architecture.md)。
 
 所有组件源码统一位于 [src/components/](src/components/README.md)。84 种组件各自封装在 `egui/widgets/` 的独立文件，声明扩展属性、事件和受控映射，实现专属绘制、交互或布局策略；数据、布局算法和重复的绘制机制共享。目录说明提供完整文件对应表。
 

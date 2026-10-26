@@ -62,9 +62,16 @@ pub(in crate::components::egui::widgets) fn paint(
         egui::PopupCloseBehavior::CloseOnClickOutside,
         |ui| {
             ui.set_style(style);
-            ui.strong(&r.title);
-            ui.label(&r.text);
-            ui.label(contract::string(n, state, "description", ""));
+            let description = contract::string(n, state, "description", "");
+            if !r.title.is_empty() {
+                ui.strong(&r.title);
+            }
+            if !r.text.is_empty() && (!confirm || description.is_empty()) {
+                ui.label(&r.text);
+            }
+            if !description.is_empty() {
+                ui.label(description);
+            }
             if confirm {
                 ui.horizontal(|ui| {
                     if contract::flag(n, state, "showCancel", true)
@@ -139,7 +146,7 @@ pub(in crate::components::egui::widgets) fn close_on_leave(
 #[allow(clippy::too_many_arguments)]
 pub(in crate::components::egui::widgets) fn finish(
     ui: &egui::Ui,
-    n: &v02::Node,
+    n: &protocol::Node,
     _state: &crate::binding::State,
     memory: &mut Memory,
     collector: &mut Collector<'_>,

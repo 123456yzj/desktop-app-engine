@@ -7,7 +7,7 @@ pub(in crate::components::egui::widgets) const PROPERTIES: &[(&str, PropertyType
 ];
 pub(in crate::components::egui::widgets) fn paint(
     ui: &mut egui::Ui,
-    n: &v02::Node,
+    n: &protocol::Node,
     rect: egui::Rect,
     content: egui::Rect,
     state: &crate::binding::State,

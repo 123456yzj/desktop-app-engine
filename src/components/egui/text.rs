@@ -1,5 +1,5 @@
 //! Host text metrics and clipped accessible labels share the same font selection.
-use super::{Color32, FontId, Pos2, Size, Vec2, egui, v02};
+use super::{Color32, FontId, Pos2, Size, Vec2, egui, protocol};
 use crate::layout::TextMeasure;
 
 pub(super) struct EguiMeasure(pub(super) egui::Painter);
@@ -15,7 +15,7 @@ impl EguiMeasure {
     }
 }
 impl TextMeasure for EguiMeasure {
-    fn styled_text(&self, text: &str, width: f32, style: &v02::Style) -> Size {
+    fn styled_text(&self, text: &str, width: f32, style: &protocol::Style) -> Size {
         let g = self.0.layout(
             text.into(),
             style_font(style, self.0.ctx()),
@@ -38,11 +38,11 @@ impl TextMeasure for EguiMeasure {
         self.size(&g)
     }
 }
-pub(super) fn style_font(style: &v02::Style, ctx: &egui::Context) -> FontId {
+pub(super) fn style_font(style: &protocol::Style, ctx: &egui::Context) -> FontId {
     let bold = egui::FontFamily::Name("bold".into());
-    let family = if matches!(style.font_family, Some(v02::FontFamily::Monospace)) {
+    let family = if matches!(style.font_family, Some(protocol::FontFamily::Monospace)) {
         egui::FontFamily::Monospace
-    } else if matches!(style.font_weight, Some(v02::FontWeight::Bold))
+    } else if matches!(style.font_weight, Some(protocol::FontWeight::Bold))
         && ctx.fonts(|f| f.families().contains(&bold))
     {
         bold
@@ -58,7 +58,7 @@ pub(super) fn decorated_label(
     painter: &egui::Painter,
     r: egui::Rect,
     text: egui::WidgetText,
-    style: &v02::Style,
+    style: &protocol::Style,
     color: Color32,
     wrap_mode: egui::TextWrapMode,
 ) {
@@ -89,16 +89,16 @@ pub(super) fn decorated_label(
         response.on_hover_text(label);
     }
 }
-fn style_position(r: egui::Rect, size: Vec2, style: &v02::Style) -> Pos2 {
+fn style_position(r: egui::Rect, size: Vec2, style: &protocol::Style) -> Pos2 {
     match style.text_align {
-        Some(v02::TextAlign::Center) => {
+        Some(protocol::TextAlign::Center) => {
             r.min
                 + Vec2::new(
                     (r.width() - size.x).max(0.0) / 2.0,
                     (r.height() - size.y).max(0.0) / 2.0,
                 )
         }
-        Some(v02::TextAlign::End) => r.min + Vec2::new((r.width() - size.x).max(0.0), 0.0),
+        Some(protocol::TextAlign::End) => r.min + Vec2::new((r.width() - size.x).max(0.0), 0.0),
         _ => r.min,
     }
 }
@@ -107,7 +107,7 @@ pub(super) fn styled_label(
     painter: &egui::Painter,
     r: egui::Rect,
     text: &str,
-    style: &v02::Style,
+    style: &protocol::Style,
     color: Color32,
 ) {
     if text.is_empty() || !r.is_positive() {

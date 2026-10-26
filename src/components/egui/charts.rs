@@ -18,7 +18,7 @@ pub(super) struct SeriesContext<'a> {
 pub(super) fn paint_chart(
     ui: &mut egui::Ui,
     p: &egui::Painter,
-    n: &v02::Node,
+    n: &protocol::Node,
     rect: egui::Rect,
     enabled: bool,
     state: &crate::binding::State,
@@ -41,7 +41,7 @@ pub(super) fn paint_chart(
     if plot.width() <= 0.0 || plot.height() <= 0.0 {
         return;
     }
-    let x = chart::axis_range(
+    let mut x = chart::axis_range(
         c.points
             .iter()
             .enumerate()
@@ -50,6 +50,26 @@ pub(super) fn paint_chart(
         n.x_axis.as_ref(),
         false,
     );
+    if n.kind == Kind::BarChart {
+        let spacing = c
+            .points
+            .iter()
+            .enumerate()
+            .filter(|(i, _)| !c.hidden.contains(i))
+            .map(|(_, points)| chart::bar_spacing(points))
+            .fold(f64::INFINITY, f64::min);
+        let padding = if spacing.is_finite() {
+            spacing * 0.5
+        } else {
+            0.5
+        };
+        if n.x_axis.as_ref().and_then(|a| a.min).is_none() {
+            x.min -= padding;
+        }
+        if n.x_axis.as_ref().and_then(|a| a.max).is_none() {
+            x.max += padding;
+        }
+    }
     let y = chart::axis_range(
         c.points
             .iter()

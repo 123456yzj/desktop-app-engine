@@ -25,7 +25,7 @@ PluginChartApp/
 
 客户只收到一个应用 EXE。应用自动将内置资源释放到 `%LOCALAPPDATA%\DesktopAppEngine\resources\<资源内容标识>\`，再从该缓存加载插件。
 
-`plugins` 在应用 JSON 顶层列出启用包名。开发加载器通过 `compiler::compile_at` 按输入描述目录发现插件，打包应用使用内置资源缓存。`protocol::v02::parse` 只解析输入，程序化宿主应在编译时明确传入资源目录。插件入口必须在包内；包名仅接受字母、数字、下划线、连字符。manifest 错误、缺失包、重复组件注册都使加载失败。Node 优先使用 `plugins/runtime/node.exe`，开发时可回退 PATH 中的 node，正式导出必须内置 Node。
+`plugins` 在应用 JSON 顶层列出启用包名。开发加载器通过 `compiler::compile_at` 按输入描述目录发现插件，打包应用使用内置资源缓存。`protocol::parse` 只解析输入，程序化宿主应在编译时明确传入资源目录。插件入口必须在包内；包名仅接受字母、数字、下划线、连字符。manifest 错误、缺失包、重复组件注册都使加载失败。Node 优先使用 `plugins/runtime/node.exe`，开发时可回退 PATH 中的 node，正式导出必须内置 Node。
 
 `--check` 校验配置和 manifest，不执行 JavaScript；`--check-plugins` 额外逐个启动已引用组件，在 800×400 下 mount、栅格化返回 SVG、unmount；成功退出 0，失败退出 2。这个模式会执行插件代码。插件与应用具有相同本机权限，API 1 不提供沙箱。
 

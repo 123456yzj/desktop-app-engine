@@ -3,7 +3,7 @@ use super::*;
 #[allow(clippy::too_many_arguments)]
 pub(in crate::components::egui::widgets) fn paint(
     ui: &mut egui::Ui,
-    n: &v02::Node,
+    n: &protocol::Node,
     state: &crate::binding::State,
     items: &[Value],
     selected: &mut Vec<String>,

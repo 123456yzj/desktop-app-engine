@@ -111,7 +111,7 @@ fn collect_keys(items: &[Value], keys: &mut Vec<String>, skip_disabled: bool) {
 #[allow(clippy::too_many_arguments)]
 fn tree(
     ui: &mut egui::Ui,
-    n: &v02::Node,
+    n: &protocol::Node,
     state: &crate::binding::State,
     items: &[Value],
     selected: &mut Vec<String>,

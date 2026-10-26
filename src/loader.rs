@@ -1,7 +1,7 @@
 //! Select an input document and resolve its resources relative to its own directory.
 use crate::{
     compiler::{self, CompiledDescription},
-    protocol::v02,
+    protocol,
 };
 use std::path::Path;
 #[cfg(test)]
@@ -12,7 +12,7 @@ pub fn parse_document(source: &str) -> Result<CompiledDescription, String> {
 }
 
 pub fn parse_document_at(source: &str, base: &Path) -> Result<CompiledDescription, String> {
-    compiler::compile_at(v02::parse(source)?, base)
+    compiler::compile_at(protocol::parse(source)?, base)
 }
 
 pub fn load_document(path: Option<&Path>) -> Result<CompiledDescription, String> {

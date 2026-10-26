@@ -30,9 +30,9 @@ ConfigProvider/App 为子树提供配置，Watermark/BorderBeam 装饰内容，A
 | watermark | children、content 字符串、gap=120 point（16..1000）、rotate=-22 度 |
 | borderBeam | children、duration=6 秒（0.1..3600）、borderWidth=2（1..32） |
 | affix | children、offsetTop/offsetBottom，0..10000 point |
-| `v02::util::component_api(Kind)` | 返回扩展属性的类型/枚举/范围、原生事件、事件写回属性、主属性、是否容器/输入控件 |
+| `protocol::util::component_api(Kind)` | 返回扩展属性的类型/枚举/范围、原生事件、事件写回属性、主属性、是否容器/输入控件 |
 
-Rust 嵌入宿主可调用 `desktop_app_engine::v02::util::component_api(desktop_app_engine::v02::Kind::Pagination)` 检查真实契约。结果描述扩展属性；旧组件的原有字段和公共布局样式见 [Schema](../description-0.2.schema.json)。插件事件仍由 manifest 定义。
+Rust 嵌入宿主可调用 `desktop_app_engine::protocol::util::component_api(desktop_app_engine::protocol::Kind::Pagination)` 检查真实契约。结果描述扩展属性；旧组件的原有字段和公共布局样式见 [Schema](../description-0.2.schema.json)。插件事件仍由 manifest 定义。
 
 ## 当前限制
 

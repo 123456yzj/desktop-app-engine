@@ -77,7 +77,7 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
     }
     let mut style = n.style.clone();
     style.text_wrap = Some(false);
-    style.text_align = Some(v02::TextAlign::Center);
+    style.text_align = Some(protocol::TextAlign::Center);
     styled_label(
         ui,
         &painter,

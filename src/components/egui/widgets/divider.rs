@@ -1,10 +1,10 @@
 use super::*;
-use crate::v02::{LineVariant, TextAlign};
+use crate::protocol::{LineVariant, TextAlign};
 component!(&[], &[]);
 pub(in crate::components::egui) fn paint(
     ui: &egui::Ui,
     painter: &egui::Painter,
-    node: &v02::Node,
+    node: &protocol::Node,
     rect: egui::Rect,
     text: &str,
 ) {

@@ -78,7 +78,7 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, avat
             token(ui, Token::Accent).gamma_multiply(0.2),
         );
         let mut style = n.style.clone();
-        style.text_align = Some(v02::TextAlign::Center);
+        style.text_align = Some(protocol::TextAlign::Center);
         styled_label(
             ui,
             &ui.painter().clone(),

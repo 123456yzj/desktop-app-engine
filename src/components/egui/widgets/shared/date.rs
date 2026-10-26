@@ -20,7 +20,7 @@ pub(in crate::components::egui::widgets) const PROPERTIES: &[(&str, PropertyType
 ];
 pub(in crate::components::egui::widgets) fn calendar(
     ui: &mut egui::Ui,
-    n: &v02::Node,
+    n: &protocol::Node,
     state: &crate::binding::State,
     memory: &mut Memory,
     value: &mut Value,

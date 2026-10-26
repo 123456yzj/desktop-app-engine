@@ -22,7 +22,7 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
         value,
         collector,
     } = c;
-    let options = v02::select_options(n, state).unwrap_or_default();
+    let options = protocol::select_options(n, state).unwrap_or_default();
     let multiple = contract::multiple(n, state);
     let tags = contract::string(n, state, "mode", "single") == "tags";
     let searchable = contract::flag(n, state, "showSearch", multiple);

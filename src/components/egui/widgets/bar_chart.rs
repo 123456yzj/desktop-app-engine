@@ -4,7 +4,7 @@ component!(&[], &[]);
 pub(in crate::components::egui) fn paint(
     ui: &mut egui::Ui,
     p: &egui::Painter,
-    n: &v02::Node,
+    n: &protocol::Node,
     rect: egui::Rect,
     enabled: bool,
     state: &crate::binding::State,
@@ -26,16 +26,7 @@ pub(in crate::components::egui) fn paint(
 }
 fn paint_series(c: charts::SeriesContext<'_>) -> Option<usize> {
     let x = c.transform.x;
-    let spacing = c
-        .points
-        .iter()
-        .flatten()
-        .map(|p| p.x)
-        .collect::<Vec<_>>()
-        .windows(2)
-        .map(|w| (w[1] - w[0]).abs())
-        .filter(|s| *s > 0.)
-        .fold(x.max - x.min, f64::min);
+    let spacing = chart::bar_spacing(c.points).min(x.max - x.min);
     let width =
         (spacing / (x.max - x.min) * c.transform.width * 0.75).min(100.) / c.visible_series as f64;
     let mut hover = None;

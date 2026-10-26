@@ -14,7 +14,7 @@
 | 数据展示 | Avatar→avatar，Badge→badgeCount，Calendar→calendar，Carousel→carousel，Collapse→collapse，Descriptions→descriptions，Empty→empty，Image→image，List→list，Listy→listy，Popover→popover，QRCode→qrCode，Segmented→segmented，Timeline→timeline，Tooltip→tooltip，Tour→tour，Tree→tree | [展示](components/35-native-display.md)、[导航](components/33-navigation.md)、[录入](components/34-native-inputs.md)、[反馈](components/36-native-feedback.md) |
 | 反馈 | Alert→alert，Drawer→drawer，Message→message，Modal→modal，Notification→notification，Popconfirm→popconfirm，Result→result，Skeleton→skeleton，Spin→spin，Watermark→watermark | [反馈](components/36-native-feedback.md)、[配置与装饰](components/37-native-context.md) |
 | 其他 | Affix→affix，App→app，BorderBeam→borderBeam，ConfigProvider→configProvider | [配置与装饰](components/37-native-context.md) |
-| 工具 | Util→`v02::util::component_api(Kind)`，无 JSON 节点 | [桌面工具](components/37-native-context.md) |
+| 工具 | Util→`protocol::util::component_api(Kind)`，无 JSON 节点 | [桌面工具](components/37-native-context.md) |
 
 `badge` 为既有状态标签，对应 **Tag**；`badgeCount` 对应官网 **Badge 徽标数**。`text` 对应 Typography，`metric` 对应 Statistic。顶层应用元信息 `app` 与 `type: "app"` 配置容器是不同字段。
 

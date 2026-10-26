@@ -11,8 +11,8 @@ use crate::{
     component::Resolved,
     interaction::{Runtime, UiEvent},
     layout::{self, Rect, Size},
+    protocol::{self, Kind, Overflow, Token, Tone},
     table::TableState,
-    v02::{self, Kind, Overflow, Token, Tone},
 };
 use eframe::egui::{self, Color32, FontId, Pos2, Stroke, StrokeKind, Vec2};
 pub use fonts::install_chinese_font;
@@ -75,7 +75,7 @@ impl DashboardApp {
     pub fn set_command_base(&mut self, base: std::path::PathBuf) {
         self.runtime.set_command_base(base);
     }
-    pub fn new(d: v02::Description) -> Result<Self, String> {
+    pub fn new(d: protocol::Description) -> Result<Self, String> {
         Self::from_compiled(crate::compiler::compile(d)?)
     }
     pub fn from_compiled(
@@ -106,7 +106,7 @@ impl DashboardApp {
         })
     }
     /// Embed the renderer in a native controller without the separate diagnostics window.
-    pub fn embedded(description: v02::Description) -> Result<Self, String> {
+    pub fn embedded(description: protocol::Description) -> Result<Self, String> {
         let mut app = Self::new(description)?;
         app.embedded = true;
         Ok(app)
@@ -118,7 +118,10 @@ impl DashboardApp {
         self.runtime.state()
     }
     /// Native hosts own their background jobs. Retain scroll positions by component ID.
-    pub fn replace_description(&mut self, description: v02::Description) -> Result<(), String> {
+    pub fn replace_description(
+        &mut self,
+        description: protocol::Description,
+    ) -> Result<(), String> {
         if self.runtime.commands_running()
             || self.runtime.http_active()
             || self.runtime.has_plugins()
@@ -303,6 +306,7 @@ impl DashboardApp {
                     }
                     if matches!(node.kind, Kind::LineChart | Kind::BarChart)
                         && node.zoom == Some(true)
+                        && ui.input(|i| i.modifiers.alt)
                     {
                         let plot = plot_rect(er(b.content), node.legend.unwrap_or(true));
                         let c = self.charts.entry(node.id.clone()).or_default();
@@ -633,13 +637,13 @@ impl DashboardApp {
                             content,
                             self.runtime.state(),
                             &mut collector,
-                        ) && n.html_type != v02::ButtonType::Button
+                        ) && n.html_type != protocol::ButtonType::Button
                         {
                             submit_form(
                                 ui,
                                 &self.runtime.tree,
                                 id,
-                                if n.html_type == v02::ButtonType::Submit {
+                                if n.html_type == protocol::ButtonType::Submit {
                                     "submit"
                                 } else {
                                     "reset"
@@ -719,13 +723,39 @@ impl DashboardApp {
                     Kind::Watermark | Kind::BorderBeam | Kind::Spin => {}
                     kind if kind == Kind::Badge
                         || kind == Kind::Select
-                        || v02::widgets::is_widget(kind) =>
+                        || protocol::widgets::is_widget(kind) =>
                     {
                         let mut value = r.value.clone().unwrap_or(serde_json::Value::Null);
                         if kind == Kind::Select && !matches!(n.value, Some(Binding::State { .. })) {
                             value = self.control_values.get(&n.id).cloned().unwrap_or(value);
                         }
                         let memory = self.widget_memory.entry(n.id.clone()).or_default();
+                        if matches!(kind, Kind::Modal | Kind::Drawer) {
+                            let width =
+                                (protocol::widgets::number(n, self.runtime.state(), "width", 520.)
+                                    as f32)
+                                    .min(v.width() - 32.)
+                                    - 24.;
+                            memory.body_height = self.runtime.tree.nodes[id]
+                                .children
+                                .iter()
+                                .filter(|&&child| self.resolved[child].visible)
+                                .map(|&child| {
+                                    layout::measure(
+                                        &self.runtime.tree,
+                                        &self.resolved,
+                                        child,
+                                        layout::Constraint {
+                                            width: layout::Limit::Bounded(width),
+                                            height: layout::Limit::Unbounded,
+                                        },
+                                        &measurer,
+                                    )
+                                    .h + n.layout.gap
+                                })
+                                .sum::<f32>()
+                                .max(40.);
+                        }
                         let widget_rect = widgets::header_rect(n, r, rect, content);
                         widgets::paint(
                             ui,

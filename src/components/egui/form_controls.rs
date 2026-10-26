@@ -4,7 +4,7 @@ use serde_json::Value;
 pub(super) use widgets::input_number::NumberEdit;
 pub(super) fn control(
     ui: &mut egui::Ui,
-    node: &v02::Node,
+    node: &protocol::Node,
     resolved: &Resolved,
     rect: egui::Rect,
     value: &mut Value,

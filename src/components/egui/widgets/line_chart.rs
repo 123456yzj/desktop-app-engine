@@ -4,7 +4,7 @@ component!(&[], &[]);
 pub(in crate::components::egui) fn paint(
     ui: &mut egui::Ui,
     p: &egui::Painter,
-    n: &v02::Node,
+    n: &protocol::Node,
     rect: egui::Rect,
     enabled: bool,
     state: &crate::binding::State,

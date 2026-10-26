@@ -21,7 +21,7 @@
 
 | 已有实现 | 位置 | 后续约束 |
 | --- | --- | --- |
-| 组件节点、类型化状态、literal/state 属性 | src/protocol/v02/ | 统一协议，严格校验字段及绑定类型 |
+| 组件节点、类型化状态、literal/state 属性 | src/protocol/ | 统一协议，严格校验字段及绑定类型 |
 | JSON 类型解析、严格字段与语义校验 | src/protocol/、src/compiler/ | 错误继续包含字段路径、ID 和原因 |
 | 输入快照、动作队列、set/concat | src/runtime/ | 快照及顺序写入语义保持 |
 | 组件测量、排列与原生绘制 | src/components/layout/、src/components/egui/ | 几何与输入使用同一组件树 |

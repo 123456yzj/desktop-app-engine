@@ -14,6 +14,7 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, ment
     let options = options(n, state);
     let mut text = value.as_str().unwrap_or("").to_owned();
     let old = text.clone();
+    let clear = contract::flag(n, state, "allowClear", false) && !text.is_empty();
     let edit = if mentions {
         egui::TextEdit::multiline(&mut text)
             .desired_rows(contract::number(n, state, "rows", 3.) as usize)
@@ -22,8 +23,12 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, ment
     };
     let response = ui.add_sized(
         [
-            rect.width(),
-            if mentions { rect.height() * 0.6 } else { 30. },
+            rect.width() - if clear { 64. } else { 0. },
+            if mentions {
+                rect.height() * 0.6
+            } else {
+                rect.height()
+            },
         ],
         edit.hint_text(&r.placeholder)
             .char_limit(crate::MAX_INPUT_CHARS),
@@ -88,9 +93,16 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, ment
             memory.was_open = true;
         }
     }
-    if contract::flag(n, state, "allowClear", false)
-        && !text.is_empty()
-        && ui.small_button("清除").clicked()
+    if clear
+        && ui
+            .put(
+                egui::Rect::from_min_size(
+                    rect.right_top() - Vec2::new(60., 0.),
+                    Vec2::new(60., rect.height().min(40.)),
+                ),
+                egui::Button::new("清除"),
+            )
+            .clicked()
     {
         text.clear();
         collector.push(ui, "clear", None, Value::Null);

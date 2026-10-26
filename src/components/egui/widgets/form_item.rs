@@ -3,7 +3,7 @@ component!(&[], &[]);
 pub(in crate::components::egui) fn paint(
     ui: &mut egui::Ui,
     painter: &egui::Painter,
-    node: &v02::Node,
+    node: &protocol::Node,
     resolved: &Resolved,
     rect: egui::Rect,
     error: Option<&str>,

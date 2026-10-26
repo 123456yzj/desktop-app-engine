@@ -97,7 +97,7 @@ Grid 中声明 `height: {"fr": n}` 的子项使对应行按权重分配剩余高
 | table | rows 数组对象绑定、rowKey、columns | rowHeight=32，16..512；pageSize/current、loading/emptyText/bordered；events.rowSelect/sortChange/pageChange |
 | lineChart/barChart | series 数组、layout.height.fixed >=120 | title、xAxis/yAxis、legend=true、zoom=false、pan=false |
 
-协议另提供 50 个原生组件，当前共 84 种 type。新增组件的 text/title/label/placeholder/value/options 支持直接字面量或 Binding；扩展属性均支持两种形式。disabled、size 为公共扩展字段；内部 api 字段不接受用户声明。字段精确枚举和范围可通过 Rust `v02::util::component_api(Kind)` 查询，所有跨字段和绑定约束由引擎验证。
+协议另提供 50 个原生组件，当前共 84 种 type。新增组件的 text/title/label/placeholder/value/options 支持直接字面量或 Binding；扩展属性均支持两种形式。disabled、size 为公共扩展字段；内部 api 字段不接受用户声明。字段精确枚举和范围可通过 Rust `protocol::util::component_api(Kind)` 查询，所有跨字段和绑定约束由引擎验证。
 
 | 类别 | 新增 type | 字段、事件、完整示例 |
 | --- | --- | --- |

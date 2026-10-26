@@ -26,11 +26,11 @@ impl Runtime {
                 let n = &self.tree.nodes[id];
                 ancestors_active &= active(&n.spec.visible) && active(&n.spec.enabled);
                 ancestors_active &=
-                    !crate::v02::widgets::flag(&n.spec, &self.state, "disabled", false)
+                    !crate::protocol::widgets::flag(&n.spec, &self.state, "disabled", false)
                         && (!matches!(
                             n.spec.kind,
-                            crate::v02::Kind::ConfigProvider | crate::v02::Kind::App
-                        ) || !crate::v02::widgets::flag(
+                            crate::protocol::Kind::ConfigProvider | crate::protocol::Kind::App
+                        ) || !crate::protocol::widgets::flag(
                             &n.spec,
                             &self.state,
                             "componentDisabled",
@@ -41,26 +41,26 @@ impl Runtime {
             if !ancestors_active || !active(&node.spec.visible) || !active(&node.spec.enabled) {
                 continue;
             }
-            if crate::v02::widgets::flag(&node.spec, &self.state, "disabled", false) {
+            if crate::protocol::widgets::flag(&node.spec, &self.state, "disabled", false) {
                 continue;
             }
             if matches!(
                 node.spec.kind,
-                crate::v02::Kind::Button | crate::v02::Kind::Switch
-            ) && crate::v02::widgets::flag(&node.spec, &self.state, "loading", false)
+                crate::protocol::Kind::Button | crate::protocol::Kind::Switch
+            ) && crate::protocol::widgets::flag(&node.spec, &self.state, "loading", false)
             {
                 continue;
             }
             if e.kind == "change"
                 && matches!(
                     node.spec.kind,
-                    crate::v02::Kind::Input | crate::v02::Kind::InputNumber
+                    crate::protocol::Kind::Input | crate::protocol::Kind::InputNumber
                 )
-                && crate::v02::widgets::flag(&node.spec, &self.state, "readOnly", false)
+                && crate::protocol::widgets::flag(&node.spec, &self.state, "readOnly", false)
             {
                 continue;
             }
-            if let Err(error) = crate::v02::widgets::validate_secondary(
+            if let Err(error) = crate::protocol::widgets::validate_secondary(
                 &node.spec,
                 &self.state,
                 &e.kind,
@@ -76,7 +76,7 @@ impl Runtime {
                 .as_ref()
                 .and_then(|r| r.definition.events.get(&e.kind))
                 .cloned();
-            if node.spec.kind == crate::v02::Kind::Plugin {
+            if node.spec.kind == crate::protocol::Kind::Plugin {
                 let Some(contract) = &plugin_contract else {
                     continue;
                 };
@@ -86,11 +86,11 @@ impl Runtime {
                 }
             }
             let action_names = node.metadata.action_names.clone();
-            let is_form = node.spec.kind == crate::v02::Kind::Form;
-            if crate::v02::widgets::is_widget(node.spec.kind)
+            let is_form = node.spec.kind == crate::protocol::Kind::Form;
+            if crate::protocol::widgets::is_widget(node.spec.kind)
                 && e.kind == "change"
                 && let Err(error) =
-                    crate::v02::widgets::validate_value(&node.spec, &self.state, &e.payload)
+                    crate::protocol::widgets::validate_value(&node.spec, &self.state, &e.payload)
             {
                 self.error = Some(error);
                 continue;
@@ -98,12 +98,12 @@ impl Runtime {
             if node.spec.kind.is_input()
                 && e.kind == "change"
                 && let Err(error) =
-                    crate::v02::validate_input_value(&node.spec, &self.state, &e.payload)
+                    crate::protocol::validate_input_value(&node.spec, &self.state, &e.payload)
             {
                 self.error = Some(error);
                 continue;
             }
-            if node.spec.kind == crate::v02::Kind::Splitter && e.kind == "change" {
+            if node.spec.kind == crate::protocol::Kind::Splitter && e.kind == "change" {
                 if node.spec.resizable == Some(false) {
                     continue;
                 }
@@ -118,29 +118,31 @@ impl Runtime {
             }
             if matches!(
                 node.spec.kind,
-                crate::v02::Kind::Select | crate::v02::Kind::Radio
+                crate::protocol::Kind::Select | crate::protocol::Kind::Radio
             ) && e.kind == "change"
-                && !crate::v02::widgets::multiple(&node.spec, &self.state)
+                && !crate::protocol::widgets::multiple(&node.spec, &self.state)
             {
                 let allowed = e.payload.as_str() == Some("")
-                    && node.spec.kind == crate::v02::Kind::Select
-                    && crate::v02::widgets::flag(&node.spec, &self.state, "allowClear", false)
-                    || crate::v02::select_options(&node.spec, &self.state).is_ok_and(|options| {
-                        options
-                            .iter()
-                            .any(|o| !o.disabled && e.payload.as_str() == Some(o.value.as_str()))
-                    });
+                    && node.spec.kind == crate::protocol::Kind::Select
+                    && crate::protocol::widgets::flag(&node.spec, &self.state, "allowClear", false)
+                    || crate::protocol::select_options(&node.spec, &self.state).is_ok_and(
+                        |options| {
+                            options.iter().any(|o| {
+                                !o.disabled && e.payload.as_str() == Some(o.value.as_str())
+                            })
+                        },
+                    );
                 if !allowed {
                     self.error = Some("select.change 必须选择可用选项".into());
                     continue;
                 }
             }
             let binding = if let Some(property) =
-                crate::v02::widgets::event_property(node.spec.kind, &e.kind)
+                crate::protocol::widgets::event_property(node.spec.kind, &e.kind)
             {
                 node.spec.api.get(property).cloned()
             } else if e.kind == "change" {
-                if node.spec.kind == crate::v02::Kind::Text {
+                if node.spec.kind == crate::protocol::Kind::Text {
                     node.spec.text.clone()
                 } else {
                     node.spec.value.clone()
@@ -177,8 +179,8 @@ impl Runtime {
                 let result = action
                     .resolve(&self.state)
                     .and_then(|id| match &action {
-                        crate::v02::EventAction::Fixed(_) => Ok(id.to_owned()),
-                        crate::v02::EventAction::Binding(_) => action_names
+                        crate::protocol::EventAction::Fixed(_) => Ok(id.to_owned()),
+                        crate::protocol::EventAction::Binding(_) => action_names
                             .get(id)
                             .cloned()
                             .ok_or_else(|| format!("当前作用域未定义动作 {id:?}")),

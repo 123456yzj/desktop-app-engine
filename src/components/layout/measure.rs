@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
     component::{NodeId, Resolved, Tree},
-    v02::{ColumnSpec, Kind, Style},
+    protocol::{ColumnSpec, Kind, Style},
 };
 
 pub trait TextMeasure {
@@ -113,14 +113,21 @@ impl<T: TextMeasure> Measurer<'_, T> {
         let font = style.font_size.unwrap_or(16.0);
         match node.kind {
             Kind::Text | Kind::Badge | Kind::Button => {
+                let close_width = if node.kind == Kind::Badge
+                    && resolved.api.get("closable") == Some(&serde_json::json!(true))
+                {
+                    20.0
+                } else {
+                    0.0
+                };
                 let text_width = if node.kind == Kind::Text {
                     inner
                 } else {
-                    (inner - 2.0 * style.padding_x.unwrap_or(10.0)).max(0.)
+                    (inner - 2.0 * style.padding_x.unwrap_or(10.0) - close_width).max(0.)
                 };
                 let mut size = self.text.styled_text(&resolved.text, text_width, style);
                 if node.kind != Kind::Text {
-                    size.w += 2.0 * style.padding_x.unwrap_or(10.0);
+                    size.w += 2.0 * style.padding_x.unwrap_or(10.0) + close_width;
                     size.h += 2.0 * style.padding_y.unwrap_or(6.0);
                 }
                 if node.kind == Kind::Text {
@@ -277,7 +284,7 @@ impl<T: TextMeasure> Measurer<'_, T> {
             Kind::Masonry => self.masonry(id, inner),
             Kind::Splitter if !node.vertical => self.splitter(id, inner),
             Kind::Grid => self.grid(id, inner, width),
-            kind if crate::v02::widgets::is_widget(kind) => {
+            kind if crate::protocol::widgets::is_widget(kind) => {
                 if kind.is_container() && !matches!(kind, Kind::Modal | Kind::Drawer) {
                     let mut size = self.column(id, inner);
                     if self.tree.nodes[id].children.is_empty() {
@@ -333,7 +340,75 @@ impl<T: TextMeasure> Measurer<'_, T> {
                         Kind::Image | Kind::QrCode => (180., 180.),
                         Kind::Calendar => (320., 300.),
                         Kind::Tree | Kind::Transfer | Kind::List | Kind::Listy => (inner, 240.),
-                        Kind::Descriptions | Kind::Timeline | Kind::Result => (inner, 160.),
+                        Kind::Descriptions => {
+                            let columns = resolved
+                                .api
+                                .get("column")
+                                .and_then(serde_json::Value::as_u64)
+                                .unwrap_or(3) as usize;
+                            let items = resolved
+                                .api
+                                .get("items")
+                                .and_then(serde_json::Value::as_array)
+                                .map(Vec::as_slice)
+                                .unwrap_or(&[]);
+                            let vertical = resolved
+                                .api
+                                .get("direction")
+                                .and_then(serde_json::Value::as_str)
+                                == Some("vertical");
+                            let cell_width = inner / columns as f32;
+                            let height = items
+                                .chunks(columns)
+                                .map(|row| {
+                                    row.iter()
+                                        .map(|item| {
+                                            let label = item["label"]
+                                                .as_str()
+                                                .or_else(|| item["title"].as_str())
+                                                .unwrap_or("");
+                                            let content = item["content"]
+                                                .as_str()
+                                                .or_else(|| item["text"].as_str())
+                                                .unwrap_or("");
+                                            let label_width = if vertical {
+                                                cell_width
+                                            } else {
+                                                cell_width * 0.34
+                                            };
+                                            let content_width = if vertical {
+                                                cell_width
+                                            } else {
+                                                cell_width - label_width
+                                            };
+                                            let l = self
+                                                .text
+                                                .styled_text(
+                                                    &format!("{label}:"),
+                                                    (label_width - 20.).max(1.),
+                                                    style,
+                                                )
+                                                .h;
+                                            let c = self
+                                                .text
+                                                .styled_text(
+                                                    content,
+                                                    (content_width - 20.).max(1.),
+                                                    style,
+                                                )
+                                                .h;
+                                            if vertical {
+                                                l + c + 28.
+                                            } else {
+                                                l.max(c) + 20.
+                                            }
+                                        })
+                                        .fold(0., f32::max)
+                                })
+                                .sum();
+                            (inner, height)
+                        }
+                        Kind::Timeline | Kind::Result => (inner, 160.),
                         Kind::Skeleton => (inner, 120.),
                         Kind::Alert | Kind::Steps => (inner, 64.),
                         Kind::Mentions => (240., 100.),

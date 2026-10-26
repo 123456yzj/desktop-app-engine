@@ -1,7 +1,7 @@
 //! Fixed-height virtual table model. The GUI formats only the returned row interval.
 use crate::{
     binding::{FormatKind, State},
-    v02::{Column, ColumnSpec, Node, required},
+    protocol::{Column, ColumnSpec, Node, required},
 };
 use serde_json::Value;
 use std::{cmp::Ordering, collections::HashSet, ops::Range};
