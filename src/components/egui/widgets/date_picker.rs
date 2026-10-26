@@ -48,6 +48,7 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
     if response.clicked() {
         ui.memory_mut(|m| m.toggle_popup(id));
     }
+    let style = ui.style().clone();
     egui::popup::popup_above_or_below_widget(
         ui,
         id,
@@ -55,6 +56,7 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
         egui::AboveOrBelow::Below,
         egui::PopupCloseBehavior::CloseOnClickOutside,
         |ui| {
+            ui.set_style(style);
             let before = value.clone();
             shared::date::calendar(ui, n, state, memory, value);
             if contract::flag(n, state, "showTime", false) {

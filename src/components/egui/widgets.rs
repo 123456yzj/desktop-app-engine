@@ -211,6 +211,55 @@ struct WidgetContext<'a, 'events> {
     collector: &'a mut Collector<'events>,
 }
 
+// Measure with the same widgets and style as the floating area, without painting
+// or accepting input. No geometry is retained between frames.
+fn floating_measure_ui(ui: &egui::Ui, n: &protocol::Node, size: Vec2) -> egui::Ui {
+    let mut measure = egui::Ui::new(
+        ui.ctx().clone(),
+        egui::Id::new((&n.id, "floating-measure")),
+        egui::UiBuilder::new()
+            .max_rect(egui::Rect::from_min_size(Pos2::ZERO, size))
+            .sizing_pass()
+            .invisible(),
+    );
+    measure.set_style(ui.style().clone());
+    theme::component_visuals(&mut measure);
+    measure.style_mut().override_font_id = Some(style_font(&n.style, ui.ctx()));
+    measure
+}
+
+pub(super) fn floating_reserved(
+    ui: &egui::Ui,
+    tree: &crate::component::Tree,
+    resolved: &[Resolved],
+    state: &crate::binding::State,
+) -> Vec<egui::Rect> {
+    tree.nodes
+        .iter()
+        .zip(resolved)
+        .filter_map(|(node, r)| {
+            (node.spec.kind == Kind::FloatButton && r.visible).then(|| {
+                let mut n = node.spec.clone();
+                // Match the effective control font applied by DashboardApp's paint loop.
+                if n.style.font_size.is_none()
+                    && let Some(size) = r
+                        .api
+                        .get("size")
+                        .or_else(|| r.api.get("@size"))
+                        .and_then(Value::as_str)
+                {
+                    n.style.font_size = Some(match size {
+                        "small" => 12.,
+                        "large" => 18.,
+                        _ => 16.,
+                    });
+                }
+                float_button::reserved_rect(ui, &n, r, state)
+            })
+        })
+        .collect()
+}
+
 #[derive(Default)]
 pub(super) struct Memory {
     pub properties: BTreeMap<String, Value>,
@@ -223,6 +272,8 @@ pub(super) struct Memory {
     pub body: Option<egui::Rect>,
     pub body_height: f32,
     pub layer: Option<egui::LayerId>,
+    // Scratch space populated only during this widget's paint, then cleared.
+    floating_reserved: Vec<egui::Rect>,
 }
 
 pub(super) fn local(
@@ -430,9 +481,16 @@ pub(super) fn paint(
     memory: &mut Memory,
     value: &mut Value,
     collector: &mut Collector<'_>,
+    floating_reserved: &[egui::Rect],
 ) {
     let before = value.clone();
     let event_start = collector.events.len();
+    if matches!(n.kind, Kind::Message | Kind::Notification) {
+        memory.floating_reserved.clear();
+        memory
+            .floating_reserved
+            .extend_from_slice(floating_reserved);
+    }
     let mut builder = egui::UiBuilder::new()
         .id_salt((&n.id, "widget"))
         .max_rect(rect);
@@ -507,6 +565,7 @@ pub(super) fn paint(
         Kind::Watermark => watermark::paint(c),
         _ => {}
     }
+    memory.floating_reserved.clear();
     let changed = if before.is_number() && value.is_number() {
         before.as_f64() != value.as_f64()
     } else {

@@ -221,14 +221,14 @@
                          ]}
                          ]},
                          {"type": "colorPicker", "id": "colorPickerDemo", "value": {"kind": "state", "key": "color"}, "showText": true, "presets": ["#1677ff", "#52c41a", "#faad14", "#f5222d"]},
-                        {"type": "mentions", "id": "mentionsDemo", "value": {"kind": "state", "key": "mention"}, "options": ["Ada", "Alan", "Grace"], "prefix": "@", "rows": 3},
+                         {"type": "mentions", "id": "mentionsDemo", "class": "max-w-[840px] text-sm", "value": {"kind": "state", "key": "mention"}, "options": ["Ada", "Alan", "Grace"], "prefix": "@", "rows": 3},
                         {"type": "rate", "id": "rateDemo", "value": {"kind": "state", "key": "rating"}, "allowHalf": true, "tooltips": ["很差", "较差", "一般", "很好", "优秀"]},
                         {"type": "text", "id": "treeInputsTitle", "text": {"kind": "literal", "value": "结构化输入 / 穿梭、树、文件与日历"}, "class": "text-lg font-bold text-slate-800"},
                         {"type": "transfer", "id": "transferDemo", "class": "h-[190px]", "value": {"kind": "state", "key": "permissions"}, "options": ["read", "write", "admin"], "titles": ["可选权限", "已选权限"], "showSearch": true},
                         {"type": "treeSelect", "id": "treeSelectDemo", "value": {"kind": "state", "key": "treeValue"}, "options": [{"value": "engineering", "label": "研发团队", "children": [{"value": "ada", "label": "Ada"}, {"value": "alan", "label": "Alan"}]}], "showSearch": true, "allowClear": true},
                         {"type": "upload", "id": "uploadDemo", "class": "h-[150px] bg-slate-50 border border-slate-200 rounded-xl", "value": {"kind": "state", "key": "files"}, "text": "Upload 选择本地文件", "multiple": true, "accept": ".png,.jpg,.txt,.json", "maxCount": 5, "maxSize": 10485760},
                         {"type": "text", "id": "uploadHint", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "文件仅记录在本地，不会自动上传。"}},
-                        {"type": "calendar", "id": "calendarDemo", "class": "h-[300px]", "value": {"kind": "state", "key": "calendarDate"}},
+                        {"type": "calendar", "id": "calendarDemo", "value": {"kind": "state", "key": "calendarDate"}},
                         {"type": "tree", "id": "treeDemo", "class": "h-40", "treeData": [{"key": "team", "title": "研发团队", "children": [{"key": "memberAda", "title": "Ada"}, {"key": "memberAlan", "title": "Alan"}]}], "selectedKeys": {"kind": "state", "key": "treeSelected"}, "checkedKeys": {"kind": "state", "key": "treeChecked"}, "expandedKeys": {"kind": "state", "key": "treeExpanded"}, "checkable": true}
                       ]
                     },

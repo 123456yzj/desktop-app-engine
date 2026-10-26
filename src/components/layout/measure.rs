@@ -23,6 +23,25 @@ pub trait TextMeasure {
     }
 }
 
+// Keep in sync with shared::date::calendar and theme::component_visuals.
+// Grid's minimum row height applies to weekday labels as well as date cells.
+fn calendar_height(line_height: f32, picker: &str, show_today: bool) -> f32 {
+    let line_height = line_height.ceil();
+    let control = (line_height + 2. * 5.).max(30.);
+    let item_gap = 6.;
+    match picker {
+        "month" | "quarter" | "year" => {
+            let rows = if picker == "quarter" { 2. } else { 4. };
+            control + item_gap + rows * control + (rows - 1.) * item_gap
+        }
+        _ => {
+            let weekdays = line_height.max(30.);
+            let grid = weekdays + 6. * control + 6. * 4.;
+            control + item_gap + grid + if show_today { item_gap + control } else { 0. }
+        }
+    }
+}
+
 pub fn measure(
     tree: &Tree,
     resolved: &[Resolved],
@@ -338,7 +357,25 @@ impl<T: TextMeasure> Measurer<'_, T> {
                         Kind::Icon => (24., 24.),
                         Kind::Avatar => (40., 40.),
                         Kind::Image | Kind::QrCode => (180., 180.),
-                        Kind::Calendar => (320., 300.),
+                        Kind::Calendar => {
+                            // Match the renderer's explicit font and size/@size fallback,
+                            // including the CJK fallback glyphs, without label wrapping.
+                            let line_height = self
+                                .text
+                                .styled_text("年月今天一二三四五六日0123456789", 100_000., style)
+                                .h;
+                            let picker = resolved
+                                .api
+                                .get("picker")
+                                .and_then(serde_json::Value::as_str)
+                                .unwrap_or("date");
+                            let show_today = resolved
+                                .api
+                                .get("showToday")
+                                .and_then(serde_json::Value::as_bool)
+                                .unwrap_or(true);
+                            (320., calendar_height(line_height, picker, show_today))
+                        }
                         Kind::Tree | Kind::Transfer | Kind::List | Kind::Listy => (inner, 240.),
                         Kind::Descriptions => {
                             let columns = resolved
@@ -411,7 +448,17 @@ impl<T: TextMeasure> Measurer<'_, T> {
                         Kind::Timeline | Kind::Result => (inner, 160.),
                         Kind::Skeleton => (inner, 120.),
                         Kind::Alert | Kind::Steps => (inner, 64.),
-                        Kind::Mentions => (240., 100.),
+                        Kind::Mentions => {
+                            let rows = resolved
+                                .api
+                                .get("rows")
+                                .and_then(serde_json::Value::as_u64)
+                                .unwrap_or(3) as f32;
+                            let line_height =
+                                self.text.styled_text("欢迎 @Ada", 100_000., style).h.ceil();
+                            let padding = style.padding_y.unwrap_or(6.).clamp(0., 127.).trunc();
+                            (240., rows * line_height + 2. * padding + 2.)
+                        }
                         Kind::Rate => (180., 34.),
                         _ => (240., 36.),
                     };

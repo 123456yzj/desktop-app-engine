@@ -2,6 +2,10 @@
 
 对象：`examples/all-components.json`。本轮先记录方案，再修改、打包和逐项图片复验。
 
+> 后续输入框尺寸修复：姓名联想与 Mentions 已重新打包并完成 27 张定向图片验收，见 [输入框尺寸验收](all-components-input-sizing-acceptance.md)。下述 183 图结论对应此前 repaired-4 产物，不代表最新输入框产物完成了全量回归。
+
+> 2026-10-26 最新回归：旧 180 张逐图检查发现的四类问题已修复；新 Debug 打包 EXE 的 **183 张原始 PNG 全部逐张验收，183 pass / 0 fail / 0 uncertain**。最新产物、根因、修复与边界见 [修复后回归验收](all-components-repaired-acceptance.md)。旧批次 162 pass / 15 fail / 3 uncertain 记录保留在 [180 张图片验收报告](all-components-image-acceptance.md)；下文是先前九项实施记录。
+
 ## 修复清单
 
 | # | 问题 | 实施方案 | 验收要求 | 状态 |

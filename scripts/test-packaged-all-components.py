@@ -18,6 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def write_index(output, related=None, baseline=None):
     """Create a local navigation page; never automatically approve images."""
+    artifact = json.loads((output / "artifact.json").read_text(encoding="utf-8"))
+    executable = Path(artifact["exe"])
     folders = [output] + ([related.resolve()] if related else [])
     reports = []
     for folder in folders:
@@ -61,7 +63,7 @@ def write_index(output, related=None, baseline=None):
 <h1>All Components 修复检查</h1><p>{len(reports)} 个场景 / {count} 张实际 EXE PNG。
 Debug；内置定义；wgpu / Dx12 CPU 离屏。普通窗口为 Glow，未做原生窗口/DPI 验收。</p>
 <p>示例 configProvider 固定浅色；dark 场景仅验证深色宿主。图片生成不自动表示验收通过，逐项结论见项目 docs/all-components-fix-plan.md。</p>
-<p><a href="{(output / 'all-components.exe').as_uri()}">打开 EXE</a> · <a href="{(output / 'artifact.json').as_uri()}">产物哈希</a> · <a href="{(output / 'fonts.json').as_uri()}">字体哈希</a></p>
+<p><a href="{executable.as_uri()}">打开 EXE</a> · <a href="{(output / 'artifact.json').as_uri()}">产物哈希</a> · <a href="{(output / 'fonts.json').as_uri()}">字体哈希</a></p>
 {''.join(sections)}</html>'''
     (output / "index.html").write_text(page, encoding="utf-8")
     print(f"Review entry: {output / 'index.html'} ({count} captures)")
@@ -80,6 +82,45 @@ def click(target, name="opened", position=None):
     if position:
         press["target_position"] = position
     return [press, {"name": name, "pressed": False, "wait_ms": 200}]
+
+
+def point(x, y, name):
+    return [{"name": name + "-press", "pointer": [x, y], "pressed": True, "capture": False},
+        {"name": name, "pressed": False, "wait_ms": 300}]
+
+
+def interaction_cases():
+    """Real input sequences; screenshots, not case names, determine acceptance."""
+    cases = []
+    for suffix, scale, dark in [("", 1, False), ("-scaled", 1.75, False), ("-dark", 1, True)]:
+        form = enter(1) + [{"name": "scroll", "pointer": [1110, 630], "wheel": [0, -440],
+            "capture": False, "wait_ms": 300}]
+        definitions = [
+            ("cascader-select", form + click("cascaderDemo") + point(716, 607, "expanded")
+                + point(750, 642, "selected") + click("cascaderDemo", "cleared", [0.93, 0.5])),
+            ("autocomplete-select", form + click("autoCompleteDemo")
+                + [{"name": "typed", "text": "Gr", "wait_ms": 200}]
+                + point(300, 575, "selected") + click("autoCompleteDemo", "cleared", [0.93, 0.5])),
+            ("date-select", form + click("datePickerDemo", position=[0.4, 0.5])
+                + point(470, 774, "selected") + click("datePickerDemo", "cleared", [0.93, 0.5])),
+            ("modal-interact", enter(5) + click("showModal") + click("modalName", "focused")
+                + [{"name": "edited", "select_all": True, "text": "Grace"}]
+                + point(902, 513, "confirmed") + click("showModal", "reopened")
+                + point(843, 513, "cancelled") + click("showModal", "reopened-again")
+                + point(913, 387, "closed")),
+            ("popconfirm-interact", enter(5) + click("popconfirmDemo")
+                + point(865, 416, "confirmed") + click("popconfirmDemo", "reopened")
+                + point(807, 416, "cancelled")),
+            ("notification-close", enter(5) + click("showNotification")
+                + click("notificationDemo", "closed", [0.58, 0.36])),
+            ("time-edit", form + point(839, 620, "focused")
+                + [{"name": "edited", "select_all": True, "text": "5"},
+                   {"name": "submitted", "keys": ["Enter"]}]
+                + point(1150, 470, "blurred")),
+        ]
+        for name, steps in definitions:
+            cases.append({"name": name + suffix, "scale": scale, "dark": dark, "steps": steps})
+    return cases
 
 
 def render(exe, output, name, steps, scale=1, dark=False):
@@ -116,6 +157,7 @@ def main():
     parser.add_argument("--exe", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--plan", type=Path, help="JSON list of custom cases; uses existing EXE")
+    parser.add_argument("--with-interactions", action="store_true", help="Also capture selection, dialog and single-digit time input sequences")
     parser.add_argument("--index-only", action="store_true", help="Index existing captures without running tests")
     parser.add_argument("--related", type=Path, help="Additional capture directory to index")
     parser.add_argument("--baseline", type=Path, help="Before-fix audit directory for side-by-side images")
@@ -184,6 +226,11 @@ def main():
             {"name": "page-scroll", "pointer": [1110, 630], "wheel": [0, -440], "wait_ms": 1000},
             {"name": "lower", "pointer": [1110, 630], "wheel": [0, -440], "wait_ms": 3000},
         ], scale, dark)
+    if args.with_interactions:
+        cases = interaction_cases()
+        (output / "interaction-plan.json").write_text(json.dumps(cases, ensure_ascii=False, indent=2), encoding="utf-8")
+        for case in cases:
+            render(exe, output, case["name"], case["steps"], case["scale"], case["dark"])
     write_index(output, args.related, args.baseline)
     print("Captures generated. Visual review still required.")
 

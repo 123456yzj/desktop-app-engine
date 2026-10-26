@@ -87,10 +87,25 @@ pub fn ticks(range: Range, pixels: f64) -> Vec<f64> {
         .collect()
 }
 pub fn tick_text(n: f64) -> String {
-    if n != 0.0 && !(0.001..1e7).contains(&n.abs()) {
-        format!("{n:e}")
+    if n == 0.0 {
+        return "0".into();
+    }
+    if !n.is_finite() {
+        return n.to_string();
+    }
+    // Round to 12 significant digits before choosing notation. This removes
+    // arithmetic noise without rounding small nonzero values down to zero.
+    // Scientific formatting also handles subnormals without log10/powf overflow.
+    let scientific = format!("{n:.11e}");
+    let (mantissa, exponent) = scientific.split_once('e').unwrap();
+    let exponent: i32 = exponent.parse().unwrap();
+    if (-3..7).contains(&exponent) {
+        let rounded: f64 = scientific.parse().unwrap();
+        let text = format!("{:.*}", (11 - exponent) as usize, rounded);
+        text.trim_end_matches('0').trim_end_matches('.').to_owned()
     } else {
-        n.to_string()
+        let mantissa = mantissa.trim_end_matches('0').trim_end_matches('.');
+        format!("{mantissa}e{exponent}")
     }
 }
 pub fn series_points(
@@ -220,6 +235,66 @@ pub fn bar_spacing(points: &[Option<Point>]) -> f64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn tick_text_removes_arithmetic_tails_and_negative_zero() {
+        for (value, expected) in [
+            (1.4000000000000001, "1.4"),
+            (0.1 + 0.2, "0.3"),
+            (-1.2000000000000002, "-1.2"),
+            (0.0, "0"),
+            (-0.0, "0"),
+            (100.0, "100"),
+            (0.001, "0.001"),
+            (0.0123456789012345, "0.0123456789012"),
+            (1234567.89012345, "1234567.89012"),
+        ] {
+            assert_eq!(tick_text(value), expected, "value: {value:?}");
+        }
+    }
+
+    #[test]
+    fn tick_text_bounds_scientific_notation_and_preserves_extreme_magnitudes() {
+        for (value, expected) in [
+            (1e-4, "1e-4"),
+            (-1.234567890123456e-100, "-1.23456789012e-100"),
+            (1e7, "1e7"),
+            (1.234567890123456e100, "1.23456789012e100"),
+            (f64::MAX, "1.79769313486e308"),
+            (f64::MIN_POSITIVE, "2.22507385851e-308"),
+            (f64::from_bits(1), "4.94065645841e-324"),
+            (9_999_999.9999999, "1e7"),
+            (0.00099999999999999, "0.001"),
+        ] {
+            let text = tick_text(value);
+            assert_eq!(text, expected, "value: {value:?}");
+            assert!(text.len() <= 19, "unbounded tick: {text}");
+        }
+    }
+
+    #[test]
+    fn zoomed_ticks_have_concise_distinct_labels_with_accurate_values() {
+        let range = zoom_range(Range::new(0.0, 4.0), 2.0, 0.4);
+        let values = ticks(range, 640.0);
+        let labels: Vec<_> = values.iter().map(|&n| tick_text(n)).collect();
+        assert!(labels.iter().any(|s| s == "1.4"));
+        assert!(labels.windows(2).all(|pair| pair[0] != pair[1]));
+        for (value, text) in values.iter().zip(&labels) {
+            assert!(text.len() <= 3, "unexpected tail: {text}");
+            assert!((text.parse::<f64>().unwrap() - value).abs() < 1e-12);
+        }
+        for factor in [1e-12, 1e-4, 1e4, 1e12] {
+            let range = zoom_range(Range::new(-2.0, 2.0), 0.0, factor);
+            let values = ticks(range, 640.0);
+            assert!(!values.is_empty());
+            let labels: Vec<_> = values.iter().map(|&n| tick_text(n)).collect();
+            assert!(labels.windows(2).all(|pair| pair[0] != pair[1]));
+            for (value, text) in values.iter().zip(labels) {
+                let parsed = text.parse::<f64>().unwrap();
+                assert!((parsed - value).abs() <= value.abs() * 1e-11);
+            }
+        }
+    }
 
     #[test]
     fn bar_spacing_handles_unordered_duplicate_and_missing_points() {

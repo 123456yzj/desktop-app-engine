@@ -19,18 +19,23 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, ment
         egui::TextEdit::multiline(&mut text)
             .desired_rows(contract::number(n, state, "rows", 3.) as usize)
     } else {
-        egui::TextEdit::singleline(&mut text)
+        egui::TextEdit::singleline(&mut text).vertical_align(egui::Align::Center)
     };
-    let response = ui.add_sized(
-        [
-            rect.width() - if clear { 64. } else { 0. },
-            if mentions {
-                rect.height() * 0.6
-            } else {
-                rect.height()
-            },
-        ],
-        edit.hint_text(&r.placeholder)
+    let input_rect = egui::Rect::from_min_max(
+        rect.min,
+        Pos2::new(
+            (rect.right() - if clear { 64. } else { 0. }).max(rect.left() + 1.),
+            rect.bottom(),
+        ),
+    );
+    let response = ui.put(
+        input_rect,
+        edit.font(style_font(&n.style, ui.ctx()))
+            .margin(egui::Margin::symmetric(
+                n.style.padding_x.unwrap_or(8.).clamp(0., 127.) as i8,
+                n.style.padding_y.unwrap_or(6.).clamp(0., 127.) as i8,
+            ))
+            .hint_text(&r.placeholder)
             .char_limit(crate::MAX_INPUT_CHARS),
     );
     if response.changed() {
@@ -50,11 +55,13 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, ment
         let style = ui.style().clone();
         let popup = egui::Area::new(egui::Id::new((&n.id, "suggestions")))
             .order(egui::Order::Foreground)
-            .fixed_pos(response.rect.left_bottom())
+            .fixed_pos(input_rect.left_bottom())
             .show(ui.ctx(), |ui| {
                 ui.set_style(style);
-                egui::Frame::popup(ui.style()).show(ui, |ui| {
-                    ui.set_min_width(response.rect.width());
+                let frame = egui::Frame::popup(ui.style());
+                let width = (input_rect.width() - frame.total_margin().sum().x).max(1.);
+                frame.show(ui, |ui| {
+                    ui.set_width(width);
                     for option in options.iter().take(100) {
                         let (key, label, disabled) = option_parts(option);
                         if contract::flag(n, state, "filterOption", true)

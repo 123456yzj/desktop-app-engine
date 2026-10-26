@@ -390,6 +390,12 @@ impl DashboardApp {
                 self.runtime.error = Some(e);
             }
             let mut popup_layers = vec![None; self.runtime.tree.nodes.len()];
+            let floating_reserved = widgets::floating_reserved(
+                ui,
+                &self.runtime.tree,
+                &self.resolved,
+                self.runtime.state(),
+            );
             #[cfg(feature = "visual-tests")]
             self.visual_targets.clear();
             for (id, node) in self.runtime.tree.nodes.iter().enumerate() {
@@ -766,7 +772,14 @@ impl DashboardApp {
                             memory,
                             &mut value,
                             &mut collector,
+                            &floating_reserved,
                         );
+                        #[cfg(feature = "visual-tests")]
+                        if matches!(kind, Kind::Message | Kind::Notification | Kind::FloatButton)
+                            && let Some(bounds) = memory.body
+                        {
+                            self.visual_targets.insert(n.id.clone(), bounds);
+                        }
                         if !matches!(n.value, Some(Binding::State { .. })) {
                             self.control_values.insert(n.id.clone(), value);
                         }
@@ -865,6 +878,7 @@ impl DashboardApp {
                     self.widget_memory.entry(node.spec.id.clone()).or_default(),
                     &mut serde_json::Value::Null,
                     &mut collector,
+                    &floating_reserved,
                 );
             }
         };

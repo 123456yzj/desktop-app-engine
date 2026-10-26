@@ -143,45 +143,113 @@ pub(super) fn paint_chart(
     let font = n.style.font_size.unwrap_or(14.0);
     let color = token(ui, n.style.color.unwrap_or(Token::TextMuted));
     let border = Stroke::new(1.0_f32, token(ui, Token::Border));
-    for tick in chart::ticks(x, plot.width() as f64) {
-        let pos = transform.screen(Point { x: tick, y: y.min });
+    let x_ticks: Vec<_> = chart::ticks(x, plot.width() as f64)
+        .into_iter()
+        .map(|tick| {
+            (
+                transform.screen(Point { x: tick, y: y.min }).x as f32,
+                chart::tick_text(tick),
+            )
+        })
+        .collect();
+    for (i, (position, text)) in x_ticks.iter().enumerate() {
+        let position = *position;
         p.line_segment(
             [
-                Pos2::new(pos.x as f32, plot.top()),
-                Pos2::new(pos.x as f32, plot.bottom()),
+                Pos2::new(position, plot.top()),
+                Pos2::new(position, plot.bottom()),
             ],
             border,
         );
-        label(
+        // Each label owns at most half the distance to either neighbour.
+        // Keep the text centred on its tick (inset at chart edges); omit labels that cannot fit rather
+        // than wrapping, overlapping, or moving the underlying axis/grid.
+        let left = if i > 0 {
+            (x_ticks[i - 1].0 + position) * 0.5
+        } else {
+            rect.left()
+        };
+        let right = x_ticks
+            .get(i + 1)
+            .map_or(rect.right(), |next| (position + next.0) * 0.5);
+        let size = p
+            .layout_no_wrap(text.clone(), FontId::proportional(font * 0.857), color)
+            .size()
+            .ceil();
+        let height = if legend {
+            23.0
+        } else {
+            rect.bottom() - plot.bottom() - 5.0
+        };
+        if size.x + 2.0 > right - left - 6.0 || size.y + 1.0 > height {
+            continue;
+        }
+        let label_left = (position - (size.x + 2.0) * 0.5).clamp(left + 3.0, right - size.x - 5.0);
+        label_line(
             ui,
             p,
             egui::Rect::from_min_size(
-                Pos2::new(pos.x as f32 - 22.0, plot.bottom() + 5.0),
-                Vec2::new(70.0, 20.0),
+                Pos2::new(label_left, plot.bottom() + 5.0),
+                size + Vec2::new(2.0, 1.0),
             ),
-            &chart::tick_text(tick),
+            text,
             font * 0.857,
             color,
         );
     }
-    for tick in chart::ticks(y, plot.height() as f64) {
-        let pos = transform.screen(Point { x: x.min, y: tick });
+    let y_ticks: Vec<_> = chart::ticks(y, plot.height() as f64)
+        .into_iter()
+        .map(|tick| {
+            (
+                transform.screen(Point { x: x.min, y: tick }).y as f32,
+                chart::tick_text(tick),
+            )
+        })
+        .collect();
+    for (i, (position, text)) in y_ticks.iter().enumerate() {
+        let position = *position;
         p.line_segment(
             [
-                Pos2::new(plot.left(), pos.y as f32),
-                Pos2::new(plot.right(), pos.y as f32),
+                Pos2::new(plot.left(), position),
+                Pos2::new(plot.right(), position),
             ],
             border,
         );
-        label(
+        // Y ticks are ordered bottom to top. Fit long scientific labels inside
+        // the existing gutter without changing the plot or its range semantics.
+        let bottom = if i > 0 {
+            (y_ticks[i - 1].0 + position) * 0.5
+        } else {
+            plot.bottom() + 3.0
+        };
+        let top = y_ticks
+            .get(i + 1)
+            .map_or(rect.top(), |next| (position + next.0) * 0.5);
+        let width = (plot.left() - rect.left() - 6.0).max(1.0);
+        let natural = p
+            .layout_no_wrap(text.clone(), FontId::proportional(font * 0.857), color)
+            .size();
+        let tick_font = font * 0.857 * ((width - 2.0).max(1.0) / natural.x.max(1.0)).min(1.0);
+        let size = p
+            .layout_no_wrap(text.clone(), FontId::proportional(tick_font), color)
+            .size()
+            .ceil();
+        if size.y + 1.0 > bottom - top - 4.0 {
+            continue;
+        }
+        let label_top = (position - (size.y + 1.0) * 0.5).clamp(top + 2.0, bottom - size.y - 3.0);
+        label_line(
             ui,
             p,
             egui::Rect::from_min_size(
-                Pos2::new(rect.left(), pos.y as f32 - 7.0),
-                Vec2::new(60.0, 20.0),
+                Pos2::new(
+                    rect.left() + (width - size.x - 2.0).max(0.0) * 0.5,
+                    label_top,
+                ),
+                size + Vec2::new(2.0, 1.0),
             ),
-            &chart::tick_text(tick),
-            font * 0.857,
+            text,
+            tick_font,
             color,
         );
     }
