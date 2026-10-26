@@ -113,7 +113,12 @@ impl<T: TextMeasure> Measurer<'_, T> {
         let font = style.font_size.unwrap_or(16.0);
         match node.kind {
             Kind::Text | Kind::Badge | Kind::Button => {
-                let mut size = self.text.styled_text(&resolved.text, inner, style);
+                let text_width = if node.kind == Kind::Text {
+                    inner
+                } else {
+                    (inner - 2.0 * style.padding_x.unwrap_or(10.0)).max(0.)
+                };
+                let mut size = self.text.styled_text(&resolved.text, text_width, style);
                 if node.kind != Kind::Text {
                     size.w += 2.0 * style.padding_x.unwrap_or(10.0);
                     size.h += 2.0 * style.padding_y.unwrap_or(6.0);
@@ -128,6 +133,9 @@ impl<T: TextMeasure> Measurer<'_, T> {
                     }
                 }
                 if node.kind == Kind::Button {
+                    if resolved.api.get("loading") == Some(&serde_json::json!(true)) {
+                        size.w += 22.;
+                    }
                     if resolved
                         .api
                         .get("shape")
@@ -144,7 +152,7 @@ impl<T: TextMeasure> Measurer<'_, T> {
             }
             Kind::Input | Kind::Select | Kind::InputNumber => Size {
                 w: 220.0,
-                h: if node.kind == Kind::Input
+                h: (if node.kind == Kind::Input
                     && resolved.api.get("multiline") == Some(&serde_json::json!(true))
                 {
                     resolved
@@ -160,7 +168,12 @@ impl<T: TextMeasure> Measurer<'_, T> {
                         "large" => 40.,
                         _ => 34.,
                     }
-                },
+                })
+                .max(if node.kind == Kind::Input {
+                    self.text.styled_text("Mg", inner, style).h + 2. * style.padding_y.unwrap_or(2.)
+                } else {
+                    0.
+                }),
             },
             Kind::Checkbox | Kind::Switch => {
                 let label = self
@@ -290,7 +303,11 @@ impl<T: TextMeasure> Measurer<'_, T> {
                             _ => {}
                         }
                     }
-                    if matches!(kind, Kind::Tabs | Kind::Carousel | Kind::Collapse) {
+                    if matches!(kind, Kind::Tabs | Kind::Carousel | Kind::Collapse)
+                        && !(kind == Kind::Tabs
+                            && resolved.api.get("hideTabBar")
+                                == Some(&serde_json::Value::Bool(true)))
+                    {
                         size.h += if kind == Kind::Collapse {
                             resolved
                                 .api

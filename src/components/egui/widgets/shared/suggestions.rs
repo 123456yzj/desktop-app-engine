@@ -42,10 +42,12 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, ment
     };
     if response.has_focus() || memory.was_open {
         let query = query.to_lowercase();
+        let style = ui.style().clone();
         let popup = egui::Area::new(egui::Id::new((&n.id, "suggestions")))
             .order(egui::Order::Foreground)
             .fixed_pos(response.rect.left_bottom())
             .show(ui.ctx(), |ui| {
+                ui.set_style(style);
                 egui::Frame::popup(ui.style()).show(ui, |ui| {
                     ui.set_min_width(response.rect.width());
                     for option in options.iter().take(100) {

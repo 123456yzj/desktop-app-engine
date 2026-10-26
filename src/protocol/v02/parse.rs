@@ -57,6 +57,7 @@ pub fn parse(source: &str) -> Result<Description, String> {
 pub(super) fn parse_node(mut value: Value) -> Result<Node, String> {
     let kind: Kind = serde_json::from_value(value.get("type").cloned().ok_or("缺少 type")?)
         .map_err(|e| e.to_string())?;
+    classes::normalize(&mut value, kind).map_err(|e| format!("组件 {:?}: {e}", value.get("id")))?;
     widgets::normalize(&mut value, kind)?;
     let specific: &[&str] = match kind {
         Kind::Plugin => &["component", "props"],
@@ -200,6 +201,30 @@ pub(super) fn parse_node(mut value: Value) -> Result<Node, String> {
             layout.entry("width").or_insert(width);
             layout.entry("height").or_insert(height);
         }
+    }
+    if matches!(kind, Kind::Button | Kind::Panel | Kind::Card) {
+        let style = value
+            .as_object_mut()
+            .unwrap()
+            .entry("style")
+            .or_insert_with(|| serde_json::json!({}));
+        let style = style.as_object_mut().ok_or("style 必须是对象")?;
+        style
+            .entry("radius")
+            .or_insert(serde_json::json!(if kind == Kind::Button { 4 } else { 6 }));
+        style.entry("borderWidth").or_insert(serde_json::json!(1));
+    }
+    if matches!(kind, Kind::Input | Kind::Select | Kind::InputNumber) {
+        let style = value
+            .as_object_mut()
+            .unwrap()
+            .entry("style")
+            .or_insert_with(|| serde_json::json!({}));
+        style
+            .as_object_mut()
+            .ok_or("style 必须是对象")?
+            .entry("borderWidth")
+            .or_insert(serde_json::json!(1));
     }
     serde_json::from_value(value).map_err(|e| e.to_string())
 }

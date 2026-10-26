@@ -43,10 +43,16 @@ pub(in crate::components::egui) fn control(
         return;
     }
     let mut checked = value.as_bool().unwrap_or(false);
-    let response = ui.put(
-        rect,
-        egui::Checkbox::new(&mut checked, &resolved.text).indeterminate(node.indeterminate),
+    let mut child = ui.new_child(
+        egui::UiBuilder::new()
+            .id_salt((&node.id, "checkbox"))
+            .max_rect(rect)
+            .layout(egui::Layout::left_to_right(egui::Align::Center)),
     );
+    child.spacing_mut().icon_width = 18.;
+    child.spacing_mut().icon_spacing = 8.;
+    let response = child
+        .add(egui::Checkbox::new(&mut checked, &resolved.text).indeterminate(node.indeterminate));
     if response.clicked() {
         response.request_focus();
     }

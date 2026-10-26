@@ -22,18 +22,39 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
     let count = contract::number(n, state, "count", 5.) as usize;
     ui.horizontal(|ui| {
         for index in 0..count {
-            let response = ui.add(
-                egui::Button::new(
-                    egui::RichText::new(contract::string(n, state, "character", "★"))
-                        .size(24.)
-                        .color(if rating > index as f64 {
-                            token(ui, Token::Warning)
-                        } else {
-                            token(ui, Token::Border)
-                        }),
-                )
-                .frame(false),
+            let fill = (rating - index as f64).clamp(0., 1.) as f32;
+            let character = contract::string(n, state, "character", "★");
+            let color = token(
+                ui,
+                if fill == 1. {
+                    Token::Warning
+                } else {
+                    Token::Border
+                },
             );
+            let response = ui.add(
+                egui::Button::new(egui::RichText::new(character).size(24.).color(color))
+                    .frame(false),
+            );
+            if fill > 0. && fill < 1. {
+                let color = token(ui, Token::Warning);
+                let galley = ui.painter().layout_no_wrap(
+                    character.to_owned(),
+                    egui::FontId::proportional(24.),
+                    color,
+                );
+                let origin = response.rect.center() - galley.size() / 2.;
+                let clip = egui::Rect::from_min_max(
+                    origin,
+                    egui::pos2(
+                        origin.x + galley.size().x * fill,
+                        origin.y + galley.size().y,
+                    ),
+                );
+                ui.painter()
+                    .with_clip_rect(clip.intersect(ui.clip_rect()))
+                    .galley(origin, galley, color);
+            }
             if response.clicked() {
                 let half = contract::flag(n, state, "allowHalf", false)
                     && response

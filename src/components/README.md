@@ -22,17 +22,13 @@ src/components/
 │   ├── masonry.rs
 │   ├── splitter.rs
 │   └── tests.rs
-└── egui/                     # 原生组件绘制、输入、本地状态和测试
+└── egui/                     # 原生组件绘制、输入和本地状态
     ├── mod.rs                # 帧流程、绑定缓存、滚动、状态及事件协调
     ├── fonts.rs              # 系统中文与粗体字体安装
     ├── form_controls.rs      # 表单控件的共用样式、禁用及变更收集
     ├── charts.rs             # 图表坐标轴、图例、缩放及系列绘制接口
     ├── text.rs               # 文字测量与绘制辅助
     ├── theme.rs              # 主题与控件样式辅助
-    ├── form_tests.rs
-    ├── layout_tests.rs
-    ├── style_tests.rs        # 公共样式：文字、容器、控件与状态样式
-    ├── widget_tests.rs
     ├── widgets.rs            # 共用上下文、本地状态及绘制分派
     └── widgets/
         ├── button.rs        # Button 的契约、绘制与点击交互
@@ -44,6 +40,8 @@ src/components/
 ```
 
 `widgets.rs::definition` 对全部 `Kind` 穷尽分派；新增组件时必须添加独立文件并注册。组件通过 `component!` 声明契约，`contracts.rs` 读取这些声明进行规范化和事件属性查询。公共协议字段仍由 `protocol/v02` 定义，专属值校验和跨字段规则由共享校验模块处理。
+
+`protocol/v02/classes.rs` 使用 `hypen-tailwind-parse` 将静态 JSON `class` 严格映射到原生 style/layout，在应用默认值前合并显式字段；未知类与不支持属性报错。测量、排列与绘制消费相同的最终节点。支持范围见 [公共属性教程](../../docs/components/02-common.md#json-class-工具类)，可运行 [utility-classes.json](../../examples/utility-classes.json)。
 
 布局组件在各自文件选择 `LayoutKind`，共同使用 `layout/` 的测量和排列算法。LineChart、BarChart 分别实现系列绘制，共用坐标轴、图例和交互框架。相近控件也共用机制，例如 Modal/Drawer 的对话框、List/Listy 的虚拟列表、Image/Avatar 的图片加载；组件文件保留各自配置和差异行为。
 
@@ -77,4 +75,8 @@ src/components/
 
 ## 验证
 
-按变更范围运行现有构建、布局、输入、样式和事件测试。`style_tests.rs` 覆盖字号/字体/对齐/换行、容器背景与单层边框、`bordered:false`、Button 与 Input/Select 的 padding 和状态样式，并用 `examples/all-components.json` 校验展示应用声明的文字样式。组件教程可通过 `python scripts/check-component-docs.py --schema` 校验，完整工程检查见 [项目 README](../../README.md)。
+必须遵循 [项目测试规范](../../docs/testing-policy.md)，禁止新增或恢复仅注入 egui 输入并检查绘制数据或内部 UI 状态的界面测试。
+
+现有单元测试覆盖协议与 class 解析、状态运行时、输入校验和纯布局算法。组件教程可通过 `python scripts/check-component-docs.py --schema` 校验描述及 Schema，完整工程检查见 [项目 README](../../README.md)。
+
+已接入可选 `visual-tests` feature 的打包 EXE 离屏入口，以及 `scripts/test-packaged-classes.py` 的实际 PNG 像素检查和显式基准图比较，运行方法见 [测试规范](../../docs/testing-policy.md#打包产物离屏入口)。当前覆盖 utility-classes 示例的明暗主题、缩放和交互，使用 wgpu；真实 Glow 窗口的隔离自动化尚未接入。单元测试与描述校验通过不代表视觉效果通过。

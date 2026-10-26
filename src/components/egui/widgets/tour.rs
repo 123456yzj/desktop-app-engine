@@ -31,11 +31,17 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
     let Some(step) = steps.get(current) else {
         return;
     };
+    let style = ui.style().clone();
     egui::Window::new(item_label(step))
         .id(egui::Id::new((&n.id, "tour")))
         .order(egui::Order::Foreground)
+        .anchor(egui::Align2::CENTER_CENTER, Vec2::ZERO)
+        .default_width(360.)
+        .resizable(false)
+        .frame(egui::Frame::window(&style).inner_margin(16.))
         .collapsible(false)
         .show(ui.ctx(), |ui| {
+            ui.set_style(style);
             ui.label(step["description"].as_str().unwrap_or(""));
             ui.label(format!("{} / {}", current + 1, steps.len()));
             ui.horizontal(|ui| {

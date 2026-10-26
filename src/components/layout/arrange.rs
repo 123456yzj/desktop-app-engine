@@ -94,7 +94,11 @@ impl<T: TextMeasure> Arranger<'_, T> {
             content.y += label;
             content.h = (content.h - label - error).max(0.0);
         }
-        if matches!(node.kind, Kind::Tabs | Kind::Carousel | Kind::Collapse) {
+        if matches!(node.kind, Kind::Tabs | Kind::Carousel | Kind::Collapse)
+            && !(node.kind == Kind::Tabs
+                && self.measurer.resolved[id].api.get("hideTabBar")
+                    == Some(&serde_json::Value::Bool(true)))
+        {
             let header = if node.kind == Kind::Collapse {
                 self.measurer.resolved[id]
                     .api

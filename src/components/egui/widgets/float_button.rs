@@ -28,6 +28,7 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
         .order(egui::Order::Foreground)
         .fixed_pos(pos)
         .show(ui.ctx(), |ui| {
+            ui.style_mut().spacing.button_padding = Vec2::splat(10.);
             let label = if r.text.is_empty() {
                 contract::string(n, state, "icon", "+")
             } else {
@@ -35,15 +36,21 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
             };
             let response = ui.add_enabled(
                 r.enabled,
-                egui::Button::new(label)
-                    .min_size(Vec2::splat(48.))
-                    .corner_radius(
-                        if contract::string(n, state, "shape", "circle") == "circle" {
-                            24.
-                        } else {
-                            6.
-                        },
-                    ),
+                egui::Button::new(
+                    egui::RichText::new(label)
+                        .size(20.)
+                        .color(token(ui, n.style.color.unwrap_or(Token::OnPrimary))),
+                )
+                .fill(token(ui, n.style.background.unwrap_or(Token::Primary)))
+                .stroke(Stroke::NONE)
+                .min_size(Vec2::splat(48.))
+                .corner_radius(
+                    if contract::string(n, state, "shape", "circle") == "circle" {
+                        24.
+                    } else {
+                        6.
+                    },
+                ),
             );
             if response.clicked() {
                 collector.push(ui, "click", None, Value::Null);

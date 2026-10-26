@@ -12,6 +12,7 @@
 | `id` | 非空字符串 | 必填 | 全树唯一，保持控件身份；组件树深度上限 64 |
 | `layout` | 布局对象 | `{}` | 尺寸、约束、内边距；容器还支持子项排列 |
 | `style` | 样式对象 | `{}` | 颜色、字体、边框与组件适用的状态样式 |
+| `class` | 静态字符串 | `""` | 原生 Tailwind 工具类子集，见下文；不接受绑定 |
 | `visible` | 布尔绑定 | `true` | 隐藏后不占布局空间，也不响应输入 |
 | `enabled` | 布尔绑定 | `true` | 禁用后保留布局，停止业务交互 |
 | `disabled` | 布尔或绑定 | `false` | 禁用组件及其后代；enabled=false 或 disabled=true 均会禁用 |
@@ -75,8 +76,8 @@ Flex/Space 通过 `vertical` 切换主轴；Space 默认 gap=8、align=center。
 | 属性 | 类型 / 默认值 | 适用说明 |
 | --- | --- | --- |
 | `background` / `color` / `borderColor` | 主题 Token 或十六进制颜色 / 按组件与主题 | 背景、前景、边框色 |
-| `borderWidth` | 非负数 / 0 | 显式边框宽度；控件有自身边框反馈。Panel/Card 的边框同时受 `bordered` 控制 |
-| `radius` | 非负数 / 0 | Panel/Card 默认至少 6，Button 默认至少 4 |
+| `borderWidth` | 非负数 / 组件相关 | Button、Panel/Card、Input/Select/InputNumber 默认 1，其余公共默认 0；显式 0 可关闭基础边框。Panel/Card 同时受 `bordered` 控制 |
+| `radius` | 非负数 / 组件相关 | Panel/Card 默认 6，Button 默认 4，其余公共默认 0；显式 0 保持直角 |
 | `fontSize` | 非负数 / 通常 16 | 表格及图表内容绘制默认 14；Metric 数值按字号放大 |
 | `fontFamily` | `proportional` / `monospace` | 比例字体或等宽字体 |
 | `fontWeight` | `normal` / `bold` | 等宽字体优先于字重 |
@@ -89,6 +90,43 @@ Flex/Space 通过 `vertical` 切换主轴；Space 默认 gap=8、align=center。
 公共样式由组件各自绘制：Panel/Card 只画一层背景和边框，`bordered:false` 时不画边框；Input/Select 的 `background`、`borderColor`、`borderWidth`、`radius` 作用于控件外框。
 
 可用 Token：`surface`、`surfaceRaised`、`textPrimary`、`textMuted`、`border`、`accent`、`success`、`warning`、`danger`、`focus`、`primary`、`onPrimary`。Token 随主题变化；`#RRGGBB` 与 `#RRGGBBAA` 保持精确颜色。
+
+## JSON class 工具类
+
+组件可直接声明 `"class": "px-4 py-2 bg-blue-500 rounded-lg hover:bg-blue-600"`。加载时使用 `hypen-tailwind-parse` 解析为现有 `style` / `layout`，测量、排列、绘制共用最终属性。无需 CSS 文件或构建 Tailwind。可运行示例：[utility-classes.json](../../examples/utility-classes.json)，全部组件展示也使用了类名。
+
+优先级为组件默认值 < 从左到右的 class < 显式 `style` / `layout`。同属性后写覆盖；`style.hover` 等状态对象按颜色字段合并，显式状态字段优先。显式 `layout.width` 整体替换类名尺寸；显式 `layout.gap` 覆盖类名行列间距，之后可用显式 `rowGap` / `columnGap` 分别指定。`radius: 0`、`borderWidth: 0`、`paddingY: 0` 均保留。状态颜色在状态激活时覆盖基础色，优先级为 disabled > active > hover。
+
+类名不继承，也不接受 state/prop 绑定；每个节点最多 256 个类名、16384 UTF-8 字节。单位转换固定为 `1rem = 16 point`、`1px = 1 point`，例如 `p-4` 为 16 point；跟随显示缩放，字号不会改变 rem 基准。颜色表采用解析库的十六进制颜色，随主题保持固定；需要主题 Token 时继续用显式 `style`。
+
+| 类别 | 支持写法 | 原生含义与限制 |
+| --- | --- | --- |
+| 颜色 | `bg-blue-500`、`text-slate-600`、`border-gray-300`、`bg-transparent`、`bg-black/50`、`bg-[#112233]` | 映射 background/color/borderColor；支持调色板、十六进制及可解析的 rgba；不支持 currentColor、CSS 变量或渐变 |
+| 字号 | `text-xs` 至 `text-9xl`、`text-[18px]` | 只设置 fontSize，行高使用原生字体度量；不应用 Tailwind 的附带 line-height |
+| 字体 | `font-normal`、`font-bold`、`font-sans`、`font-mono` | 两种字重、比例/等宽字体；不支持 semibold 或 serif |
+| 文字 | `text-left/center/right/start/end`、`text-wrap/nowrap`、`whitespace-normal/nowrap` | 映射 textAlign/textWrap，适用范围同现有 style |
+| 边框和圆角 | `border`、`border-0/2/4/8`、`border-[3px]`、`rounded`、`rounded-none/sm/md/lg/xl/2xl/3xl/full`、`rounded-[10px]` | 四边统一边框和四角统一圆角；border-* 宽度默认使用主题边框色。Button 的 shape/variant、Card 的 bordered、输入焦点/校验反馈仍按组件规则生效 |
+| 内边距 | `p-4`、`px-4`、`py-2`、`p-[12px]` | 容器只接受 `p-*` → layout.padding；Button/Badge/Input 接受 p/px/py → style.paddingX/Y；不支持单边 padding。Input 内边距须为 0..127 的整数 point |
+| 尺寸 | `w-64`、`h-12`、`w-auto`、`h-auto`、`w-[240px]`、`min-w-[80px]`、`max-h-96` | 固定/自动尺寸及 min/max，支持 px/rem；百分比、w-full、视口尺寸不支持，剩余空间用显式 fr |
+| 容器间距 | `gap-4`、`gap-x-3`、`gap-y-2`，可用 `[12px]` | gap/columnGap/rowGap；后写 gap 重置之前的轴向间距 |
+| 容器对齐 | `items-start/center/end/stretch`、`justify-start/center/end/between/around/evenly` | 映射 align/justify；沿用各容器限制，Grid/Masonry 不接受 justify |
+| 换行与滚动 | `flex-wrap/nowrap`、`overflow-hidden/clip/auto/scroll` | 映射 layout.wrap/overflow；换行只用于支持换行的横向容器，auto/scroll 均为引擎双轴滚动 |
+| 状态 | `hover:bg-blue-600`、`active:text-white`、`disabled:border-gray-300` | 仅 Button/Input/Select/InputNumber 的背景、文字、边框颜色；active 映射 pressed；输入框保留原生焦点和校验反馈 |
+
+这是原生布局的工具类子集。组件类型决定结构与主轴，使用 row/column/flex/grid 等节点；`flex`、`grid` 类名、响应式前缀、dark、组合状态、focus、important、margin、阴影、动画、变换和行高暂不支持。未知类名和无法映射的属性会带组件 ID 与类名报错；映射后的属性仍经过组件和布局语义校验。不要通过原版 Tailwind 的 CSS 层叠顺序推断本项目的优先级。
+
+```json
+{
+  "schemaVersion": "0.2",
+  "app": {"name": "Class 示例", "window": {"width": 640, "height": 360}},
+  "state": {},
+  "root": {"type": "column", "id": "page", "class": "p-6 gap-4 items-start", "children": [
+    {"type": "text", "id": "heading", "text": {"kind": "literal", "value": "工具类样式"}, "class": "text-2xl font-bold text-blue-600"},
+    {"type": "button", "id": "button", "text": {"kind": "literal", "value": "悬停查看颜色"}, "class": "px-4 py-2 bg-blue-500 text-white border-0 rounded-lg hover:bg-blue-600 active:bg-blue-700"}
+  ]},
+  "actions": {}
+}
+```
 
 ## 示例：控制显示和禁用
 

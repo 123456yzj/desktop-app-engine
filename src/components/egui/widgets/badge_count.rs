@@ -93,7 +93,7 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
     if !r.text.is_empty() {
         let label = egui::Rect::from_min_max(rect.min + Vec2::new(leading, 0.), rect.max);
         let mut style = n.style.clone();
-        style.text_align = Some(v02::TextAlign::Center);
+        style.text_align = Some(v02::TextAlign::Start);
         styled_label(
             ui,
             &ui.painter().clone(),

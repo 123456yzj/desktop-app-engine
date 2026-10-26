@@ -75,10 +75,25 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, mode
             } else {
                 item_label(item).to_owned()
             };
-            let response = ui.add_enabled(
+            let response = shared::navigation_item(
+                ui,
+                &label,
+                selected && mode != Mode::Breadcrumb,
                 !item_disabled(item),
-                egui::SelectableLabel::new(selected, label),
+                if mode == Mode::Tabs { 64. } else { 0. },
+                if mode == Mode::Breadcrumb { 24. } else { 34. },
             );
+            if mode == Mode::Tabs
+                && selected
+                && contract::string(n, state, "tabType", "line") == "line"
+            {
+                let line = egui::Rect::from_min_size(
+                    response.rect.left_bottom() - Vec2::new(-12., 2.),
+                    Vec2::new((response.rect.width() - 24.).max(0.), 2.),
+                );
+                ui.painter()
+                    .rect_filled(line, 1., token(ui, Token::Primary));
+            }
             if response.clicked() {
                 match mode {
                     Mode::Steps => *value = json!(index),

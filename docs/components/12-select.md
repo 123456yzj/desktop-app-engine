@@ -55,7 +55,7 @@
 | `optionsFormat` | array / lines | array | 选项解析方式 |
 | `placeholder` | 字符串绑定 | 空 | 当前值为空且没有匹配项时显示 |
 | `mode` | single / multiple / tags 或绑定 | single | 单选、多选或可添加标签 |
-| `showSearch` | 布尔或绑定 | false | 按选项标签过滤；tags 模式需开启以输入新标签 |
+| `showSearch` | 布尔或绑定 | single: false；multiple/tags: true | 在选择框内输入并按选项标签过滤 |
 | `allowClear` | 布尔或绑定 | false | 清除单选为 `""`，清除多选为 `[]` |
 | `loading` | 布尔或绑定 | false | 弹出列表显示加载指示 |
 | `maxCount` | 整数 1..10000 或绑定 | 10000 | multiple/tags 允许选择的最大数量 |
@@ -67,6 +67,13 @@
 
 array 格式支持字符串数组 `["dev","test"]`，或对象数组；对象字段为 `label`、`value`、可选 `disabled:false`。value 唯一，最多 10,000 项。state 对象数组的每项应声明同一组字段，避免类型结构不一致。
 
+## 交互
+
+- 悬停保持完整边框，展开或聚焦时显示蓝色边框。选中值左对齐，清空图标位于框内右侧，仅在有值且悬停时显示；清空不切换弹层。
+- 单选提交后收起；多选和标签提交后保持展开并清空搜索。多选以标签显示，点击标签的 × 移除该项；搜索为空时 Backspace 移除最后一个可移除项。
+- 上下方向键打开列表或移动活动项，跳过禁用项；Enter 提交活动项，基础单选也支持 Space。Escape、Tab 或点击外部关闭列表，关闭后清空搜索。Tab 保持正常焦点移动。
+- 达到 maxCount 时禁用未选项，已选项仍可取消。loading 时显示加载指示且不提交选项。弹层与选择框同宽，空间不足时向上展开。
+
 ## 动态选项
 
 将 options 绑定字符串状态并设置 optionsFormat 为 lines，可按换行拆出选项；去除每行首尾空白和空行。也可用 `{"kind":"state","key":"branchJob","path":"/stdout"}` 绑定命令输出，具体命令结果结构见 [命令文档](../10-command-binding.md)。
@@ -76,7 +83,7 @@ open 动作可请求数据，或执行已定义命令；仅刷新选项而保持
 ## 常见问题
 
 - **支持远程搜索吗？** search 动作可请求远程数据，再由应用更新 options；控件本身不自动发请求或防抖。
-- **列表如何显示更多选项？** 下拉列表提供滚动，单选原有视图与带搜索/多选的视图显示高度不同。
+- **列表如何显示更多选项？** 所有 Select 共用可滚动列表，最大高度 256，按可用屏幕空间缩小或向上展开。
 - **如何禁用整个下拉？** 使用公共 enabled 布尔绑定；禁用单项使用 disabled。
 - **change 中如何读取新值？** 从已更新的 state 读取，或使用 event Binding；后者须声明与字符串/数组匹配的 eventPayload 样本。
 

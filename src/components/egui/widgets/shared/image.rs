@@ -56,14 +56,17 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, avat
             collector.push(ui, "preview", None, json!(src));
         }
         if memory.was_open {
+            let style = ui.style().clone();
             egui::Window::new(if r.title.is_empty() {
                 "图片预览"
             } else {
                 &r.title
             })
             .id(egui::Id::new((&n.id, "preview")))
+            .frame(egui::Frame::window(&style).inner_margin(12.))
             .open(&mut memory.was_open)
             .show(ui.ctx(), |ui| {
+                ui.set_style(style);
                 ui.add(egui::Image::new(src).max_size(Vec2::new(960., 720.)));
             });
         }

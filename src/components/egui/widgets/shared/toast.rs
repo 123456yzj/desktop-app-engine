@@ -59,10 +59,12 @@ pub(in crate::components::egui::widgets) fn paint(
             "top" => egui::Align2::CENTER_TOP,
             _ => egui::Align2::RIGHT_TOP,
         };
+        let style = ui.style().clone();
         egui::Area::new(egui::Id::new((&n.id, "toast")))
             .order(egui::Order::Foreground)
             .anchor(anchor, Vec2::new(16., 16.))
             .show(ui.ctx(), |ui| {
+                ui.set_style(style);
                 egui::Frame::popup(ui.style())
                     .inner_margin(12.)
                     .show(ui, |ui| {

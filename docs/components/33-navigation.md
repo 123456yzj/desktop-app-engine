@@ -46,12 +46,14 @@
 | menu | selectedKeys 字符串数组；items、mode、multiple、selectable、openKeys、inlineCollapsed、inlineIndent、theme | change：选中键数组；click：键字符串；select/deselect：`{key,selectedKeys}`；openChange：展开键数组，写回 openKeys |
 | pagination | current 从 1 开始；pageSize 默认 10；total、pageSizeOptions、hideOnSinglePage、showLessItems、showQuickJumper、showSizeChanger、showTotal、simple | change：页码；showSizeChange：每页条数，写回 pageSize |
 | steps | current 从 0 开始；items、initial、direction | change：步骤索引 |
-| tabs | activeKey 字符串；items、defaultActiveKey、tabPlacement、tabBarGutter、tabType、hideAdd | change/tabClick：键字符串；edit：`{action:"add"或"remove",key}` |
+| tabs | activeKey 字符串；items、defaultActiveKey、tabPlacement、tabBarGutter、tabType、hideAdd、hideTabBar | change/tabClick：键字符串；edit：`{action:"add"或"remove",key}` |
 | segmented | value 字符串；options；vertical | change：字符串 |
 | collapse | activeKey 字符串数组；items、accordion | change：展开键数组 |
 | carousel | current 从 0 开始；children 或 items、autoplay、autoplaySpeed（毫秒）、dots、arrows、infinite | change：幻灯片索引 |
 
 Menu 的 defaultSelectedKeys/defaultOpenKeys、Pagination 的 defaultCurrent/defaultPageSize、Tabs 的 defaultActiveKey、Collapse 的 defaultActiveKey 用于本地初始状态。字面量主值可交互并保存在控件本地；state Binding 每帧读取外部状态。
+
+`hideTabBar: true` 隐藏 Tabs 的标题栏并释放其布局空间，内容仍按 `activeKey` 切换。适用于左侧 Menu 或搜索选择器控制的组件文档页面；这是本引擎提供的扩展属性。
 
 items 最多 10000 项、嵌套最多 32 层，key/value 在整棵列表内唯一。Menu 单选最多一个键；accordion 最多一个展开键。选中键与树展开键必须属于当前数据，更新数据时需同时移除失效键。
 

@@ -13,7 +13,7 @@ pub(in crate::components::egui::widgets) fn paint(
     state: &crate::binding::State,
 ) {
     let painter = ui.painter().clone();
-    let radius = n.style.radius.max(6.);
+    let radius = n.style.radius;
     painter.rect_filled(
         rect,
         radius,
@@ -28,11 +28,7 @@ pub(in crate::components::egui::widgets) fn paint(
             )
             .hovered();
     if contract::flag(n, state, "bordered", true) {
-        let width = if n.style.border_color.is_some() {
-            n.style.border_width
-        } else {
-            1_f32
-        };
+        let width = n.style.border_width;
         if width > 0. {
             painter.rect_stroke(
                 rect,

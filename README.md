@@ -38,6 +38,8 @@ cargo run --bin vben-package --locked --offline
 
 [全部组件展示](examples/all-components.json) 是完整的协议 0.2 应用，覆盖全部 84 种组件，按布局、录入、导航、展示、数据和反馈分为六个可切换分区。示例包含表单校验、模块通信、表格分页、图表与弹窗交互；Image 使用无来源占位，Upload 只记录本地选择。Plugin 使用仓库中的 ECharts 适配器，开发加载需在描述文件旁准备 `plugins/`，打包需按 [插件安装说明](docs/15-plugins.md#安装和运行) 准备生产依赖和 Node 运行库。
 
+[组件实验室](examples/component-gallery.json) 提供文档式浏览：左侧按分类逐个列出 84 种组件，右侧展示说明与 173 个用法示例，支持中英文搜索跳转和独立滚动。运行 `python scripts/build-component-gallery.py` 可根据上述示例与用法配置重新生成定义。它使用相同的 ECharts 插件资源；打包方式与其他协议 0.2 应用一致。实际 EXE 的图片检查方法见 [组件文档展示应用测试](docs/testing-policy.md#组件文档展示应用)。
+
 工作台 JSON 通过 `app.host: "vben-package"` 声明所需原生宿主。先构建一次宿主模板，随后仍由统一命令导出完整应用：
 
 ```powershell
@@ -81,6 +83,8 @@ target\release\desktop-app-engine.exe package --output exports\Monitor.exe < C:\
 
 ## 验证与协议
 
+**测试必须遵循 [项目测试规范](docs/testing-policy.md)。** 界面样式采用离屏 PNG 图片测试，打包产物在隔离环境中验证实际显示与交互；禁止通过注入输入并断言绘制数据来验收 GUI。下面的构建、单元测试及 `--check` 不代表视觉验收通过。
+
 编写界面可从 [组件使用教程](docs/components/README.md) 开始：按布局容器、基础组件、数据录入、数据展示与扩展分类，提供完整 JSON 示例、属性表、事件说明和常见问题。首次使用建议先读 [01 快速开始](docs/components/01-quick-start.md) 和 [02 公共属性与布局](docs/components/02-common.md)。
 
 ```powershell
@@ -91,7 +95,7 @@ cargo run --bin desktop-app-engine --locked --offline -- --app .\examples\vben-p
 cargo run --bin vben-package --locked --offline -- --check
 ```
 
-协议 0.2 当前提供 84 种组件 type，包含新增的导航、日期/树输入、图片/二维码、弹窗提示和配置装饰组件。教程示例可通过 `python scripts/check-component-docs.py --schema` 批量校验（需 Python jsonschema）；自动化测试覆盖布局、表单、受控状态、事件顺序和 egui 输入。完整目录见 [组件教程](docs/components/README.md)，新增组件见 [导航](docs/components/33-navigation.md)、[录入与树](docs/components/34-native-inputs.md)、[展示](docs/components/35-native-display.md)、[反馈](docs/components/36-native-feedback.md)、[配置与装饰](docs/components/37-native-context.md)。[覆盖对照](docs/21-component-coverage.md) 逐项记录尚未实现的属性和桌面差异，名称覆盖不代表官网完整 API 兼容。远端 SSH 操作与客户环境需单独验证。
+协议 0.2 当前提供 84 种组件 type，包含新增的导航、日期/树输入、图片/二维码、弹窗提示和配置装饰组件。教程示例可通过 `python scripts/check-component-docs.py --schema` 批量校验（需 Python jsonschema）；现有单元测试覆盖协议与 class 解析、纯布局算法、表单校验、受控状态和运行时事件顺序。打包 EXE 的离屏 PNG 入口和 class 示例图片验证已接入，使用可选 `visual-tests` feature；[运行方法和覆盖范围](docs/testing-policy.md#打包产物离屏入口) 说明 wgpu 与正式 Glow 后端的差异。真实窗口的隔离自动化尚未接入。完整目录见 [组件教程](docs/components/README.md)，新增组件见 [导航](docs/components/33-navigation.md)、[录入与树](docs/components/34-native-inputs.md)、[展示](docs/components/35-native-display.md)、[反馈](docs/components/36-native-feedback.md)、[配置与装饰](docs/components/37-native-context.md)。[覆盖对照](docs/21-component-coverage.md) 逐项记录尚未实现的属性和桌面差异，名称覆盖不代表官网完整 API 兼容。远端 SSH 操作与客户环境需单独验证。
 
 - [描述格式](docs/05-description-format.md) 与 [0.2 JSON Schema](docs/description-0.2.schema.json)
 - [命令](docs/10-command-binding.md)、[动态事件](docs/11-dynamic-event-binding.md)、[作用域](docs/12-scoped-state.md)

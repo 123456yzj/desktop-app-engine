@@ -1,0 +1,29 @@
+{
+  "schemaVersion": "0.2",
+  "app": {"name": "JSON class 样式", "window": {"width": 720, "height": 560}},
+  "state": {"message": "尚未点击", "name": "Ada"},
+  "root": {
+    "type": "column", "id": "page", "class": "p-6 gap-4 items-start bg-white",
+    "children": [
+      {"type": "text", "id": "heading", "text": {"kind": "literal", "value": "在 JSON 中使用 class"}, "class": "text-2xl font-bold text-blue-600"},
+      {
+        "type": "card", "id": "card", "class": "p-4 gap-3 bg-slate-50 text-slate-800 border border-slate-200 rounded-xl w-[640px]",
+        "title": {"kind": "literal", "value": "原生组件样式"},
+        "children": [
+          {"type": "text", "id": "hint", "text": {"kind": "literal", "value": "试试悬停、按下按钮，以及编辑输入框。"}, "class": "text-sm text-slate-600"},
+          {"type": "input", "id": "name", "value": {"kind": "state", "key": "name"}, "class": "px-4 py-2 bg-white text-slate-800 border border-slate-300 rounded-lg hover:border-blue-500"},
+          {"type": "row", "id": "buttons", "class": "gap-3 items-center", "children": [
+            {"type": "button", "id": "save", "text": {"kind": "literal", "value": "保存"}, "class": "px-4 py-2 bg-blue-500 text-white border-0 rounded-lg hover:bg-blue-600 active:bg-blue-700", "events": {"click": "save"}},
+            {"type": "button", "id": "disabled", "text": {"kind": "literal", "value": "已禁用"}, "enabled": {"kind": "literal", "value": false}, "class": "px-4 py-2 rounded-lg disabled:bg-slate-200 disabled:text-slate-500", "events": {"click": "disabledClick"}},
+            {"type": "button", "id": "override", "text": {"kind": "literal", "value": "显式覆盖为直角"}, "class": "px-4 py-2 bg-white text-slate-700 rounded-lg border-2 border-blue-500", "style": {"radius": 0}}
+          ]}
+        ]
+      },
+      {"type": "text", "id": "status", "text": {"kind": "state", "key": "message"}, "class": "text-sm font-mono text-slate-600"}
+    ]
+  },
+  "actions": {
+    "save": {"steps": [{"type": "set", "target": "message", "value": {"kind": "literal", "value": "已保存"}}]},
+    "disabledClick": {"steps": [{"type": "set", "target": "message", "value": {"kind": "literal", "value": "错误：禁用按钮被触发"}}]}
+  }
+}

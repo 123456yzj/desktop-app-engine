@@ -40,10 +40,18 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, casc
     } else {
         selected.join(" / ")
     };
+    let style = ui.style().clone();
     let response = egui::ComboBox::from_id_salt("treeSelect")
         .width((rect.width() - 8.).max(1.))
         .selected_text(display)
+        // Expanding a branch or editing search must keep the popup open.
+        // Single selection explicitly closes it after choosing a leaf below.
+        .close_behavior(egui::PopupCloseBehavior::CloseOnClickOutside)
         .show_ui(ui, |ui| {
+            ui.set_style(style);
+            // Reserve room for expanded branches instead of retaining the
+            // collapsed popup's short scroll viewport.
+            ui.set_min_height(180.);
             if contract::flag(n, state, "showSearch", false) {
                 ui.text_edit_singleline(&mut memory.search);
             }
@@ -145,7 +153,7 @@ fn tree_options(
                 *selected = vec![key.into()];
             }
             if !multiple {
-                ui.close_menu();
+                ui.memory_mut(|memory| memory.close_popup());
             }
         }
         path.pop();

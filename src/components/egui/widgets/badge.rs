@@ -33,8 +33,11 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
     };
     painter.rect_filled(
         content,
-        6.,
-        token(ui, tone).gamma_multiply(if checked { 0.15 } else { 0.04 }),
+        n.style.radius,
+        n.style
+            .background
+            .map(|c| token(ui, c))
+            .unwrap_or_else(|| token(ui, tone).gamma_multiply(if checked { 0.15 } else { 0.04 })),
     );
     let closable = contract::flag(n, state, "closable", false);
     let tag_rect = if closable {
@@ -84,6 +87,6 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
         )),
         &format!("{}{}", contract::string(n, state, "icon", ""), r.text),
         &style,
-        token(ui, tone),
+        token(ui, n.style.color.unwrap_or(tone)),
     );
 }

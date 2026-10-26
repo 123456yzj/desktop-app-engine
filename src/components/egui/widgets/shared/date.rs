@@ -25,6 +25,7 @@ pub(in crate::components::egui::widgets) fn calendar(
     memory: &mut Memory,
     value: &mut Value,
 ) {
+    crate::components::egui::theme::component_visuals(ui);
     let date = value
         .as_str()
         .and_then(|s| NaiveDate::parse_from_str(s.get(..10).unwrap_or(s), "%Y-%m-%d").ok())

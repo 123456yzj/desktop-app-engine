@@ -2,16 +2,8 @@
 mod charts;
 mod fonts;
 mod form_controls;
-#[cfg(test)]
-mod form_tests;
-#[cfg(test)]
-mod layout_tests;
-#[cfg(test)]
-mod style_tests;
 mod text;
 mod theme;
-#[cfg(test)]
-mod widget_tests;
 pub(in crate::components) mod widgets;
 use crate::{
     binding::Binding,
@@ -58,9 +50,11 @@ struct ChartState {
     hidden: HashSet<usize>,
 }
 pub struct DashboardApp {
+    // Positioning metadata for offscreen input; acceptance still uses rendered PNGs.
+    #[cfg(feature = "visual-tests")]
+    visual_targets: BTreeMap<String, egui::Rect>,
     embedded: bool,
     host_events: Vec<UiEvent>,
-    open_selects: HashSet<String>,
     user_scrolled: HashSet<String>,
     logs: crate::gui_logs::Viewer,
     runtime: Runtime,
@@ -90,9 +84,10 @@ impl DashboardApp {
         let runtime = Runtime::from_compiled(description)?;
         let count = runtime.tree.nodes.len();
         Ok(Self {
+            #[cfg(feature = "visual-tests")]
+            visual_targets: BTreeMap::new(),
             embedded: false,
             host_events: vec![],
-            open_selects: HashSet::new(),
             user_scrolled: HashSet::new(),
             logs: crate::gui_logs::Viewer::default(),
             runtime,
@@ -174,6 +169,10 @@ impl DashboardApp {
     }
     pub fn draw(&mut self, ctx: &egui::Context) {
         self.render(ctx);
+    }
+    #[cfg(feature = "visual-tests")]
+    pub fn visual_targets(&self) -> BTreeMap<String, egui::Rect> {
+        self.visual_targets.clone()
     }
     pub fn draw_in(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
         self.render_inner(ctx, Some(ui));
@@ -387,6 +386,8 @@ impl DashboardApp {
                 self.runtime.error = Some(e);
             }
             let mut popup_layers = vec![None; self.runtime.tree.nodes.len()];
+            #[cfg(feature = "visual-tests")]
+            self.visual_targets.clear();
             for (id, node) in self.runtime.tree.nodes.iter().enumerate() {
                 let mut spec = node.spec.clone();
                 if let Some(locale) = self.resolved[id].api.get("@locale") {
@@ -428,6 +429,13 @@ impl DashboardApp {
                 if !r.visible || !floating && (b.clip.w <= 0. || b.clip.h <= 0.) {
                     continue;
                 }
+                #[cfg(feature = "visual-tests")]
+                if !floating {
+                    let visible = er(b.rect).intersect(er(b.clip));
+                    if visible.is_positive() {
+                        self.visual_targets.insert(n.id.clone(), visible);
+                    }
+                }
                 if let Some(parent) = node.parent {
                     popup_layers[id] = popup_layers[parent];
                 }
@@ -454,6 +462,7 @@ impl DashboardApp {
                         ..ui.style().as_ref().clone()
                     });
                 }
+                theme::component_visuals(ui);
                 ui.set_clip_rect(er(b.clip));
                 let painter = ui.painter().with_clip_rect(er(b.clip));
                 let rect = er(b.rect);
@@ -668,40 +677,6 @@ impl DashboardApp {
                         }
                         if submit {
                             submit_form(ui, &self.runtime.tree, id, "submit", &mut collector);
-                        }
-                    }
-                    Kind::Select if n.api.is_empty() => {
-                        let initial = r
-                            .value
-                            .as_ref()
-                            .and_then(|v| v.as_str())
-                            .unwrap_or_default();
-                        let mut selected = if matches!(n.value, Some(Binding::Literal { .. })) {
-                            self.inputs
-                                .get(&n.id)
-                                .map(String::as_str)
-                                .unwrap_or(initial)
-                                .to_owned()
-                        } else {
-                            initial.to_owned()
-                        };
-                        let before = selected.clone();
-                        let open = widgets::select::paint_simple(
-                            ui,
-                            n,
-                            r,
-                            content,
-                            self.runtime.state(),
-                            &mut selected,
-                            &mut collector,
-                        );
-                        if open && self.open_selects.insert(n.id.clone()) {
-                            collector.push(ui, "open", None, serde_json::Value::Null);
-                        } else if !open {
-                            self.open_selects.remove(&n.id);
-                        }
-                        if selected != before {
-                            self.inputs.insert(n.id.clone(), selected);
                         }
                     }
                     Kind::Table => widgets::table::paint(

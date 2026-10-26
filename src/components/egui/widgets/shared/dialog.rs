@@ -68,42 +68,48 @@ pub(in crate::components::egui::widgets) fn paint(c: WidgetContext<'_, '_>, draw
             .fixed_pos(position)
             .interactable(true)
     };
-    let response = egui::Modal::new(id).area(area).show(ui.ctx(), |ui| {
-        ui.set_width((width - 24.).max(16.));
-        ui.heading(&r.title);
-        if !r.text.is_empty() {
-            ui.label(&r.text);
-        }
-        let body = egui::Rect::from_min_size(
-            ui.cursor().min,
-            Vec2::new(ui.available_width(), (height - 96.).max(40.)),
-        );
-        memory.body = Some(body);
-        memory.layer = Some(ui.layer_id());
-        ui.allocate_space(body.size());
-        ui.horizontal(|ui| {
-            if contract::flag(n, state, "footer", !drawer) {
-                if ui
-                    .button(contract::string(n, state, "cancelText", "取消"))
-                    .clicked()
-                {
+    let style = ui.style().clone();
+    let frame = egui::Frame::popup(&style).inner_margin(12.);
+    let response = egui::Modal::new(id)
+        .area(area)
+        .frame(frame)
+        .show(ui.ctx(), |ui| {
+            ui.set_style(style);
+            ui.set_width((width - 24.).max(16.));
+            ui.heading(&r.title);
+            if !r.text.is_empty() {
+                ui.label(&r.text);
+            }
+            let body = egui::Rect::from_min_size(
+                ui.cursor().min,
+                Vec2::new(ui.available_width(), (height - 96.).max(40.)),
+            );
+            memory.body = Some(body);
+            memory.layer = Some(ui.layer_id());
+            ui.allocate_space(body.size());
+            ui.horizontal(|ui| {
+                if contract::flag(n, state, "footer", !drawer) {
+                    if ui
+                        .button(contract::string(n, state, "cancelText", "取消"))
+                        .clicked()
+                    {
+                        close = true;
+                    }
+                    if ui
+                        .add_enabled(
+                            !contract::flag(n, state, "confirmLoading", false),
+                            egui::Button::new(contract::string(n, state, "okText", "确定")),
+                        )
+                        .clicked()
+                    {
+                        ok = true;
+                    }
+                }
+                if contract::flag(n, state, "closable", true) && ui.button("关闭").clicked() {
                     close = true;
                 }
-                if ui
-                    .add_enabled(
-                        !contract::flag(n, state, "confirmLoading", false),
-                        egui::Button::new(contract::string(n, state, "okText", "确定")),
-                    )
-                    .clicked()
-                {
-                    ok = true;
-                }
-            }
-            if contract::flag(n, state, "closable", true) && ui.button("关闭").clicked() {
-                close = true;
-            }
+            });
         });
-    });
     if response.is_top_modal
         && !response.any_popup_open
         && contract::flag(n, state, "keyboard", true)

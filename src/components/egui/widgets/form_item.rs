@@ -11,20 +11,25 @@ pub(in crate::components::egui) fn paint(
     let rect = rect.shrink(node.layout.padding + node.style.border_width);
     let font = node.style.font_size.unwrap_or(16.);
     if !resolved.label.is_empty() {
-        let label = format!(
-            "{}{}",
-            if node.rules.iter().any(|r| r.required) {
-                "* "
-            } else {
-                ""
-            },
-            resolved.label
-        );
+        let required = node.rules.iter().any(|r| r.required);
+        let offset = if required { 12. } else { 0. };
+        if required {
+            painter.text(
+                rect.min,
+                egui::Align2::LEFT_TOP,
+                "*",
+                FontId::proportional(font),
+                token(ui, Token::Danger),
+            );
+        }
         label_line(
             ui,
             painter,
-            egui::Rect::from_min_size(rect.min, Vec2::new(rect.width(), font + 8.)),
-            &label,
+            egui::Rect::from_min_size(
+                rect.min + Vec2::new(offset, 0.),
+                Vec2::new(rect.width() - offset, font + 8.),
+            ),
+            &resolved.label,
             font,
             token(ui, node.style.color.unwrap_or(Token::TextPrimary)),
         );

@@ -215,6 +215,7 @@ struct WidgetContext<'a, 'events> {
 pub(super) struct Memory {
     pub properties: BTreeMap<String, Value>,
     pub search: String,
+    pub select_active: Option<String>,
     pub checks: HashSet<String>,
     pub started: Option<f64>,
     pub dismissed: bool,
@@ -527,7 +528,10 @@ pub(super) fn header_rect(
     rect: egui::Rect,
     content: egui::Rect,
 ) -> egui::Rect {
-    if !matches!(n.kind, Kind::Tabs | Kind::Collapse) {
+    if n.kind == Kind::Tabs && r.api.get("hideTabBar") == Some(&Value::Bool(true)) {
+        return egui::Rect::from_min_size(rect.min, Vec2::ZERO);
+    }
+    if !matches!(n.kind, Kind::Tabs | Kind::Collapse | Kind::Carousel) {
         return content;
     }
     let inner = rect.shrink(n.layout.padding + n.style.border_width);

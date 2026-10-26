@@ -117,6 +117,45 @@ fn layout_regions_allocate_remaining_space() {
 }
 
 #[test]
+fn hidden_tab_bar_releases_its_layout_space() {
+    for hidden in [false, true] {
+        for placement in ["top", "start"] {
+            let r = runtime(json!({"type":"tabs","id":"root","hideTabBar":hidden,
+                "tabPlacement":placement,"activeKey":"page","items":[{"key":"page","label":"Page"}],
+                "children":[leaf("page",20.0)]}));
+            let b = boxes(&r, 300.0, 200.0);
+            near(
+                b.boxes[1].rect.y,
+                if !hidden && placement == "top" {
+                    44.0
+                } else {
+                    0.0
+                },
+            );
+            near(
+                b.boxes[1].rect.x,
+                if !hidden && placement == "start" {
+                    120.0
+                } else {
+                    0.0
+                },
+            );
+            let measured = measure(
+                &r.tree,
+                &r.tree.resolve(r.state()).unwrap(),
+                0,
+                Constraint {
+                    width: Limit::Bounded(300.0),
+                    height: Limit::Unbounded,
+                },
+                &Text,
+            );
+            near(measured.h, if hidden { 20.0 } else { 64.0 });
+        }
+    }
+}
+
+#[test]
 fn fractional_children_in_scroll_columns_retain_natural_extent() {
     let r = runtime(
         json!({"type":"column","id":"root","layout":{"overflow":"scroll"},"children":[

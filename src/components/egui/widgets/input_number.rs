@@ -66,11 +66,28 @@ pub(in crate::components::egui) fn control(
         0.
     };
     let text_rect = egui::Rect::from_min_max(rect.min, rect.max - Vec2::new(buttons, 0.));
+    let hovered = ui.rect_contains_pointer(rect);
+    let colors = if !resolved.enabled {
+        node.style.disabled.as_ref()
+    } else if hovered {
+        node.style.hover.as_ref()
+    } else {
+        None
+    };
+    let background = colors
+        .and_then(|s| s.background)
+        .or(node.style.background)
+        .map(|c| token(ui, c))
+        .unwrap_or(ui.visuals().extreme_bg_color);
+    ui.painter()
+        .rect_filled(rect, node.style.radius, background);
     let response = ui.put(
         text_rect,
         egui::TextEdit::singleline(&mut edit.text)
             .id(egui::Id::new((&node.id, "number")))
             .font(style_font(&node.style, ui.ctx()))
+            .frame(false)
+            .margin(egui::Margin::symmetric(12, 8))
             .interactive(!readonly)
             .char_limit(64),
     );
@@ -90,17 +107,49 @@ pub(in crate::components::egui) fn control(
     let lower = egui::Rect::from_min_max(upper.left_bottom(), rect.max);
     let (min, max) = node.number_range();
     let current = value.as_f64().unwrap();
+    let border = if response.has_focus() {
+        token(ui, Token::Primary)
+    } else {
+        colors
+            .and_then(|s| s.border_color)
+            .or(node.style.border_color)
+            .map(|c| token(ui, c))
+            .unwrap_or_else(|| token(ui, Token::Border))
+    };
+    ui.painter().rect_stroke(
+        rect,
+        node.style.radius,
+        Stroke::new(node.style.border_width, border),
+        StrokeKind::Inside,
+    );
+    if controls {
+        let separator = token(ui, node.style.border_color.unwrap_or(Token::Border));
+        ui.painter().line_segment(
+            [upper.left_top(), lower.left_bottom()],
+            Stroke::new(1_f32, separator),
+        );
+        ui.painter().line_segment(
+            [upper.left_bottom(), upper.right_bottom()],
+            Stroke::new(1_f32, separator),
+        );
+    }
     ui.spacing_mut().interact_size.y = 0.;
     ui.spacing_mut().button_padding.y = 0.;
     let up = ui
         .add_enabled_ui(controls && !readonly && current < max, |ui| {
-            ui.put(upper, egui::Button::new("+"))
+            ui.put(
+                upper,
+                egui::Button::new(egui::RichText::new("+").size(12.)).frame(false),
+            )
         })
         .inner
         .clicked();
     let down = ui
         .add_enabled_ui(controls && !readonly && current > min, |ui| {
-            ui.put(lower, egui::Button::new("−"))
+            ui.put(
+                lower,
+                egui::Button::new(egui::RichText::new("−").size(12.)).frame(false),
+            )
         })
         .inner
         .clicked();

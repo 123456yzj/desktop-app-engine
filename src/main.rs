@@ -7,6 +7,9 @@ use desktop_app_engine::{
 use eframe::egui;
 use std::path::PathBuf;
 
+#[cfg(feature = "visual-tests")]
+mod visual_test;
+
 struct Options {
     credential_store: Option<String>,
     credential_action: Option<CredentialAction>,
@@ -15,6 +18,8 @@ struct Options {
     theme: egui::ThemePreference,
     check: bool,
     check_plugins: bool,
+    #[cfg(feature = "visual-tests")]
+    visual_test: Option<PathBuf>,
 }
 enum CredentialAction {
     Set(String),
@@ -31,11 +36,20 @@ fn options() -> Result<Options, String> {
         theme: egui::ThemePreference::System,
         check: false,
         check_plugins: false,
+        #[cfg(feature = "visual-tests")]
+        visual_test: None,
     };
     let mut args = std::env::args_os().skip(1);
 
     while let Some(arg) = args.next() {
         match arg.to_str() {
+            #[cfg(feature = "visual-tests")]
+            Some("--visual-test") => {
+                if options.visual_test.is_some() {
+                    return Err("--visual-test 只能指定一次".into());
+                }
+                options.visual_test = Some(args.next().ok_or("--visual-test 缺少场景文件")?.into());
+            }
             Some("--credential-store") => {
                 if options.credential_store.is_some() {
                     return Err("--credential-store 只能指定一次".into());
@@ -100,6 +114,17 @@ fn options() -> Result<Options, String> {
 
 fn run() -> Result<(), String> {
     let options = options()?;
+    #[cfg(feature = "visual-tests")]
+    if let Some(scenario) = &options.visual_test {
+        if options.path.is_some()
+            || options.check
+            || options.credential_action.is_some()
+            || options.credential_store.is_some()
+        {
+            return Err("--visual-test 不能与外部描述、校验或凭据命令混用".into());
+        }
+        return visual_test::run(scenario);
+    }
     if let Some(action) = &options.credential_action {
         if options.check {
             return Err("凭据管理命令不能与校验命令混用".into());
@@ -249,6 +274,7 @@ fn main() {
         eprintln!("{error}");
         if !std::env::args_os().any(|arg| {
             arg == "--check"
+                || arg == "--visual-test"
                 || arg == "--check-plugins"
                 || arg
                     .to_str()

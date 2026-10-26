@@ -19,7 +19,8 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
         let item = &items[index];
         let mode = contract::string(n, state, "mode", "left");
         let right = mode == "right" || mode == "alternate" && index % 2 == 1;
-        ui.with_layout(
+        ui.allocate_ui_with_layout(
+            Vec2::new(ui.available_width(), 24.),
             if right {
                 egui::Layout::right_to_left(egui::Align::Center)
             } else {

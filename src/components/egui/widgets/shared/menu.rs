@@ -42,17 +42,25 @@ pub(in crate::components::egui::widgets) fn paint(
                 if has_children { " ▸" } else { "" }
             )
         };
-        let response = ui.add_enabled(
-            !item_disabled(item),
-            egui::SelectableLabel::new(
-                selected.iter().any(|s| s == key),
-                egui::RichText::new(label).color(if item["danger"] == true {
-                    token(ui, Token::Danger)
-                } else {
-                    token(ui, Token::TextPrimary)
-                }),
-            ),
-        );
+        let active = selected.iter().any(|s| s == key);
+        let horizontal = contract::string(n, state, "mode", "vertical") == "horizontal";
+        let width = if horizontal { 0. } else { ui.available_width() };
+        let response = ui
+            .scope(|ui| {
+                if item["danger"] == true {
+                    ui.visuals_mut().override_text_color = Some(token(ui, Token::Danger));
+                }
+                shared::navigation_item(ui, &label, active, !item_disabled(item), width, 36.)
+            })
+            .inner;
+        if active && !horizontal {
+            let mark = egui::Rect::from_min_size(
+                response.rect.left_center() - Vec2::new(0., 8.),
+                Vec2::new(3., 16.),
+            );
+            ui.painter()
+                .rect_filled(mark, 2., token(ui, Token::Primary));
+        }
         if response.clicked() {
             if has_children {
                 toggle(open, key);

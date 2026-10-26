@@ -6,6 +6,7 @@ use crate::{
 use serde::{Deserialize, Deserializer};
 use std::collections::BTreeMap;
 
+mod classes;
 mod parse;
 pub mod util;
 pub(crate) use crate::components::contracts as widgets;

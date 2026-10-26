@@ -51,6 +51,7 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
     } else {
         egui::AboveOrBelow::Below
     };
+    let style = ui.style().clone();
     let popup = egui::popup::popup_above_or_below_widget(
         ui,
         id,
@@ -58,6 +59,7 @@ pub(super) fn paint(c: WidgetContext<'_, '_>) {
         direction,
         egui::PopupCloseBehavior::CloseOnClickOutside,
         |ui| {
+            ui.set_style(style);
             shared::menu::paint(
                 ui,
                 n,

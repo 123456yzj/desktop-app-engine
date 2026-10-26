@@ -40,6 +40,8 @@ format：`{"type":"number|percent|text","precision":0,"unit":""}`，字段缺省
 
 每节点 type、id 必填。id 非空、全树唯一，深度上限 64。visible/enabled 是布尔绑定，缺省 true，父隐藏/禁用传播到子节点。隐藏节点不布局和命中；禁用节点仍绘制但不发事件。
 
+可选 `class` 为静态工具类字符串，如 `"px-4 py-2 bg-blue-500 rounded-lg hover:bg-blue-600"`。加载时转换到 style/layout，再执行默认值和语义校验；从左到右覆盖，显式 style/layout 最优先，状态颜色按字段合并。仅支持原生 Tailwind 子集，未知/不支持类名报错；单位固定 1rem=16 point，最多 256 个类名、16384 UTF-8 字节。支持范围、组件限制、覆盖与示例见 [公共属性：JSON class](components/02-common.md#json-class-工具类)。
+
 layout 所有尺寸为逻辑 point，有限非负且 <=1,000,000，min <= max。width/height 缺省 auto；显式形式为 `{"auto":true}`、`{"fixed":240}`、`{"fr":1}`，恰好一种。fr 正数且 <=1,000,000；主轴权重分配，交叉轴填充可用长度。无界测量时 fr 退化内容尺寸。
 
 | layout 字段 | 缺省与行为 |
@@ -56,7 +58,7 @@ layout 所有尺寸为逻辑 point，有限非负且 <=1,000,000，min <= max。
 
 gap/rowGap/columnGap/align/justify/wrap/overflow 只用于容器，叶节点声明会被拒绝。splitter 不接受 gap/rowGap/columnGap/align/justify/wrap，其间距由 barSize 控制。表格自身提供双轴滚动，图表的滚轮由 zoom 单独控制。width/height、约束和 padding 可用于所有组件。坐标按边界对齐像素，避免累加四舍五入误差。
 
-style：background/color/borderColor 可使用 surface、surfaceRaised、textPrimary、textMuted、border、accent、success、warning、danger、focus、primary、onPrimary Token，或 `#RRGGBB` / `#RRGGBBAA` 精确颜色。Token 随主题变化，精确颜色保持不变。fontSize 缺省 16，borderWidth/radius 缺省 0。card/panel 缺省 raised surface 与至少 6 point 圆角，badge/button 有自身最小圆角。样式无继承，每节点单独指定。同一组件的背景和边框只绘制一次：panel/card 的边框由 `bordered` 控制，禁用时不再绘制；输入和下拉的边框、圆角与背景归控件外框所有。
+style：background/color/borderColor 可使用 surface、surfaceRaised、textPrimary、textMuted、border、accent、success、warning、danger、focus、primary、onPrimary Token，或 `#RRGGBB` / `#RRGGBBAA` 精确颜色。Token 随主题变化，精确颜色保持不变。fontSize 缺省 16；Button、Panel/Card、Input/Select/InputNumber 的 borderWidth 缺省 1，其余公共默认 0。card/panel 缺省 raised surface 与 6 point 圆角，button 默认 4；显式 radius=0 与 borderWidth=0 保留。同一组件的背景和边框只绘制一次：panel/card 的边框由 `bordered` 控制，关闭时不再绘制；输入和下拉的边框、圆角与背景归控件外框所有。样式无继承，每节点单独指定。
 
 文本支持 `fontFamily: proportional|monospace`、`fontWeight: normal|bold`、`textWrap: true|false` 和 `textAlign: start|center|end`；center 同时在可用文本框内垂直居中。默认正常比例字体、换行、起始对齐。Bold 使用 Windows 系统粗体字体；自定义嵌入宿主未安装粗体字族时回退普通比例字体。等宽字体优先于字重。截断的文本默认悬停显示完整内容，可设置 `textOverflowTooltip: false` 关闭，适用于可滚动的日志正文。
 

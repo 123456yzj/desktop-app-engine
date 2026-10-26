@@ -62,6 +62,13 @@ pub(in crate::components::egui) fn paint(
         .or(n.style.color)
         .map(|c| token(ui, c))
         .unwrap_or(color);
+    if clear {
+        painter.rect_filled(
+            content,
+            n.style.radius,
+            edit_bg.unwrap_or(ui.visuals().extreme_bg_color),
+        );
+    }
     for (label, x) in [
         (prefix, content.left()),
         (suffix, input_rect.right() + if clear { 28. } else { 0. }),
@@ -100,6 +107,7 @@ pub(in crate::components::egui) fn paint(
             } else {
                 edit
             };
+            let edit = if clear { edit.frame(false) } else { edit };
             let edit = if n.style.padding_x.is_some() || n.style.padding_y.is_some() {
                 edit.margin(egui::Margin::symmetric(
                     n.style.padding_x.unwrap_or(4.).clamp(0., 127.) as i8,
@@ -120,7 +128,12 @@ pub(in crate::components::egui) fn paint(
                         Pos2::new(input_rect.right(), content.top()),
                         Vec2::new(28., content.height()),
                     ),
-                    egui::Button::new("×"),
+                    egui::Button::new(
+                        egui::RichText::new("×")
+                            .size(16.)
+                            .color(token(ui, Token::TextMuted)),
+                    )
+                    .frame(false),
                 )
             })
             .inner
@@ -129,7 +142,7 @@ pub(in crate::components::egui) fn paint(
     let status_error = matches!(status, "error" | "warning");
     if status_error {
         painter.rect_stroke(
-            input_rect,
+            if clear { content } else { input_rect },
             3.,
             Stroke::new(
                 1_f32,
@@ -149,21 +162,22 @@ pub(in crate::components::egui) fn paint(
     // radius would be lost without a matching stroke. The focus ring wins while focused,
     // except for an explicit pressed style, which is transient and must stay visible.
     if !status_error
-        && (!response.has_focus() || pressed)
+        && (!response.has_focus() || pressed || clear)
         && let Some(border) = paint_state
             .and_then(|s| s.border_color)
             .or(n.style.border_color)
+            .or(clear.then_some(Token::Border))
     {
         painter.rect_stroke(
-            input_rect,
+            if clear { content } else { input_rect },
             n.style.radius,
             Stroke::new(
-                if n.style.border_width > 0. {
-                    n.style.border_width
+                n.style.border_width,
+                if clear && response.has_focus() {
+                    token(ui, Token::Primary)
                 } else {
-                    1.
+                    token(ui, border)
                 },
-                token(ui, border),
             ),
             StrokeKind::Inside,
         );

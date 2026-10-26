@@ -53,6 +53,7 @@ pub(in crate::components::egui::widgets) fn paint(
             ui.memory_mut(|m| m.open_popup(id));
         }
     }
+    let style = ui.style().clone();
     let popup = egui::popup::popup_above_or_below_widget(
         ui,
         id,
@@ -60,6 +61,7 @@ pub(in crate::components::egui::widgets) fn paint(
         egui::AboveOrBelow::Below,
         egui::PopupCloseBehavior::CloseOnClickOutside,
         |ui| {
+            ui.set_style(style);
             ui.strong(&r.title);
             ui.label(&r.text);
             ui.label(contract::string(n, state, "description", ""));

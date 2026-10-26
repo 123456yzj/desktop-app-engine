@@ -134,7 +134,12 @@ pub(super) fn styled_label(
         egui::Sense::hover(),
     );
     response.widget_info(|| egui::WidgetInfo::labeled(egui::WidgetType::Label, true, text));
-    if style.text_overflow_tooltip != Some(false) && (size.x > r.width() || size.y > r.height()) {
+    // The two arranged edges can each round inward by half a physical pixel.
+    // Do not show an overflow tooltip for this one-pixel rounding difference.
+    let tolerance = 1.0 / painter.ctx().pixels_per_point() + f32::EPSILON * 128.;
+    if style.text_overflow_tooltip != Some(false)
+        && (size.x > r.width() + tolerance || size.y > r.height() + tolerance)
+    {
         response.on_hover_text(text);
     }
 }

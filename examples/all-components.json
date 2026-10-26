@@ -65,28 +65,28 @@
     "children": [{
       "type": "app", "id": "appContext", "layout": {"height": {"fr": 1}},
       "children": [{
-        "type": "layout", "id": "shell", "layout": {"height": {"fr": 1}, "gap": 10},
+        "type": "layout", "id": "shell", "class": "p-4 gap-3 bg-slate-50 text-slate-800", "layout": {"height": {"fr": 1}},
         "children": [
           {
-            "type": "header", "id": "header", "layout": {"height": {"auto": true}, "shrink": 0, "padding": 16, "gap": 8},
+            "type": "header", "id": "header", "class": "p-3 gap-1 bg-white border border-slate-200 rounded-lg", "layout": {"height": {"auto": true}, "shrink": 0},
             "children": [
-              {"type": "row", "id": "titleRow", "layout": {"gap": 12, "align": "center"}, "children": [
-                {"type": "icon", "id": "brandIcon", "name": "AppstoreOutlined", "layout": {"width": {"fixed": 30}, "height": {"fixed": 30}}},
-                {"type": "text", "id": "title", "text": {"kind": "literal", "value": "组件展示中心"}, "style": {"fontSize": 26, "fontWeight": "bold"}},
-                {"type": "badge", "id": "versionTag", "text": {"kind": "literal", "value": "协议 0.2"}, "tone": "success"},
-                {"type": "badgeCount", "id": "coverageCount", "count": 84, "overflowCount": 99, "text": "组件"}
+              {"type": "row", "id": "titleRow", "class": "gap-3 items-center", "children": [
+                {"type": "icon", "id": "brandIcon", "name": "AppstoreOutlined", "class": "w-6 h-6 text-blue-600"},
+                {"type": "text", "id": "title", "text": {"kind": "literal", "value": "组件实验室"}, "class": "text-xl font-bold text-slate-900"},
+                {"type": "badge", "id": "versionTag", "text": {"kind": "literal", "value": "v0.2"}, "class": "text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded"},
+                {"type": "text", "id": "catalogueSubtitle", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "84 种组件 / 6 个分区"}}
               ]},
-              {"type": "breadcrumb", "id": "breadcrumb", "separator": "/", "items": [{"key": "home", "label": "桌面应用引擎"}, {"key": "catalogue", "label": "全部组件"}]}
+              {"type": "breadcrumb", "id": "breadcrumb", "class": "text-xs text-slate-500 h-6", "separator": "/", "items": [{"key": "home", "label": "桌面应用引擎"}, {"key": "catalogue", "label": "组件预览"}]}
             ]
           },
           {
-            "type": "layout", "id": "body", "layout": {"height": {"fr": 1}, "gap": 16},
+            "type": "layout", "id": "body", "class": "gap-4", "layout": {"height": {"fr": 1}},
             "children": [
               {
-                "type": "sider", "id": "sidebar", "layout": {"width": {"fixed": 190}, "padding": 12, "gap": 16, "overflow": "scroll"},
+                "type": "sider", "id": "sidebar", "class": "w-[200px] p-3 gap-4 bg-white border border-slate-200 rounded-lg overflow-auto",
                 "children": [
-                  {"type": "text", "id": "sidebarTitle", "text": {"kind": "literal", "value": "组件分区"}, "style": {"fontSize": 18}},
-                  {"type": "menu", "id": "sectionMenu", "mode": "inline", "selectedKeys": {"kind": "state", "key": "selectedMenu"}, "layout": {"height": {"fixed": 230}}, "items": [
+                  {"type": "text", "id": "sidebarTitle", "text": {"kind": "literal", "value": "组件目录"}, "class": "text-xs font-bold text-slate-500"},
+                  {"type": "menu", "id": "sectionMenu", "class": "h-[244px] text-slate-700", "mode": "inline", "selectedKeys": {"kind": "state", "key": "selectedMenu"}, "items": [
                     {"key": "pageLayout", "label": "01 布局与容器"},
                     {"key": "pageForm", "label": "02 表单与录入"},
                     {"key": "pageNavigation", "label": "03 导航与切换"},
@@ -95,14 +95,17 @@
                     {"key": "pageFeedback", "label": "06 反馈与弹窗"}
                   ], "events": {"click": "navigate"}},
                   {"type": "divider", "id": "sidebarDivider"},
-                  {"type": "metric", "id": "componentMetric", "label": {"kind": "literal", "value": "已覆盖组件"}, "value": {"kind": "state", "key": "componentCount"}},
-                  {"type": "text", "id": "sidebarHint", "text": {"kind": "literal", "value": "每个分区可滚动。\n输入值与选择状态会保留。\n右下角按钮可打开操作指南。"}}
+                  {"type": "card", "id": "sidebarSummary", "class": "p-3 gap-3 bg-slate-50 border-0 rounded-lg", "children": [
+                    {"type": "badgeCount", "id": "coverageCount", "count": 84, "overflowCount": 99, "text": "组件", "status": "default"},
+                    {"type": "metric", "id": "componentMetric", "class": "h-[58px] text-slate-700", "label": {"kind": "literal", "value": "已覆盖组件"}, "value": {"kind": "state", "key": "componentCount"}},
+                    {"type": "text", "id": "sidebarHint", "class": "text-xs text-slate-500", "text": {"kind": "literal", "value": "切换分区保留输入\n滚动查看完整示例"}}
+                  ]}
                 ]
               },
               {
-                "type": "content", "id": "mainContent", "layout": {"height": {"fr": 1}, "padding": 8},
+                "type": "content", "id": "mainContent", "class": "p-3 bg-white border border-slate-200 rounded-lg", "layout": {"height": {"fr": 1}},
                 "children": [{
-                  "type": "tabs", "id": "mainTabs", "activeKey": {"kind": "state", "key": "activePage"}, "tabBarGutter": 16,
+                  "type": "tabs", "id": "mainTabs", "activeKey": {"kind": "state", "key": "activePage"}, "tabBarGutter": 6,
                   "layout": {"height": {"fr": 1}}, "events": {"change": "prepareMenuSelection", "tabClick": "syncMenu"},
                   "items": [
                     {"key": "pageLayout", "label": "布局"}, {"key": "pageForm", "label": "录入"},
@@ -111,90 +114,96 @@
                   ],
                   "children": [
                     {
-                      "type": "column", "id": "pageLayout", "layout": {"height": {"fr": 1}, "padding": 12, "gap": 16, "overflow": "scroll"},
+                      "type": "column", "id": "pageLayout", "class": "p-4 gap-5 overflow-auto", "layout": {"height": {"fr": 1}},
                       "children": [
-                        {"type": "text", "id": "layoutIntro", "text": {"kind": "literal", "value": "布局与容器：Row / Column / Grid / Flex / Space / Layout / Masonry / Splitter"}, "style": {"fontSize": 20}},
-                        {"type": "grid", "id": "metricGrid", "columns": [{"fr": 1}, {"fr": 1}, {"fr": 1}], "layout": {"gap": 12}, "children": [
-                          {"type": "card", "id": "metricCard", "title": {"kind": "literal", "value": "Card 卡片"}, "layout": {"padding": 16, "height": {"fixed": 145}}, "children": [
+                        {"type": "text", "id": "layoutIntro", "text": {"kind": "literal", "value": "01 / 布局与容器"}, "class": "text-2xl font-bold text-slate-900"},
+                        {"type": "text", "id": "layoutDescription", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "从基础排列到自适应容器，用 Row、Grid、Flex 与 Splitter 组织内容。"}},
+                        {"type": "grid", "id": "metricGrid", "columns": [{"fr": 1}, {"fr": 1}, {"fr": 1}], "class": "gap-4", "children": [
+                          {"type": "card", "id": "metricCard", "title": {"kind": "literal", "value": "Card / 数据概览"}, "class": "p-4 h-[136px] bg-white border border-slate-200 rounded-lg", "children": [
                             {"type": "metric", "id": "demoMetric", "label": {"kind": "literal", "value": "组件总数"}, "value": {"kind": "state", "key": "componentCount"}}
                           ]},
-                          {"type": "panel", "id": "progressPanel", "title": {"kind": "literal", "value": "Panel 面板"}, "layout": {"padding": 16, "height": {"fixed": 145}, "gap": 12}, "children": [
+                          {"type": "panel", "id": "progressPanel", "title": {"kind": "literal", "value": "Panel / 完成进度"}, "class": "p-4 h-[136px] gap-3 bg-white border border-slate-200 rounded-lg", "children": [
                             {"type": "text", "id": "progressLabel", "text": {"kind": "literal", "value": "Progress 进度条"}},
                             {"type": "progress", "id": "progress", "value": {"kind": "state", "key": "progress"}, "text": {"kind": "literal", "value": "72%"}}
                           ]},
-                          {"type": "card", "id": "flexCard", "title": {"kind": "literal", "value": "Flex + Space"}, "layout": {"padding": 16, "height": {"fixed": 145}, "gap": 10}, "children": [
-                            {"type": "flex", "id": "flexDemo", "vertical": false, "layout": {"gap": 8, "wrap": true}, "children": [
-                              {"type": "badge", "id": "flexTagA", "text": {"kind": "literal", "value": "自动排列"}},
-                              {"type": "badge", "id": "flexTagB", "text": {"kind": "literal", "value": "可换行"}, "tone": "success"}
+                          {"type": "card", "id": "flexCard", "title": {"kind": "literal", "value": "Flex + Space / 灵活排列"}, "class": "p-4 h-[136px] gap-3 bg-white border border-slate-200 rounded-lg", "children": [
+                            {"type": "flex", "id": "flexDemo", "vertical": false, "class": "gap-2 flex-wrap", "children": [
+                              {"type": "badge", "id": "flexTagA", "class": "text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded", "text": {"kind": "literal", "value": "自动排列"}},
+                              {"type": "badge", "id": "flexTagB", "class": "text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded", "text": {"kind": "literal", "value": "可换行"}, "tone": "success"}
                             ]},
-                            {"type": "space", "id": "spaceDemo", "children": [
-                              {"type": "button", "id": "basicButton", "text": {"kind": "literal", "value": "点击试试"}, "events": {"click": "clicked"}},
-                              {"type": "button", "id": "disabledButton", "text": {"kind": "literal", "value": "禁用"}, "enabled": {"kind": "literal", "value": false}}
+                            {"type": "space", "id": "spaceDemo", "class": "gap-2", "children": [
+                              {"type": "button", "id": "basicButton", "text": {"kind": "literal", "value": "点击试试"}, "class": "px-4 py-2 bg-blue-500 text-white border-0 rounded-lg hover:bg-blue-600 active:bg-blue-700", "events": {"click": "clicked"}},
+                              {"type": "button", "id": "disabledButton", "text": {"kind": "literal", "value": "禁用"}, "class": "px-4 py-2 rounded-lg disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200", "enabled": {"kind": "literal", "value": false}}
                             ]}
                           ]}
                         ]},
-                        {"type": "splitter", "id": "splitterDemo", "value": {"kind": "state", "key": "splitRatio"}, "layout": {"height": {"fixed": 170}}, "children": [
-                          {"type": "panel", "id": "splitterLeft", "title": {"kind": "literal", "value": "Splitter 左侧"}, "layout": {"padding": 16, "minWidth": 180}, "children": [
-                            {"type": "text", "id": "splitterHint", "text": {"kind": "literal", "value": "拖动中间分割条调整比例，也可聚焦后使用左右方向键。"}}
+                        {"type": "splitter", "id": "splitterDemo", "value": {"kind": "state", "key": "splitRatio"}, "class": "h-[132px]", "children": [
+                          {"type": "panel", "id": "splitterLeft", "title": {"kind": "literal", "value": "Splitter / 拖动调整布局"}, "class": "p-5 min-w-[180px] bg-slate-50 border border-slate-200 rounded-xl", "children": [
+                        {"type": "text", "id": "splitterHint", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "拖动分割条调整比例，或使用左右方向键。"}}
                           ]},
-                          {"type": "panel", "id": "splitterRight", "title": {"kind": "literal", "value": "右侧预览"}, "layout": {"padding": 16, "minWidth": 180}, "children": [
+                          {"type": "panel", "id": "splitterRight", "title": {"kind": "literal", "value": "实时预览"}, "class": "p-5 min-w-[180px] bg-white border border-slate-200 rounded-lg", "children": [
                             {"type": "metric", "id": "ratioMetric", "label": {"kind": "literal", "value": "左侧比例"}, "value": {"kind": "state", "key": "splitRatio"}, "format": {"type": "percent", "precision": 0}}
                           ]}
                         ]},
-                        {"type": "text", "id": "masonryTitle", "text": {"kind": "literal", "value": "Masonry 瀑布流与装饰容器"}, "style": {"fontSize": 18}},
-                        {"type": "masonry", "id": "masonryDemo", "columnCount": 3, "minColumnWidth": 230, "layout": {"gap": 12}, "children": [
-                          {"type": "watermark", "id": "watermarkDemo", "content": "组件展示", "gap": 90, "rotate": -22, "layout": {"height": {"fixed": 160}, "padding": 16}, "children": [
+                        {"type": "text", "id": "masonryTitle", "text": {"kind": "literal", "value": "Masonry / 瀑布流与装饰容器"}, "class": "text-lg font-bold text-slate-800"},
+                        {"type": "masonry", "id": "masonryDemo", "columnCount": 3, "minColumnWidth": 230, "class": "gap-4", "children": [
+                          {"type": "watermark", "id": "watermarkDemo", "content": "组件展示", "gap": 90, "rotate": -22, "class": "h-40 p-4 bg-slate-50 border border-slate-200 rounded-xl", "children": [
                             {"type": "text", "id": "watermarkText", "text": {"kind": "literal", "value": "Watermark 水印\n叠加在内容上方的视觉装饰。"}}
                           ]},
-                          {"type": "borderBeam", "id": "borderBeamDemo", "duration": 5, "borderWidth": 2, "layout": {"height": {"fixed": 120}, "padding": 16}, "children": [
+                          {"type": "borderBeam", "id": "borderBeamDemo", "duration": 5, "borderWidth": 2, "class": "h-[120px] p-4 bg-white rounded-lg", "children": [
                             {"type": "text", "id": "beamText", "text": {"kind": "literal", "value": "BorderBeam\n沿边框移动的光束。"}}
                           ]},
-                          {"type": "card", "id": "masonryCard", "title": {"kind": "literal", "value": "自然高度卡片"}, "layout": {"padding": 16, "height": {"fixed": 190}}, "children": [
+                          {"type": "card", "id": "masonryCard", "title": {"kind": "literal", "value": "自然高度卡片"}, "class": "p-4 h-[190px] bg-white border border-slate-200 rounded-xl", "children": [
                             {"type": "text", "id": "masonryText", "text": {"kind": "literal", "value": "每张卡片保留自己的高度，后续卡片进入当前最短列。缩小窗口可观察响应列数。"}}
                           ]}
                         ]},
-                        {"type": "module", "id": "moduleDemo", "layout": {"padding": 12, "gap": 10},
+                        {"type": "module", "id": "moduleDemo", "class": "p-5 gap-3 bg-slate-50 border border-slate-200 rounded-xl",
                           "state": {"draft": "模块内的草稿"}, "props": {"message": {"kind": "state", "key": "sharedMessage"}},
                           "emits": {"changed": ""}, "on": {"changed": "receiveModule"},
                           "actions": {"publish": {"steps": [{"type": "emit", "event": "changed", "payload": {"kind": "state", "key": "draft"}}]}},
                           "children": [
-                            {"type": "text", "id": "moduleTitle", "text": {"kind": "literal", "value": "Module 模块：局部状态 / props / emit"}, "style": {"fontSize": 18}},
+                            {"type": "text", "id": "moduleTitle", "text": {"kind": "literal", "value": "Module / 局部状态与模块通信"}, "class": "text-lg font-bold text-slate-800"},
                             {"type": "text", "id": "moduleProp", "text": {"kind": "prop", "key": "message"}},
-                            {"type": "input", "id": "moduleInput", "value": {"kind": "state", "key": "draft"}},
-                            {"type": "button", "id": "modulePublish", "text": {"kind": "literal", "value": "发送给父级"}, "events": {"click": "publish"}}
+                            {"type": "input", "id": "moduleInput", "value": {"kind": "state", "key": "draft"}, "class": "px-3 py-2 bg-white text-slate-800 border border-slate-300 rounded-lg hover:border-blue-500"},
+                            {"type": "button", "id": "modulePublish", "text": {"kind": "literal", "value": "发送给父级"}, "class": "px-4 py-2 bg-white text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 active:bg-blue-100", "events": {"click": "publish"}}
                           ]
                         },
-                        {"type": "affix", "id": "affixDemo", "offsetTop": 8, "layout": {"height": {"fixed": 44}}, "children": [
-                          {"type": "button", "id": "affixButton", "text": {"kind": "literal", "value": "Affix 固定操作 · 打开指南"}, "events": {"click": "showDrawer"}}
+                        {"type": "affix", "id": "affixDemo", "offsetTop": 8, "class": "h-11", "children": [
+                          {"type": "button", "id": "affixButton", "text": {"kind": "literal", "value": "Affix 固定操作 · 打开指南"}, "class": "px-4 py-2 bg-white text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 active:bg-blue-100", "events": {"click": "showDrawer"}}
                         ]}
                       ]
                     },
                     {
-                      "type": "column", "id": "pageForm", "layout": {"height": {"fr": 1}, "padding": 12, "gap": 16, "overflow": "scroll"},
+                      "type": "column", "id": "pageForm", "class": "p-4 gap-5 overflow-auto", "layout": {"height": {"fr": 1}},
                       "children": [
-                        {"type": "text", "id": "formIntro", "text": {"kind": "literal", "value": "表单与录入：编辑后可提交、重置，所有受控值保存在应用状态中。"}, "style": {"fontSize": 20}},
-                        {"type": "form", "id": "profileForm", "title": {"kind": "literal", "value": "Form / FormItem 基础表单"}, "layout": {"gap": 10}, "events": {"submit": "saveForm", "invalid": "invalidForm", "reset": "resetForm"}, "children": [
-                          {"type": "formItem", "id": "nameItem", "label": {"kind": "literal", "value": "Input 姓名"}, "rules": [{"required": true}, {"minLength": 2, "maxLength": 30}], "children": [
-                            {"type": "input", "id": "nameInput", "value": {"kind": "state", "key": "formName"}, "placeholder": {"kind": "literal", "value": "请输入至少两个字符"}, "allowClear": true}
+                        {"type": "text", "id": "formIntro", "text": {"kind": "literal", "value": "02 / 表单与录入"}, "class": "text-2xl font-bold text-slate-900"},
+                        {"type": "text", "id": "formDescription", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "编辑、校验与提交一气呵成。输入值保存在应用状态中，切换分区也不会丢失。"}},
+                        {"type": "form", "id": "profileForm", "class": "p-5 gap-3 max-w-[840px] bg-white border border-slate-200 rounded-lg", "events": {"submit": "saveForm", "invalid": "invalidForm", "reset": "resetForm"}, "children": [
+                          {"type": "text", "id": "profileHeading", "class": "text-lg font-bold text-slate-900", "text": {"kind": "literal", "value": "基础资料"}},
+                          {"type": "text", "id": "profileHint", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "填写姓名和年龄，体验表单校验、提交与重置。"}},
+                          {"type": "grid", "id": "profileFields", "class": "gap-5", "columns": [{"fr": 1}, {"fr": 1}], "children": [
+                            {"type": "formItem", "id": "nameItem", "class": "text-sm text-slate-700", "label": {"kind": "literal", "value": "姓名"}, "rules": [{"required": true, "message": "请填写姓名"}, {"minLength": 2, "maxLength": 30, "message": "姓名须为 2–30 个字符"}], "children": [
+                              {"type": "input", "id": "nameInput", "class": "h-10 text-sm px-3 py-2 bg-white text-slate-800 border border-slate-300 rounded-lg hover:border-blue-500", "value": {"kind": "state", "key": "formName"}, "placeholder": {"kind": "literal", "value": "请输入姓名"}, "allowClear": true}
+                            ]},
+                            {"type": "formItem", "id": "ageItem", "class": "text-sm text-slate-700", "label": {"kind": "literal", "value": "年龄"}, "rules": [{"min": 18, "max": 100, "message": "年龄须在 18–100 岁之间"}], "children": [
+                              {"type": "inputNumber", "id": "ageInput", "class": "h-10 text-sm bg-white text-slate-800 border border-slate-300 rounded-lg hover:border-blue-500", "value": {"kind": "state", "key": "formAge"}, "min": 0, "max": 120, "step": 1, "precision": 0}
+                            ]}
                           ]},
-                          {"type": "formItem", "id": "ageItem", "label": {"kind": "literal", "value": "InputNumber 年龄"}, "rules": [{"min": 18, "max": 100}], "children": [
-                            {"type": "inputNumber", "id": "ageInput", "value": {"kind": "state", "key": "formAge"}, "min": 0, "max": 120, "step": 1, "precision": 0}
+                          {"type": "formItem", "id": "agreementItem", "class": "text-sm", "rules": [{"required": true, "message": "请先同意条款"}], "children": [
+                            {"type": "checkbox", "id": "agreement", "class": "text-sm text-slate-700", "value": {"kind": "state", "key": "formAgreement"}, "text": {"kind": "literal", "value": "我已阅读并同意展示条款"}}
                           ]},
-                          {"type": "formItem", "id": "agreementItem", "rules": [{"required": true, "message": "请先同意条款"}], "children": [
-                            {"type": "checkbox", "id": "agreement", "value": {"kind": "state", "key": "formAgreement"}, "text": {"kind": "literal", "value": "Checkbox 同意展示条款"}}
-                          ]},
-                          {"type": "space", "id": "formButtons", "children": [
-                            {"type": "button", "id": "submitForm", "htmlType": "submit", "text": {"kind": "literal", "value": "校验并提交"}},
-                            {"type": "button", "id": "resetForm", "htmlType": "reset", "text": {"kind": "literal", "value": "重置表单"}}
+                          {"type": "space", "id": "formButtons", "class": "gap-3", "children": [
+                            {"type": "button", "id": "submitForm", "htmlType": "submit", "class": "h-10 text-sm px-5 py-2 bg-blue-500 text-white border-0 rounded-lg hover:bg-blue-600 active:bg-blue-700", "text": {"kind": "literal", "value": "保存资料"}},
+                            {"type": "button", "id": "resetForm", "htmlType": "reset", "class": "h-10 text-sm px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 active:bg-slate-100", "text": {"kind": "literal", "value": "重置"}}
                           ]}
                         ]},
                         {"type": "divider", "id": "formDivider"},
-                        {"type": "text", "id": "basicInputsTitle", "text": {"kind": "literal", "value": "Radio / Switch / Slider / Select"}, "style": {"fontSize": 18}},
+                        {"type": "text", "id": "basicInputsTitle", "text": {"kind": "literal", "value": "基础选择 / Radio · Switch · Slider · Select"}, "class": "text-lg font-bold text-slate-800"},
                         {"type": "radio", "id": "radioDemo", "value": {"kind": "state", "key": "choice"}, "options": {"kind": "literal", "value": [{"value": "desktop", "label": "桌面"}, {"value": "server", "label": "服务端"}, {"value": "disabled", "label": "禁用选项", "disabled": true}]}},
                         {"type": "switch", "id": "switchDemo", "value": {"kind": "state", "key": "switchOn"}, "text": {"kind": "literal", "value": "Switch 启用功能"}},
                         {"type": "slider", "id": "sliderDemo", "value": {"kind": "state", "key": "slider"}, "min": 0, "max": 100, "step": 5},
-                        {"type": "select", "id": "selectDemo", "value": {"kind": "state", "key": "selectValue"}, "options": {"kind": "literal", "value": [{"value": "rust", "label": "Rust"}, {"value": "typescript", "label": "TypeScript"}, {"value": "python", "label": "Python"}]}, "showSearch": true, "allowClear": true, "placeholder": {"kind": "literal", "value": "Select 选择语言"}},
-                        {"type": "text", "id": "extendedInputsTitle", "text": {"kind": "literal", "value": "搜索、级联、颜色、日期与时间"}, "style": {"fontSize": 18}},
+                        {"type": "select", "id": "selectDemo", "class": "h-10 max-w-[840px] text-sm bg-white text-slate-800 border border-slate-300 rounded-lg hover:border-blue-500", "value": {"kind": "state", "key": "selectValue"}, "options": {"kind": "literal", "value": [{"value": "rust", "label": "Rust"}, {"value": "typescript", "label": "TypeScript"}, {"value": "python", "label": "Python"}]}, "showSearch": true, "allowClear": true, "placeholder": {"kind": "literal", "value": "请选择语言"}},
+                        {"type": "text", "id": "extendedInputsTitle", "text": {"kind": "literal", "value": "进阶录入 / 搜索、级联、颜色与日期"}, "class": "text-lg font-bold text-slate-800"},
                         {"type": "autoComplete", "id": "autoCompleteDemo", "value": {"kind": "state", "key": "query"}, "options": ["Ada", "Alan", "Grace"], "placeholder": "AutoComplete 输入姓名", "allowClear": true},
                         {"type": "cascader", "id": "cascaderDemo", "value": {"kind": "state", "key": "region"}, "options": [{"value": "asia", "label": "亚洲", "children": [{"value": "china", "label": "中国"}, {"value": "japan", "label": "日本"}]}], "showSearch": true, "allowClear": true},
                         {"type": "colorPicker", "id": "colorPickerDemo", "value": {"kind": "state", "key": "color"}, "showText": true, "presets": ["#1677ff", "#52c41a", "#faad14", "#f5222d"]},
@@ -202,68 +211,71 @@
                         {"type": "timePicker", "id": "timePickerDemo", "value": {"kind": "state", "key": "time"}, "showNow": true, "allowClear": true},
                         {"type": "mentions", "id": "mentionsDemo", "value": {"kind": "state", "key": "mention"}, "options": ["Ada", "Alan", "Grace"], "prefix": "@", "rows": 3},
                         {"type": "rate", "id": "rateDemo", "value": {"kind": "state", "key": "rating"}, "allowHalf": true, "tooltips": ["很差", "较差", "一般", "很好", "优秀"]},
-                        {"type": "text", "id": "treeInputsTitle", "text": {"kind": "literal", "value": "穿梭、树选择、文件与日历"}, "style": {"fontSize": 18}},
-                        {"type": "transfer", "id": "transferDemo", "value": {"kind": "state", "key": "permissions"}, "options": ["read", "write", "admin"], "titles": ["可选权限", "已选权限"], "showSearch": true, "layout": {"height": {"fixed": 190}}},
+                        {"type": "text", "id": "treeInputsTitle", "text": {"kind": "literal", "value": "结构化输入 / 穿梭、树、文件与日历"}, "class": "text-lg font-bold text-slate-800"},
+                        {"type": "transfer", "id": "transferDemo", "class": "h-[190px]", "value": {"kind": "state", "key": "permissions"}, "options": ["read", "write", "admin"], "titles": ["可选权限", "已选权限"], "showSearch": true},
                         {"type": "treeSelect", "id": "treeSelectDemo", "value": {"kind": "state", "key": "treeValue"}, "options": [{"value": "engineering", "label": "研发团队", "children": [{"value": "ada", "label": "Ada"}, {"value": "alan", "label": "Alan"}]}], "showSearch": true, "allowClear": true},
-                        {"type": "upload", "id": "uploadDemo", "value": {"kind": "state", "key": "files"}, "text": "Upload 选择本地文件", "multiple": true, "accept": ".png,.jpg,.txt,.json", "maxCount": 5, "maxSize": 10485760, "layout": {"height": {"fixed": 150}}},
-                        {"type": "text", "id": "uploadHint", "text": {"kind": "literal", "value": "文件仅记录在本地，不会自动上传。"}},
-                        {"type": "calendar", "id": "calendarDemo", "value": {"kind": "state", "key": "calendarDate"}, "layout": {"height": {"fixed": 300}}},
-                        {"type": "tree", "id": "treeDemo", "treeData": [{"key": "team", "title": "研发团队", "children": [{"key": "memberAda", "title": "Ada"}, {"key": "memberAlan", "title": "Alan"}]}], "selectedKeys": {"kind": "state", "key": "treeSelected"}, "checkedKeys": {"kind": "state", "key": "treeChecked"}, "expandedKeys": {"kind": "state", "key": "treeExpanded"}, "checkable": true, "layout": {"height": {"fixed": 160}}}
+                        {"type": "upload", "id": "uploadDemo", "class": "h-[150px] bg-slate-50 border border-slate-200 rounded-xl", "value": {"kind": "state", "key": "files"}, "text": "Upload 选择本地文件", "multiple": true, "accept": ".png,.jpg,.txt,.json", "maxCount": 5, "maxSize": 10485760},
+                        {"type": "text", "id": "uploadHint", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "文件仅记录在本地，不会自动上传。"}},
+                        {"type": "calendar", "id": "calendarDemo", "class": "h-[300px]", "value": {"kind": "state", "key": "calendarDate"}},
+                        {"type": "tree", "id": "treeDemo", "class": "h-40", "treeData": [{"key": "team", "title": "研发团队", "children": [{"key": "memberAda", "title": "Ada"}, {"key": "memberAlan", "title": "Alan"}]}], "selectedKeys": {"kind": "state", "key": "treeSelected"}, "checkedKeys": {"kind": "state", "key": "treeChecked"}, "expandedKeys": {"kind": "state", "key": "treeExpanded"}, "checkable": true}
                       ]
                     },
                     {
-                      "type": "column", "id": "pageNavigation", "layout": {"height": {"fr": 1}, "padding": 12, "gap": 16, "overflow": "scroll"},
+                      "type": "column", "id": "pageNavigation", "class": "p-4 gap-5 overflow-auto", "layout": {"height": {"fr": 1}},
                       "children": [
-                        {"type": "text", "id": "navigationIntro", "text": {"kind": "literal", "value": "导航与切换：侧栏使用 Menu，主分区使用 Tabs，顶部使用 Breadcrumb。"}, "style": {"fontSize": 20}},
+                        {"type": "text", "id": "navigationIntro", "text": {"kind": "literal", "value": "03 / 导航与切换"}, "class": "text-2xl font-bold text-slate-900"},
+                        {"type": "text", "id": "navigationDescription", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "在步骤、标签和内容之间流畅切换，体验不同层级的信息导航。"}},
                         {"type": "anchor", "id": "anchorDemo", "direction": "horizontal", "items": [{"key": "intro", "label": "Anchor 介绍", "href": "#navigationIntro"}, {"key": "details", "label": "详情", "href": "#collapseDetails"}], "events": {"click": "anchorClicked"}},
                         {"type": "dropdown", "id": "dropdownDemo", "text": "Dropdown 操作菜单", "items": [{"key": "refresh", "label": "刷新展示"}, {"key": "help", "label": "查看帮助"}], "events": {"click": "dropdownClicked"}},
                         {"type": "steps", "id": "stepsDemo", "current": {"kind": "state", "key": "step"}, "items": [{"key": "fill", "label": "填写资料"}, {"key": "review", "label": "确认内容"}, {"key": "finish", "label": "完成"}]},
                         {"type": "segmented", "id": "segmentedDemo", "value": {"kind": "state", "key": "segment"}, "options": [{"value": "day", "label": "日"}, {"value": "week", "label": "周"}, {"value": "month", "label": "月"}]},
                         {"type": "collapse", "id": "collapseDemo", "activeKey": {"kind": "state", "key": "expandedPanels"}, "items": [{"key": "collapseDetails", "label": "Collapse 点击展开或收起"}], "children": [
-                          {"type": "text", "id": "collapseDetails", "text": {"kind": "literal", "value": "展开状态绑定字符串数组。切换分区后仍保留选择。"}, "layout": {"height": {"fixed": 60}}}
+                          {"type": "text", "id": "collapseDetails", "text": {"kind": "literal", "value": "展开状态绑定字符串数组。切换分区后仍保留选择。"}, "class": "h-[60px] text-sm text-slate-500"}
                         ]},
-                        {"type": "carousel", "id": "carouselDemo", "current": {"kind": "state", "key": "slide"}, "arrows": true, "dots": true, "layout": {"height": {"fixed": 150}}, "children": [
-                          {"type": "card", "id": "slideFirst", "title": {"kind": "literal", "value": "Carousel 第一张"}, "layout": {"padding": 16}, "children": [{"type": "text", "id": "slideFirstText", "text": {"kind": "literal", "value": "点击左右箭头切换幻灯片。"}}]},
-                          {"type": "card", "id": "slideSecond", "title": {"kind": "literal", "value": "第二张"}, "layout": {"padding": 16}, "children": [{"type": "text", "id": "slideSecondText", "text": {"kind": "literal", "value": "当前索引由 state 保存。"}}]}
+                        {"type": "carousel", "id": "carouselDemo", "current": {"kind": "state", "key": "slide"}, "arrows": true, "dots": true, "class": "h-[150px]", "children": [
+                          {"type": "card", "id": "slideFirst", "title": {"kind": "literal", "value": "Carousel / 发现更多可能"}, "class": "p-5 bg-blue-50 border border-blue-100 rounded-xl", "children": [{"type": "text", "id": "slideFirstText", "class": "text-slate-500", "text": {"kind": "literal", "value": "点击左右箭头切换幻灯片。"}}]},
+                          {"type": "card", "id": "slideSecond", "title": {"kind": "literal", "value": "Carousel / 状态随行"}, "class": "p-5 bg-slate-50 border border-slate-200 rounded-xl", "children": [{"type": "text", "id": "slideSecondText", "class": "text-slate-500", "text": {"kind": "literal", "value": "当前索引由 state 保存。"}}]}
                         ]},
                         {"type": "pagination", "id": "paginationDemo", "current": {"kind": "state", "key": "page"}, "pageSize": {"kind": "state", "key": "pageSize"}, "total": 123, "showSizeChanger": true, "showQuickJumper": true, "showTotal": true},
-                        {"type": "text", "id": "navigationNote", "text": {"kind": "literal", "value": "Anchor 在本示例中将点击结果显示到状态栏。Pagination 展示独立分页状态，表格分区拥有自己的分页。"}}
+                        {"type": "text", "id": "navigationNote", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "Anchor 在本示例中将点击结果显示到状态栏。Pagination 展示独立分页状态，表格分区拥有自己的分页。"}}
                       ]
                     },
                     {
-                      "type": "column", "id": "pageDisplay", "layout": {"height": {"fr": 1}, "padding": 12, "gap": 16, "overflow": "scroll"},
+                      "type": "column", "id": "pageDisplay", "class": "p-4 gap-5 overflow-auto", "layout": {"height": {"fr": 1}},
                       "children": [
-                        {"type": "text", "id": "displayIntro", "text": {"kind": "literal", "value": "图片、列表与展示"}, "style": {"fontSize": 20}},
-                        {"type": "space", "id": "identityRow", "children": [
-                          {"type": "avatar", "id": "avatarDemo", "text": "Ada", "shape": "circle", "layout": {"width": {"fixed": 56}, "height": {"fixed": 56}}},
+                        {"type": "text", "id": "displayIntro", "text": {"kind": "literal", "value": "04 / 图片与展示"}, "class": "text-2xl font-bold text-slate-900"},
+                        {"type": "text", "id": "displayDescription", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "用头像、描述列表和时间线呈现信息，让内容清晰可读。"}},
+                        {"type": "space", "id": "identityRow", "class": "gap-4 items-center", "children": [
+                          {"type": "avatar", "id": "avatarDemo", "class": "w-14 h-14", "text": "Ada", "shape": "circle"},
                           {"type": "badgeCount", "id": "unreadBadge", "count": 120, "overflowCount": 99, "text": "未读消息"},
                           {"type": "badge", "id": "checkableTag", "text": {"kind": "literal", "value": "可选 Tag"}, "checkable": true, "checked": {"kind": "state", "key": "tagChecked"}, "closable": true}
                         ]},
-                        {"type": "descriptions", "id": "descriptionsDemo", "column": 2, "bordered": true, "items": [{"label": "名称", "content": "全部组件展示"}, {"label": "协议", "content": "0.2"}, {"label": "运行方式", "content": "原生 Windows EXE"}, {"label": "组件数量", "content": "84"}], "layout": {"height": {"fixed": 130}}},
-                        {"type": "row", "id": "imageRow", "layout": {"gap": 20, "height": {"fixed": 190}}, "children": [
-                          {"type": "image", "id": "imageDemo", "alt": "Image 图片占位 · 可在 JSON 中配置 src", "preview": true, "layout": {"width": {"fixed": 330}, "height": {"fixed": 180}}},
-                          {"type": "qrCode", "id": "qrCodeDemo", "value": "desktop-app-engine:all-components:0.2", "errorLevel": "M", "layout": {"width": {"fixed": 180}, "height": {"fixed": 180}}}
+                        {"type": "descriptions", "id": "descriptionsDemo", "class": "h-[130px]", "column": 2, "bordered": true, "items": [{"label": "名称", "content": "全部组件展示"}, {"label": "协议", "content": "0.2"}, {"label": "运行方式", "content": "原生 Windows EXE"}, {"label": "组件数量", "content": "84"}]},
+                        {"type": "row", "id": "imageRow", "class": "p-4 gap-5 h-[220px] bg-slate-50 border border-slate-200 rounded-xl", "children": [
+                          {"type": "image", "id": "imageDemo", "class": "w-[330px] h-[180px]", "alt": "Image 图片占位 · 可在 JSON 中配置 src", "preview": true},
+                          {"type": "qrCode", "id": "qrCodeDemo", "class": "w-[180px] h-[180px]", "value": "desktop-app-engine:all-components:0.2", "errorLevel": "M"}
                         ]},
-                        {"type": "text", "id": "imageNote", "text": {"kind": "literal", "value": "Image 展示无来源占位；配置 src 后可加载和预览。右侧二维码由本机生成。"}},
-                        {"type": "list", "id": "listDemo", "bordered": true, "items": [{"key": "taskA", "label": "List · 任务 A", "description": "等待处理"}, {"key": "taskB", "label": "任务 B", "description": "已完成"}, {"key": "taskC", "label": "任务 C", "description": "处理中"}], "layout": {"height": {"fixed": 165}}},
-                        {"type": "listy", "id": "listyDemo", "itemHeight": 48, "items": [{"key": "row1", "label": "Listy · 虚拟行 1", "description": "固定行高"}, {"key": "row2", "label": "虚拟行 2", "description": "区域内滚动"}, {"key": "row3", "label": "虚拟行 3", "description": "只绘制可见行"}, {"key": "row4", "label": "虚拟行 4", "description": "更多内容"}], "layout": {"height": {"fixed": 125}}},
-                        {"type": "timeline", "id": "timelineDemo", "items": [{"label": "创建应用", "description": "09:00"}, {"label": "校验描述", "description": "09:10"}, {"label": "输出 EXE", "description": "09:20"}], "pending": "等待下一步", "layout": {"height": {"fixed": 180}}},
-                        {"type": "empty", "id": "emptyDemo", "description": "Empty · 暂无更多任务", "layout": {"height": {"fixed": 80}}}
+                        {"type": "text", "id": "imageNote", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "Image 展示无来源占位；配置 src 后可加载和预览。右侧二维码由本机生成。"}},
+                        {"type": "list", "id": "listDemo", "class": "h-[165px]", "bordered": true, "items": [{"key": "taskA", "label": "List · 任务 A", "description": "等待处理"}, {"key": "taskB", "label": "任务 B", "description": "已完成"}, {"key": "taskC", "label": "任务 C", "description": "处理中"}]},
+                        {"type": "listy", "id": "listyDemo", "class": "h-[125px]", "itemHeight": 48, "items": [{"key": "row1", "label": "Listy · 虚拟行 1", "description": "固定行高"}, {"key": "row2", "label": "虚拟行 2", "description": "区域内滚动"}, {"key": "row3", "label": "虚拟行 3", "description": "只绘制可见行"}, {"key": "row4", "label": "虚拟行 4", "description": "更多内容"}]},
+                        {"type": "timeline", "id": "timelineDemo", "class": "h-[180px]", "items": [{"label": "创建应用", "description": "09:00"}, {"label": "校验描述", "description": "09:10"}, {"label": "输出 EXE", "description": "09:20"}], "pending": "等待下一步"},
+                        {"type": "empty", "id": "emptyDemo", "class": "h-20", "description": "Empty · 暂无更多任务"}
                       ]
                     },
                     {
-                      "type": "column", "id": "pageData", "layout": {"height": {"fr": 1}, "padding": 12, "gap": 16, "overflow": "scroll"},
+                      "type": "column", "id": "pageData", "class": "p-4 gap-5 overflow-auto", "layout": {"height": {"fr": 1}},
                       "children": [
-                        {"type": "text", "id": "dataIntro", "text": {"kind": "literal", "value": "表格、内置图表与 ECharts 插件"}, "style": {"fontSize": 20}},
-                        {"type": "table", "id": "tableDemo", "rows": {"kind": "state", "key": "servers"}, "rowKey": "id", "rowHeight": 36, "pageSize": 3, "current": {"kind": "state", "key": "tablePage"}, "bordered": true, "layout": {"height": {"fixed": 230}}, "columns": [
+                        {"type": "text", "id": "dataIntro", "text": {"kind": "literal", "value": "05 / 表格与图表"}, "class": "text-2xl font-bold text-slate-900"},
+                        {"type": "text", "id": "dataDescription", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "从明细到趋势：体验表格分页、原生图表和 ECharts 扩展。"}},
+                        {"type": "table", "id": "tableDemo", "class": "h-[230px]", "rows": {"kind": "state", "key": "servers"}, "rowKey": "id", "rowHeight": 36, "pageSize": 3, "current": {"kind": "state", "key": "tablePage"}, "bordered": true, "columns": [
                           {"id": "name", "field": "name", "title": "节点", "width": {"fr": 1}},
                           {"id": "load", "field": "load", "title": "负载", "width": {"fixed": 160}, "format": {"type": "percent", "precision": 1}},
                           {"id": "online", "field": "online", "title": "在线", "width": {"fixed": 100}}
                         ], "events": {"rowSelect": "rowSelected", "sortChange": "tableSorted"}},
-                        {"type": "lineChart", "id": "lineChartDemo", "title": {"kind": "literal", "value": "LineChart 折线趋势"}, "layout": {"height": {"fixed": 280}}, "series": [{"id": "line", "name": "请求量", "data": {"kind": "state", "key": "trend"}, "xField": "x", "yField": "y", "monotonicX": true}], "legend": true, "zoom": true, "pan": true, "yAxis": {"min": 0, "max": 100}},
-                        {"type": "barChart", "id": "barChartDemo", "title": {"kind": "literal", "value": "BarChart 柱状分布"}, "layout": {"height": {"fixed": 280}}, "series": [{"id": "bar", "name": "任务量", "data": {"kind": "state", "key": "trend"}, "xField": "x", "yField": "y"}], "legend": true, "yAxis": {"min": 0, "max": 100}},
-                        {"type": "text", "id": "pluginTitle", "text": {"kind": "literal", "value": "Plugin · ECharts（点击柱子可更新状态栏）"}, "style": {"fontSize": 18}},
-                        {"type": "plugin", "id": "pluginDemo", "component": "echarts.chart", "layout": {"height": {"fixed": 320}}, "props": {"option": {"kind": "literal", "value": {
+                        {"type": "lineChart", "id": "lineChartDemo", "title": {"kind": "literal", "value": "LineChart 折线趋势"}, "class": "h-[280px]", "series": [{"id": "line", "name": "请求量", "data": {"kind": "state", "key": "trend"}, "xField": "x", "yField": "y", "monotonicX": true}], "legend": true, "zoom": true, "pan": true, "yAxis": {"min": 0, "max": 100}},
+                        {"type": "barChart", "id": "barChartDemo", "title": {"kind": "literal", "value": "BarChart 柱状分布"}, "class": "h-[280px]", "series": [{"id": "bar", "name": "任务量", "data": {"kind": "state", "key": "trend"}, "xField": "x", "yField": "y"}], "legend": true, "yAxis": {"min": 0, "max": 100}},
+                        {"type": "text", "id": "pluginTitle", "text": {"kind": "literal", "value": "Plugin / ECharts · 点击柱子更新状态栏"}, "class": "text-lg font-bold text-slate-800"},
+                        {"type": "plugin", "id": "pluginDemo", "component": "echarts.chart", "class": "h-80", "props": {"option": {"kind": "literal", "value": {
                           "animation": false, "title": {"text": "ECharts Plugin", "left": "center"},
                           "grid": {"left": 55, "right": 24, "top": 60, "bottom": 45},
                           "xAxis": {"type": "category", "data": ["Layout", "Input", "Display", "Feedback"]},
@@ -272,29 +284,30 @@
                       ]
                     },
                     {
-                      "type": "column", "id": "pageFeedback", "layout": {"height": {"fr": 1}, "padding": 12, "gap": 16, "overflow": "scroll"},
+                      "type": "column", "id": "pageFeedback", "class": "p-4 gap-5 overflow-auto", "layout": {"height": {"fr": 1}},
                       "children": [
-                        {"type": "text", "id": "feedbackIntro", "text": {"kind": "literal", "value": "反馈与弹窗：点击按钮打开，Esc 或关闭按钮退出。"}, "style": {"fontSize": 20}},
-                        {"type": "space", "id": "overlayButtons", "layout": {"wrap": true}, "children": [
-                          {"type": "button", "id": "showModal", "text": {"kind": "literal", "value": "Modal 对话框"}, "events": {"click": "showModal"}},
-                          {"type": "button", "id": "showDrawer", "text": {"kind": "literal", "value": "Drawer 抽屉"}, "events": {"click": "showDrawer"}},
-                          {"type": "button", "id": "showMessage", "text": {"kind": "literal", "value": "Message 消息"}, "events": {"click": "showMessage"}},
-                          {"type": "button", "id": "showNotification", "text": {"kind": "literal", "value": "Notification 通知"}, "events": {"click": "showNotification"}},
-                          {"type": "button", "id": "showTour", "text": {"kind": "literal", "value": "Tour 导览"}, "events": {"click": "showTour"}}
+                        {"type": "text", "id": "feedbackIntro", "text": {"kind": "literal", "value": "06 / 反馈与弹窗"}, "class": "text-2xl font-bold text-slate-900"},
+                        {"type": "text", "id": "feedbackDescription", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "让每次操作都有回应。点击体验弹窗、通知和导览，使用 Esc 或关闭按钮退出。"}},
+                        {"type": "space", "id": "overlayButtons", "class": "gap-3 flex-wrap", "children": [
+                          {"type": "button", "id": "showModal", "class": "px-4 py-2 bg-blue-500 text-white border-0 rounded-lg hover:bg-blue-600 active:bg-blue-700", "text": {"kind": "literal", "value": "Modal 对话框"}, "events": {"click": "showModal"}},
+                          {"type": "button", "id": "showDrawer", "class": "px-4 py-2 bg-white text-blue-700 border border-blue-200 rounded-lg hover:bg-blue-50 active:bg-blue-100", "text": {"kind": "literal", "value": "Drawer 抽屉"}, "events": {"click": "showDrawer"}},
+                          {"type": "button", "id": "showMessage", "class": "px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 active:bg-slate-100", "text": {"kind": "literal", "value": "Message 消息"}, "events": {"click": "showMessage"}},
+                          {"type": "button", "id": "showNotification", "class": "px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 active:bg-slate-100", "text": {"kind": "literal", "value": "Notification 通知"}, "events": {"click": "showNotification"}},
+                          {"type": "button", "id": "showTour", "class": "px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 active:bg-slate-100", "text": {"kind": "literal", "value": "Tour 导览"}, "events": {"click": "showTour"}}
                         ]},
-                        {"type": "space", "id": "popupButtons", "children": [
+                        {"type": "space", "id": "popupButtons", "class": "gap-3", "children": [
                           {"type": "popover", "id": "popoverDemo", "text": "Popover 点击查看", "title": "气泡说明", "description": "支持点击打开和外部点击关闭。"},
                           {"type": "tooltip", "id": "tooltipDemo", "text": "Tooltip 悬停查看", "description": "这里是悬停提示。"},
                           {"type": "popconfirm", "id": "popconfirmDemo", "text": "Popconfirm 确认操作", "description": "确定执行演示操作吗？", "okText": "确定", "cancelText": "取消", "events": {"confirm": "confirmed"}}
                         ]},
-                        {"type": "alert", "id": "alertDemo", "text": "Alert · 全部组件已载入", "description": "这是可关闭的成功提示。", "status": "success", "showIcon": true, "closable": true, "layout": {"height": {"fixed": 85}}},
-                        {"type": "result", "id": "resultDemo", "title": "Result · 操作完成", "subTitle": "组件展示应用已准备就绪", "status": "success", "layout": {"height": {"fixed": 140}}},
-                        {"type": "text", "id": "skeletonTitle", "text": {"kind": "literal", "value": "Skeleton 骨架屏"}, "style": {"fontSize": 18}},
-                        {"type": "skeleton", "id": "skeletonDemo", "rows": 3, "avatar": true, "active": true, "layout": {"height": {"fixed": 120}}},
+                        {"type": "alert", "id": "alertDemo", "class": "h-[85px]", "text": "Alert · 全部组件已载入", "description": "这是可关闭的成功提示。", "status": "success", "showIcon": true, "closable": true},
+                        {"type": "result", "id": "resultDemo", "class": "h-[140px]", "title": "Result · 操作完成", "subTitle": "组件展示应用已准备就绪", "status": "success"},
+                        {"type": "text", "id": "skeletonTitle", "text": {"kind": "literal", "value": "Skeleton / 加载占位"}, "class": "text-lg font-bold text-slate-800"},
+                        {"type": "skeleton", "id": "skeletonDemo", "class": "h-[120px]", "rows": 3, "avatar": true, "active": true},
                         {"type": "switch", "id": "spinSwitch", "text": {"kind": "literal", "value": "切换 Spin 加载状态"}, "value": {"kind": "state", "key": "spinning"}},
-                        {"type": "spin", "id": "spinDemo", "spinning": {"kind": "state", "key": "spinning"}, "tip": "加载中", "layout": {"height": {"fixed": 110}, "padding": 16}, "children": [
+                        {"type": "spin", "id": "spinDemo", "spinning": {"kind": "state", "key": "spinning"}, "tip": "加载中", "class": "h-[130px] p-4 gap-3 bg-slate-50 border border-slate-200 rounded-xl", "children": [
                           {"type": "text", "id": "spinContent", "text": {"kind": "literal", "value": "Spin 内容区域：打开加载状态时覆盖指示器并禁用子控件。"}},
-                          {"type": "button", "id": "spinChild", "text": {"kind": "literal", "value": "内容中的操作"}, "events": {"click": "clicked"}}
+                          {"type": "button", "id": "spinChild", "class": "px-4 py-2 bg-white text-slate-700 border border-slate-300 rounded-lg hover:bg-slate-50 active:bg-slate-100", "text": {"kind": "literal", "value": "内容中的操作"}, "events": {"click": "clicked"}}
                         ]}
                       ]
                     }
@@ -303,14 +316,14 @@
               }
             ]
           },
-          {"type": "footer", "id": "footer", "layout": {"height": {"fixed": 44}, "padding": 10}, "children": [
-            {"type": "text", "id": "statusText", "text": {"kind": "state", "key": "status"}, "ellipsis": true, "style": {"fontSize": 14}}
+          {"type": "footer", "id": "footer", "class": "h-11 p-3 bg-white border border-slate-200 rounded-lg", "children": [
+            {"type": "text", "id": "statusText", "text": {"kind": "state", "key": "status"}, "ellipsis": true, "class": "text-sm text-slate-500"}
           ]}
         ]
       },
       {"type": "modal", "id": "modalDemo", "open": {"kind": "state", "key": "modalOpen"}, "title": "Modal 编辑资料", "width": 520, "events": {"ok": "saveModal"}, "children": [
-        {"type": "text", "id": "modalHint", "text": {"kind": "literal", "value": "此输入与表单姓名共用状态。确定后关闭并显示成功消息。"}},
-        {"type": "input", "id": "modalName", "value": {"kind": "state", "key": "formName"}}
+        {"type": "text", "id": "modalHint", "class": "text-sm text-slate-500", "text": {"kind": "literal", "value": "此输入与表单姓名共用状态。确定后关闭并显示成功消息。"}},
+        {"type": "input", "id": "modalName", "class": "px-3 py-2 bg-white text-slate-800 border border-slate-300 rounded-lg hover:border-blue-500", "value": {"kind": "state", "key": "formName"}}
       ]},
       {"type": "drawer", "id": "drawerDemo", "open": {"kind": "state", "key": "drawerOpen"}, "title": "组件展示操作指南", "placement": "right", "width": 420, "children": [
         {"type": "text", "id": "drawerGuide", "text": {"kind": "literal", "value": "1. 左侧菜单与顶部标签切换六个分区。\n2. 每个分区独立滚动，展示全部 84 种组件。\n3. 表单支持必填校验、提交和重置。\n4. 表格支持排序、选行和分页。\n5. 图表支持悬停，内置折线图支持缩放和平移。\n6. ECharts 插件及 Node 运行库已打入应用。\n7. Upload 仅选择并记录本地文件。\n8. Image 当前展示占位，可在 JSON 配置图片来源。\n9. Esc 或关闭按钮可退出弹窗。"}}

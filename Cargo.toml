@@ -4,6 +4,9 @@ version = "0.1.0"
 edition = "2024"
 default-run = "desktop-app-engine"
 
+[features]
+visual-tests = ["dep:egui_kittest"]
+
 [dependencies]
 eframe = { version = "=0.31.1", default-features = false, features = ["default_fonts", "glow", "accesskit"] }
 serde = { version = "1", features = ["derive"] }
@@ -19,6 +22,8 @@ image = { version = "0.25", default-features = false, features = ["png", "jpeg",
 qrcode = { version = "0.14", default-features = false }
 rfd = "0.15"
 regex = "1"
+hypen-tailwind-parse = "=0.6.6"
+egui_kittest = { version = "=0.31.1", default-features = false, features = ["wgpu"], optional = true }
 
 [profile.release]
 strip = true
